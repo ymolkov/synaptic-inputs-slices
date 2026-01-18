@@ -1,0 +1,9 @@
+set ftp:ssl-force true
+set ftp:ssl-protect-data true
+set ssl:verify-certificate false
+connect math.gsu.edu
+user ymolkov bbR3xU8C5f
+cd db/int12
+mirror -R
+
+

@@ -1,0 +1,7 @@
+echo "<tr>"
+for f
+do
+	echo "<td>$f</td>"
+done
+echo "</tr>"
+

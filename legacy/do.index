@@ -1,0 +1,7 @@
+echo "<td>"
+for f
+do
+	echo "<a href=\"$f.pdf\"><img src=\"$f.jpeg\" title=\"$f\"></a>"
+done
+echo "</td>"
+

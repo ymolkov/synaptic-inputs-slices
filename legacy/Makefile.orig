@@ -1,0 +1,206 @@
+VgluT2-I.html:	VgluT2-I-Cell1-C VgluT2-I-Cell2-C VgluT2-I-Cell2-V VgluT2-I-Cell3-V VgluT2-I-Cell4-C VgluT2-I-Cell4-V VgluT2-I-Cell5-C VgluT2-I-Cell5-V VgluT2-I-Cell6-C VgluT2-I-Cell6-V VgluT2-I-Cell7-V VgluT2-I-Cell7-C VgluT2-I-Cell8-C VgluT2-I-Cell8-V VgluT2-I-Cell9-V VgluT2-I-Cell9-C VgluT2-I-Cell10-C-1 VgluT2-I-Cell10-C-2 VgluT2-I-Cell10-V VgluT2-I-Cell11-V VgluT2-I-Cell11-C VgluT2-I-Cell12-C
+	./do.index $^ >$@
+
+
+VgluT2-I-Cell2-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .003 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell2-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .003 -l 300000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell1-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .0025 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell3-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -k 100 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell4-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .0035 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell4-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .0035 -vc -l 125000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell5-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .0032 -vc <$(basename $@) >dat 2>ph; gnuplot -e Ei=-60 plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell5-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -q .0032 -k 100 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell6-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -x 250000 -k 150 -s 1 -W 2000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell6-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -k 150 -s -1 -W 2000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell7-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -k 150 -s -1 -W 2000 -q 2 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell7-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -k 150 -s 1 -W 2000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell8-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell8-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell9-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell9-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell10-C-1.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell10-C-2.pdf:		$(basename $@) Makefile
+	./med2 -f 100 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell10-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell11-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -k 50 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell11-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-I-Cell12-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+
+
+VgluT2-E.html:	VgluT2-E-Cell1-C VgluT2-E-Cell1-V
+	./do.index $^ >$@
+
+VgluT2-E-Cell1-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -x 60000 -k 50 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VgluT2-E-Cell1-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+
+VGAT-E.html:	VGAT-E-Cell1-C VGAT-E-Cell2-C VGAT-E-Cell2-V VGAT-E-Cell2-V-2 VGAT-E-Cell3-C VGAT-E-Cell3-V VGAT-E-Cell4-C VGAT-E-Cell4-V VGAT-E-Cell5-C VGAT-E-Cell5-V VGAT-E-Cell6-V VGAT-E-Cell7-C VGAT-E-Cell7-V VGAT-E-Cell8-C VGAT-E-Cell8-V VGAT-E-Cell9-C VGAT-E-Cell9-V
+	./do.index $^ >$@
+
+VGAT-E-Cell1-C.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell2-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -l 350000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell2-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell2-V-2.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -x 100000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell3-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -x 100000 -k 100 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell3-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -k 100 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell4-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell4-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -q .0032 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell5-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell5-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell6-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell7-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -l 400000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell7-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell8-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell8-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell9-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -x 500000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-E-Cell9-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+
+VGAT-I.html:	VGAT-I-Cell1-C VGAT-I-Cell1-V VGAT-I-Cell2-C VGAT-I-Cell2-V VGAT-I-Cell3-C VGAT-I-Cell3-V VGAT-I-Cell4-C VGAT-I-Cell4-V VGAT-I-Cell5-C VGAT-I-Cell5-V VGAT-I-Cell6-C VGAT-I-Cell6-V VGAT-I-Cell7-V VGAT-I-Cell8-C VGAT-I-Cell8-V VGAT-I-Cell9-C VGAT-I-Cell9-V
+	./do.index $^ >$@
+
+VGAT-I-Cell1-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -l 200000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell1-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell2-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -x 150000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell2-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell3-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -k 150 -s 1 -W 2000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell3-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -l 250000 -k 150 -s -1 -W 2000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell4-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -l 250000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell4-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell5-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -l 200000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell5-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc -l 300000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell6-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell6-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell7-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell8-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell8-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell9-C.pdf: 		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+VGAT-I-Cell9-V.pdf:		$(basename $@) Makefile
+	./med2 -f 25 -h 1000 -vc <$(basename $@) >dat 2>ph; gnuplot plot; cp tmp.pdf $@; cp tmp.jpeg $(basename $@).jpeg
+
+
+
+index.html: VgluT2-I.html VgluT2-E.html VGAT-I.html VGAT-E.html
+	echo "<html><table border=\"1\">" >$@
+	./do.title $(basename $^) >>$@
+	echo "<tr valign=\"top\">" >>$@
+	cat $^ >>$@
+	echo "</tr></table></html>" >>$@
+
+publish:
+	lftp <pub.lftp
+
+
+
+
