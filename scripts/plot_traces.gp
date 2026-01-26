@@ -54,7 +54,11 @@ load par_file
 set title sprintf("T=%g dT=%g dT/T=%g",Ta,dTa,dTa/Ta)
 
 # Plot 1: Raw trace and trigger
-plot dat_file u 1:2 w l, q
+set title sprintf("T=%g dT=%g dT/T=%g",Ta,dTa,dTa/Ta)
+last_ph=1
+plot dat_file u 1:2 w l title "Signal", \
+     q w l dt 2 title "Threshold", \
+     dat_file u 1:(curr_ph=$3, val=($3==0 && last_ph!=0 ? $2 : NaN), last_ph=curr_ph, val) w p pt 7 ps 0.5 lc "red" title "Trigger"
 
 set style fill transparent solid .5 noborder
 
