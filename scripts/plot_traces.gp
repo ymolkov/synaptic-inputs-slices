@@ -16,7 +16,8 @@ if (!exists("out_png")) out_png="tmp.png"
 
 # Calculate stats from 'ph_file'
 # Check if file has data first
-n_lines = system(sprintf("grep -c . %s", ph_file)) + 0
+# n_lines passed from batch_runner.py
+# n_lines = system(sprintf("grep -c . %s", ph_file)) + 0
 if (n_lines > 0) {
     stats ph_file u ($2+Ei*$1) nooutput name "S1"
     Ii=S1_max
@@ -58,7 +59,7 @@ set title sprintf("T=%g dT=%g dT/T=%g",Ta,dTa,dTa/Ta)
 last_ph=1
 plot dat_file u 1:2 w l title "Signal", \
      q w l dt 2 title "Threshold", \
-     dat_file u 1:(curr_ph=$3, val=($3==0 && last_ph!=0 ? $2 : NaN), last_ph=curr_ph, val) w p pt 7 ps 0.5 lc "red" title "Trigger"
+     dat_file u 1:(curr_ph=$3, val=($3==0 && last_ph!=0 ? $2 : NaN), last_ph=curr_ph, val) w p pt 7 ps 0.25 lc "red" title "Trigger"
 
 set style fill transparent solid .5 noborder
 
