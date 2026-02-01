@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Data Analysis Methods}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Methods}
+
+\subsection{Data Preprocessing}
+Raw experimental data consisting of time series recordings from two channels ($x_0(t)$ and $x_1(t)$) and a control/phase signal ($p(t)$) were processed to extract cycle-dependent characteristics. To reduce high-frequency noise while preserving edge information, a median filter was applied to all channels. For a window size of $2k+1$ (default $k=5$), the filtered value $y[i]$ at index $i$ is given by the median of the input vector window $[x[i-k], \dots, x[i+k]]$.
+
+\subsection{Cycle Detection and Phase definition}
+Cycles were defined based on the periodic activity observed in the control signal $p(t)$. The signal was first preprocessed (optionally mixed with channel data to enhance signal-to-noise ratio) and smoothed using a median filter (width $k=10$). A robust threshold detection algorithm was employed to identify cycle onsets.
+
+The detection threshold $\theta$ was determined automatically using Median Absolute Deviation (MAD) to ensure robustness against outliers and varying noise levels. For the signal $p(t)$, we calculated the median $M = \text{median}(p)$ and the MAD:
+\begin{equation}
+    \text{MAD} = \text{median}(|p_i - M|)
+\end{equation}
+The noise standard deviation was estimated as $\sigma \approx 1.4826 \cdot \text{MAD}$. The detection threshold was set to:
+\begin{equation}
+    \theta = M + m \cdot \sigma
+\end{equation}
+where $m$ is a multiplier (default $m=2.5$).
+
+A cycle start event was defined as a rising edge crossing $\theta$ (i.e., $p[i-1] < \theta \leq p[i]$), with the additional constraint that the signal must remain above the threshold for a minimum duration (default 10 samples) to reject transient spikes.
+
+The phase $\phi(t)$ was calculated linearly between consecutive cycle start times $T_n$ and $T_{n+1}$:
+\begin{equation}
+    \phi(t) = \frac{t - T_n}{T_{n+1} - T_n}, \quad T_n \leq t < T_{n+1}
+\end{equation}
+where $t$ is the time, and $T_{n+1} - T_n$ represents the period of the $n$-th cycle.
+
+\subsection{Synaptic Conductance Reconstruction}
+The recordings consisted of three channels: the injected current $x_0(t) = I_{inj}(t)$, the membrane potential $x_1(t) = V_m(t)$, and a reference signal $p(t)$ representing the hypoglossal nerve activity (rectified and integrated with a time constant of 50 ms). To decompose the synaptic inputs into excitatory and inhibitory components, we utilized a "wedge diagram" method analogous to the technique described in previous studies~\cite{molkov2024inference}. This approach relies on the current balance equation:
+\begin{equation}
+    I_{inj}(t) = g_L (V_m(t) - E_L) + g_e(t) (V_m(t) - E_e) + g_i(t) (V_m(t) - E_i) + C \frac{dV_m}{dt}
+\end{equation}
+where $g_L, g_e(t), g_i(t)$ are leak, excitatory, and inhibitory conductances, and $E_L, E_e, E_i$ are their respective reversal potentials. Assuming the membrane time constant $\tau = C/g_L$ is fast relative to synaptic fluctuations ($dV_m/dt \approx 0$) and that the synaptic conductances depend on the phase of the cycle $\phi(t)$ rather than explicitly on time (i.e., $g_e(t) \approx g_e(\phi(t))$ and $g_i(t) \approx g_i(\phi(t))$), the relationship between injected current $I_{inj}$ and membrane potential $V_m$ is linear at any given phase $\phi$:
+\begin{equation}
+    I_{inj}(t) \approx G_{tot}(\phi) V_m(t) + I_{0}(\phi)
+\end{equation}
+where $G_{tot}(\phi) = g_L + g_e(\phi) + g_i(\phi)$ is the total conductance and $I_{0}(\phi)$ represents the regression intercept (effective resting current).
+
+To estimate these parameters, we discretized the cycle phase $\phi \in [0, 1)$ into 1000 bins. For each phase bin, we collected all data points $(V_m(t_k), I_{inj}(t_k))$ where the phase $\phi(t_k)$ fell within that bin. A simple linear regression of $I_{inj}$ versus $V_m$ was performed on these points to determine the slope $G_{tot}(\phi)$ and the intercept $I_0(\phi)$.
+
+The leak parameters ($g_L$ and $E_L$) were estimated by evaluating the total current at the reversal potentials of the synaptic currents. We calculated the theoretical currents at the inhibitory and excitatory reversal potentials for each phase:
+\begin{align}
+    Q_i(\phi) &= G_{tot}(\phi) E_i + I_0(\phi) \\
+    Q_e(\phi) &= G_{tot}(\phi) E_e + I_0(\phi)
+\end{align}
+Since the driving force for inhibition is zero at $E_i$, $Q_i(\phi)$ represents the sum of leak and excitatory currents. Assuming there exists a phase where excitation is minimal (zero), the maximum value of $Q_i(\phi)$ corresponds to the pure leak current at $E_i$, denoted $I_{Li}$. Similarly, the minimum value of $Q_e(\phi)$ corresponds to the leak current at $E_e$, denoted $I_{Le}$ (assuming zero inhibition):
+\begin{equation}
+    I_{Li} = \max_\phi Q_i(\phi) = g_L(E_i - E_L), \quad I_{Le} = \min_\phi Q_e(\phi) = g_L(E_e - E_L)
+\end{equation}
+The leak conductance $g_L$ and reversal potential $E_L$ are derived from these values:
+\begin{equation}
+    g_L = \frac{I_{Le} - I_{Li}}{E_e - E_i}, \quad E_L = E_i - \frac{I_{Li}}{g_L}
+\end{equation}
+Finally, the excitatory and inhibitory conductances for each phase were calculated explicitly as:
+\begin{align}
+    g_e(\phi) &= \frac{Q_i(\phi) - I_{Li}}{E_i - E_e} \\
+    g_i(\phi) &= \frac{Q_e(\phi) - I_{Le}}{E_e - E_i}
+\end{align}
+This method allows for the robust reconstruction of dynamic synaptic conductances from single-trace current-clamp recordings with varying injected current steps.
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
