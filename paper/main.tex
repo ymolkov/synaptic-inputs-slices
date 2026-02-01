@@ -2,6 +2,7 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{geometry}
+\usepackage{subcaption}
 \geometry{a4paper, margin=1in}
 
 \title{Data Analysis Methods}
@@ -13,6 +14,15 @@
 \maketitle
 
 \section{Methods}
+
+\subsection{Experimental Procedures}
+All animal procedures were approved by the Animal Care and Use Committee of the National Institute of Neurological Disorders and Stroke (Animal Study Proposal number: 1154--21). We used the VgluT2-tdTomato mouse line (derived from Slc17a6-cre crossed with Rosa-CAG-LSL-tdTomato) to identify VgluT2-expressing glutamatergic neurons. In some experiments, VgluT2-tdTomato-ChR2-EFYP mice were used.
+
+Rhythmically active medullary slice preparations (300--400 $\mu$m thick) were obtained from neonatal (P3--P8) mice of either sex. Slices were superfused (4 ml/min) with artificial cerebrospinal fluid (ACSF) containing (in mM): 124 NaCl, 25 NaHCO$_3$, 3 KCl, 1.5 CaCl$_2$, 1.0 MgSO$_4$, 0.5 NaH$_2$PO$_4$, and 30 D-glucose, equilibrated with 95\% O$_2$ and 5\% CO$_2$ (pH 7.35--7.40 at 27$^\circ$C). Rhythmic respiratory activity was maintained by elevating the K$^+$ concentration to 8--9 mM.
+
+Inspiratory motor output was recorded from hypoglossal (XII) nerve rootlets using fire-polished glass suction electrodes (50--100 $\mu$m inner diameter). PreBötC inspiratory population activity was monitored using macro-patch recordings (150--300 $\mu$m pipette tip). Signals were amplified (50,000--100,000$\times$; CyberAmp 380), band-pass filtered (0.3--2 kHz), and digitized at 10 kHz (PowerLab or CED).
+
+Whole-cell voltage- and current-clamp recordings were performed using a HEKA EPC-9 amplifier and PatchMaster software. Recording electrodes (borosilicate glass, 4--6 M$\Omega$) contained (in mM): 130 K-gluconate, 5 Na-gluconate, 3 NaCl, 10 HEPES, 4 Mg-ATP, 0.3 Na-GTP, and 4 sodium phosphocreatine (pH 7.3 with KOH). Measured potentials were corrected for a liquid junction potential of --10 mV. Series resistance was compensated on-line by $\sim$80\%.
 
 \subsection{Data Preprocessing}
 Raw experimental data consisting of time series recordings from two channels ($x_0(t)$ and $x_1(t)$) and a control/phase signal ($p(t)$) were processed to extract cycle-dependent characteristics. To reduce high-frequency noise while preserving edge information, a median filter was applied to all channels. For a window size of $2k+1$ (default $k=5$), the filtered value $y[i]$ at index $i$ is given by the median of the input vector window $[x[i-k], \dots, x[i+k]]$.
@@ -70,6 +80,66 @@ Finally, the excitatory and inhibitory conductances for each phase were calculat
     g_i(\phi) &= \frac{Q_e(\phi) - I_{Le}}{E_e - E_i}
 \end{align}
 This method allows for the robust reconstruction of dynamic synaptic conductances from single-trace current-clamp recordings with varying injected current steps.
+
+\section{Results}
+We analyzed the synaptic inputs received by respiratory neurons to understand how these inputs shape their firing phenotypes. Figure~\ref{fig:representative_cells} illustrates the inferred excitatory and inhibitory conductances for representative inspiratory and expiratory neurons, covering both excitatory (VgluT2$^+$) and inhibitory (VGAT$^+$) populations.
+
+Inspiratory neurons (Figures~\ref{fig:representative_cells}a and \ref{fig:representative_cells}c) consistently exhibited a specific pattern of synaptic input: they received phasic inspiratory excitation during the burst phase, concurrent with tonic expiratory inhibition during the inter-burst interval. This combination of drive and disinhibition supports their active phase during inspiration.
+
+Conversely, expiratory neurons (Figures~\ref{fig:representative_cells}b and \ref{fig:representative_cells}d) displayed a distinct connectivity profile. They received strong phasic inhibition during the inspiratory phase, which effectively shunted their activity during the cycle's active phase. notably, these neurons received no significant excitatory or inhibitory input during the expiratory phase, suggesting their firing is potentially intrinsic or driven by tonic baseline properties rather than specific phasic synaptic drive.
+
+Critically, these synaptic input patterns appear to define the firing phenotype (inspiratory vs. expiratory) independent of the neuron's own neurotransmitter identity. Both VgluT2$^+$ (excitatory) and VGAT$^+$ (inhibitory) neurons within the same firing class shared identical synaptic input profiles.
+
+\subsection*{Inferred Circuit Connectivity}
+Based on these observations, we can infer the specific connectivity between these four populations (Figure~\ref{fig:circuit}).
+First, since all Inspiratory neurons (both VgluT2-I and VGAT-I) receive tonic inhibition during the expiratory phase, this inhibition must originate from the inhibitory population active during that phase: the \textbf{VGAT-E} neurons. Thus, we infer a connection from VGAT-E to both VgluT2-I and VGAT-I.
+Second, Expiratory neurons (VgluT2-E and VGAT-E) receive strong inhibition during the inspiratory phase. This inhibition must similarly arise from the inhibitory population active during inspiration: the \textbf{VGAT-I} neurons. This indicates a connection from VGAT-I to both VgluT2-E and VGAT-E.
+Third, the phasic excitation received by all Inspiratory neurons during their active phase must be driven by the excitatory population active at that time: the \textbf{VgluT2-I} neurons. This implies that VgluT2-I neurons provide recurrent excitation to themselves and feed-forward excitation to the VGAT-I population.
+Finally, the lack of significant synaptic drive received by Expiratory neurons during their active phase specifically excludes strong recurrent excitation within the VgluT2-E population or from VgluT2-E to VGAT-E in this slice preparation.
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/VgluT2-I-Cell2-V.png}
+        \caption{VgluT2-I}
+        \label{fig:vglut2-i}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/VgluT2-E-Cell1-V.png}
+        \caption{VgluT2-E}
+        \label{fig:vglut2-e}
+    \end{subfigure}
+    
+    \vspace{0.5cm}
+    
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/VGAT-I-Cell8-C.png}
+        \caption{VGAT-I}
+        \label{fig:vgat-i}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/VGAT-E-Cell8-C.png}
+        \caption{VGAT-E}
+        \label{fig:vgat-e}
+    \end{subfigure}
+    \caption{Representative cells for each neurotransmitter and firing phenotype. Panels exhibit inferred synaptic conductances for different cell types: (a) VgluT2 Inspiratory, (b) VgluT2 Expiratory, (c) VGAT Inspiratory, and (d) VGAT Expiratory. VgluT2 (vesicular glutamate transporter 2) indicates excitatory (glutamatergic) neurons, while VGAT (vesicular GABA transporter) indicates inhibitory (GABAergic/glycinergic) neurons.}
+    \label{fig:representative_cells}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/circuit.png}
+    \caption{Proposed circuit diagram of preBötC connectivity. Nodes are color-coded by neurotransmitter phenotype: VgluT2$^+$ (Red) and VGAT$^+$ (Blue). Connections indicate synaptic interactions: Red arrows denote Excitation, and Blue lines with circular heads denote Inhibition. The connectivity pattern is inferred from the synaptic conductance analysis: VgluT2-I provides recurrent and feed-forward excitation, while VGAT-I and VGAT-E provide reciprocal inhibition to the opposing firing populations. VgluT2-E is depicted as receiving inhibition but providing no main output to the circuit.}
+    \label{fig:circuit}
+\end{figure}
 
 \bibliographystyle{plain}
 \bibliography{references}
