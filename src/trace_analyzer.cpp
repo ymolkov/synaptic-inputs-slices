@@ -68,7 +68,7 @@ void calculate_median_and_mad(const vector<double> &data, double &median,
   }
   std::nth_element(deviations.begin(), deviations.begin() + mid_idx,
                    deviations.end());
-  mad = deviations[mid_idx] * 1.4826 * 2.0;
+  mad = deviations[mid_idx] * 1.4826 * 3.0;
 }
 
 int main(int argc, char **argv) {
@@ -499,11 +499,11 @@ int main(int argc, char **argv) {
   double Gi0 = 0, dGi = 0, Ge0 = 0, dGe = 0;
   calculate_median_and_mad(all_Ginh, Gi0, dGi);
   calculate_median_and_mad(all_Gexc, Ge0, dGe);
-  // Scale MAD simply by 2 * 1.4826 to get the 2*Sigma threshold directly
+  // Scale MAD simply by 3 * 1.4826 to get the 3*Sigma threshold directly
   double dGi_thresh =
       dGi; // Already scaled in function? Wait, let's check function.
-           // Function (as currently modified) calculates MAD*1.4826*2.
-           // So dGi IS the 2*Sigma threshold. Correct.
+           // Function (as currently modified) calculates MAD*1.4826*3.
+           // So dGi IS the 3*Sigma threshold. Correct.
 
   // Determine "Transient" status for each bin
   vector<bool> is_outside(num_phase_bins, false);
