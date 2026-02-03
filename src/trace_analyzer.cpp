@@ -629,9 +629,23 @@ int main(int argc, char **argv) {
   }
   double dT = sqrt(max(0.0, T2_sum - T_sum * T_sum));
 
+  // Calculate Min/Max Voltage (Channel 1)
+  double Vmin = 1e9, Vmax = -1e9;
+  if (!filtered_data[1].empty()) {
+      auto minmax = std::minmax_element(filtered_data[1].begin(), filtered_data[1].end());
+      Vmin = *minmax.first;
+      Vmax = *minmax.second;
+  } else {
+      Vmin = 0;
+      Vmax = 0;
+  }
+
   ofstream par_file(par_filename.c_str());
   par_file << "Ta=" << T_sum << endl;
   par_file << "dTa=" << dT << endl;
+  par_file << "N=" << cycle_count << endl;
+  par_file << "Vmin=" << Vmin << endl;
+  par_file << "Vmax=" << Vmax << endl;
   par_file << "Du=" << (T_sum > 0 ? (D_sum / cycle_count) / T_sum : 0) << endl;
   par_file << "G=" << G << endl;
   par_file << "I=" << I << endl;

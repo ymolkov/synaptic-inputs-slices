@@ -33,7 +33,7 @@ def main():
         'G_exc_tr_min', 'G_exc_tr_max',
         'G_inh_st_min', 'G_inh_st_max',
         'G_exc_st_min', 'G_exc_st_max',
-        'Ta', 'Du', 'q'
+        'Ta', 'dT_stdev', 'N', 'Vmin', 'Vmax'
     ]
     
     data_rows = []
@@ -44,6 +44,10 @@ def main():
         
         par_data = parse_par_file(par_file)
         
+        # Map dTa to dT_stdev
+        if 'dTa' in par_data:
+            par_data['dT_stdev'] = par_data['dTa']
+
         row = {'Cell_ID': cell_id}
         for field in fields[1:]: # Skip Cell_ID as we set it manually
             # specific logic for fields present in par_data
