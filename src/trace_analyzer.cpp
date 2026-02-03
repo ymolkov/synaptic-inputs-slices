@@ -555,10 +555,16 @@ int main(int argc, char **argv) {
     tr_end = (best_start + max_len - 1) % num_phase_bins;
   }
 
-  // Calculate Means for Transient (tr) and Stationary (st) intervals
+  // Calculate Means and Min/Max for Transient (tr) and Stationary (st) intervals
   double sum_Ginh_tr = 0, sum_Gexc_tr = 0;
   double sum_Ginh_st = 0, sum_Gexc_st = 0;
   int count_tr = 0, count_st = 0;
+
+  // Initialize Min/Max variables
+  double G_inh_tr_min = 1e9, G_inh_tr_max = -1e9;
+  double G_exc_tr_min = 1e9, G_exc_tr_max = -1e9;
+  double G_inh_st_min = 1e9, G_inh_st_max = -1e9;
+  double G_exc_st_min = 1e9, G_exc_st_max = -1e9;
 
   for (int l = 0; l < num_phase_bins; ++l) {
     if (bin_data[l].valid) {
@@ -575,10 +581,22 @@ int main(int argc, char **argv) {
       if (is_tr) {
         sum_Ginh_tr += bin_data[l].G_inh;
         sum_Gexc_tr += bin_data[l].G_exc;
+        
+        if (bin_data[l].G_inh < G_inh_tr_min) G_inh_tr_min = bin_data[l].G_inh;
+        if (bin_data[l].G_inh > G_inh_tr_max) G_inh_tr_max = bin_data[l].G_inh;
+        if (bin_data[l].G_exc < G_exc_tr_min) G_exc_tr_min = bin_data[l].G_exc;
+        if (bin_data[l].G_exc > G_exc_tr_max) G_exc_tr_max = bin_data[l].G_exc;
+
         count_tr++;
       } else {
         sum_Ginh_st += bin_data[l].G_inh;
         sum_Gexc_st += bin_data[l].G_exc;
+
+        if (bin_data[l].G_inh < G_inh_st_min) G_inh_st_min = bin_data[l].G_inh;
+        if (bin_data[l].G_inh > G_inh_st_max) G_inh_st_max = bin_data[l].G_inh;
+        if (bin_data[l].G_exc < G_exc_st_min) G_exc_st_min = bin_data[l].G_exc;
+        if (bin_data[l].G_exc > G_exc_st_max) G_exc_st_max = bin_data[l].G_exc;
+        
         count_st++;
       }
     }
@@ -588,25 +606,15 @@ int main(int argc, char **argv) {
   double G_exc_tr = (count_tr > 0) ? sum_Gexc_tr / count_tr : 0;
   double G_inh_st = (count_st > 0) ? sum_Ginh_st / count_st : 0;
   double G_exc_st = (count_st > 0) ? sum_Gexc_st / count_st : 0;
-
-  // Calculate Min/Max Conductances
-  double G_inh_min = 1e9, G_inh_max = -1e9;
-  double G_exc_min = 1e9, G_exc_max = -1e9;
-  bool found_valid_cond = false;
-
-  for (const auto& bin : bin_data) {
-      if (bin.valid) {
-          if (bin.G_inh < G_inh_min) G_inh_min = bin.G_inh;
-          if (bin.G_inh > G_inh_max) G_inh_max = bin.G_inh;
-          if (bin.G_exc < G_exc_min) G_exc_min = bin.G_exc;
-          if (bin.G_exc > G_exc_max) G_exc_max = bin.G_exc;
-          found_valid_cond = true;
-      }
-  }
   
-  if (!found_valid_cond) {
-      G_inh_min = G_inh_max = 0;
-      G_exc_min = G_exc_max = 0;
+  // Handle empty cases for Min/Max
+  if (count_tr == 0) {
+      G_inh_tr_min = G_inh_tr_max = 0;
+      G_exc_tr_min = G_exc_tr_max = 0;
+  }
+  if (count_st == 0) {
+      G_inh_st_min = G_inh_st_max = 0;
+      G_exc_st_min = G_exc_st_max = 0;
   }
 
   // Output stats to stderr (the 'ph' file content)
@@ -671,10 +679,14 @@ int main(int argc, char **argv) {
   par_file << "G_exc_st=" << G_exc_st << endl;
 
   // Output Min/Max Conductances
-  par_file << "G_inh_min=" << G_inh_min << endl;
-  par_file << "G_inh_max=" << G_inh_max << endl;
-  par_file << "G_exc_min=" << G_exc_min << endl;
-  par_file << "G_exc_max=" << G_exc_max << endl;
+  par_file << "G_inh_tr_min=" << G_inh_tr_min << endl;
+  par_file << "G_inh_tr_max=" << G_inh_tr_max << endl;
+  par_file << "G_exc_tr_min=" << G_exc_tr_min << endl;
+  par_file << "G_exc_tr_max=" << G_exc_tr_max << endl;
+  par_file << "G_inh_st_min=" << G_inh_st_min << endl;
+  par_file << "G_inh_st_max=" << G_inh_st_max << endl;
+  par_file << "G_exc_st_min=" << G_exc_st_min << endl;
+  par_file << "G_exc_st_max=" << G_exc_st_max << endl;
 
   par_file << "q=" << threshold << endl;
   par_file.close();
