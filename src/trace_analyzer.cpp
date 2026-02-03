@@ -228,12 +228,16 @@ int main(int argc, char **argv) {
                        sorted_pp.end());
       double median = sorted_pp[mid_idx];
 
-      // 2. Calculate Max
-      double max_val = *std::max_element(pp_filtered.begin(), pp_filtered.end());
+      // 2. Calculate 99th Percentile (Robust Peak)
+      size_t p99_idx = (size_t)(n_samples * 0.99);
+      if (p99_idx >= n_samples) p99_idx = n_samples - 1;
+      std::nth_element(sorted_pp.begin(), sorted_pp.begin() + p99_idx,
+                       sorted_pp.end());
+      double p99 = sorted_pp[p99_idx];
 
-      // 3. Set Threshold to 50% of dynamic range (Half-Height)
-      // This is more robust for signals with varying amplitudes and noise levels.
-      threshold = median + 0.5 * (max_val - median);
+      // 3. Set Threshold to 50% of dynamic range defined by P99
+      // Using P99 instead of Max makes it robust to outlier peaks.
+      threshold = median + 0.5 * (p99 - median);
 
       // Fallback if signal is flat
       if (threshold <= median)
