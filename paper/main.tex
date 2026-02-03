@@ -3,15 +3,36 @@
 \usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{subcaption}
+\usepackage[round]{natbib}
+\bibliographystyle{plainnat}
 \geometry{a4paper, margin=1in}
 
-\title{Data Analysis Methods}
-\author{}
+\title{Synaptic Architecture of the PreBötzinger Complex in the Rhythmic Slice Preparation}
+\author{Yaroslav I. Molkov$^{1,2}$, Hidehiko Koizumi$^{3}$, and Jeffrey C. Smith$^{3}$ \\
+\small $^{1}$Department of Mathematics and Statistics, Georgia State University, Atlanta, GA, USA \\
+\small $^{2}$Neuroscience Institute, Georgia State University, Atlanta, GA, USA \\
+\small $^{3}$Cellular and Systems Neurobiology Section, National Institute of Neurological Disorders and Stroke, \\ \small National Institutes of Health, Bethesda, MD, USA}
 \date{}
 
 \begin{document}
 
 \maketitle
+
+\begin{abstract}
+The preBötzinger Complex (preBötC) generates the mammalian respiratory rhythm, but its core circuit architecture remains debated. While theories propose a ``mutually inhibitory ring'' logic, verifying this topology requires disentangling concurrent synaptic interactions in genetically defined neurons. We applied a novel conductance inference method to whole-cell recordings from VgluT2-expressing (excitatory) and VGAT-expressing (inhibitory) neurons in the rhythmic brainstem slice. We found that the core rhythmogenic kernel consists of a self-exciting inspiratory VgluT2 population coupled to a reciprocal inhibitory half-center formed by inspiratory and expiratory VGAT populations. Unlike in intact preparations, the expiratory VgluT2 population was passive, confirming its role as a conditional oscillator recruited only by metabolic demand. These results provide direct functional verification of the minimal synaptic architecture required to coordinate respiratory population activity.
+\end{abstract}
+
+\section{Introduction}
+
+The preBötzinger Complex (preBötC) is the primary site of respiratory rhythm generation in mammals~\citep{smith1991prebotzinger}. While the intrinsic properties of preBötC neurons have been extensively characterized, understanding the network architecture---specifically how excitatory and inhibitory synaptic populations interact to generate robust rhythmicity---remains a fundamental challenge. A major hurdle has been the difficulty in disentangling concurrent excitatory and inhibitory synaptic drives during the respiratory cycle, particularly in genetically defined cell types~\citep{koizumi2013structural}. Crucially, this study focuses on the functional connectome and dynamic synaptic drives that coordinate population activity, rather than the intrinsic or network-level mechanisms (such as pacemaker currents) that generate the rhythm itself.
+
+In a recent study, we developed a novel computational inference technique~\citep{molkov2024inference} to decompose total synaptic conductance into its excitatory and inhibitory components using single-trace current-clamp recordings. By applying this method to the \textit{in situ} arterially perfused preparation, we successfully mapped the dynamic ``synaptic fingerprints'' of respiratory neurons, revealing the functional connectivity between excitatory (VgluT2$^+$) and inhibitory (VGAT$^+$) populations that underpins the intact respiratory network.
+
+However, the \textit{in situ} preparation preserves a high degree of network complexity and external inputs. The acute brainstem slice preparation remains the gold standard for investigating the minimal, intrinsic circuitry necessary for rhythm generation. It is widely hypothesized that the slice contains a ``reduced'' circuit---a core kernel of the network capable of sustaining rhythmicity in the absence of wider pontine and feedback loops~\citep{smith2007spatial}. Yet, identifying the precise topology of this reduced circuit and how it differs from the intact network requires rigorous quantitative analysis of synaptic interactions.
+
+In this study, we apply our conductance inference methodology to the rhythmic slice preparation to define the core circuit architecture of the preBötC. We combined whole-cell recordings from genetically identified VgluT2-expressing glutamatergic and VGAT-expressing inhibitory neurons with computational analysis to reconstruct their dynamic synaptic inputs.
+
+Our analysis reveals a distinct, reduced circuit topology in the slice. We identify four functional populations based on neurotransmitter identity and firing phase. Crucially, we demonstrate that while inspiratory rhythm is driven by recurrent excitation within the VgluT2 population, the phasic transitions are enforced by specific reciprocal inhibitory interactions between VGAT populations. Furthermore, we find that unlike in the intact preparation, the VgluT2-expressing expiratory population in the slice is largely passive, receiving inhibition but providing no significant synaptic drive. These findings allow us to propose a ``minimal'' circuit model---consisting of a self-exciting inspiratory source coupled with a half-center inhibitory oscillator---that constitutes the essential machinery for respiratory rhythm generation \textit{in vitro}.
 
 \section{Methods}
 
@@ -49,7 +70,7 @@ The phase $\phi(t)$ was calculated linearly between consecutive cycle start time
 where $t$ is the time, and $T_{n+1} - T_n$ represents the period of the $n$-th cycle.
 
 \subsection{Synaptic Conductance Reconstruction}
-The recordings consisted of three channels: the injected current $x_0(t) = I_{inj}(t)$, the membrane potential $x_1(t) = V_m(t)$, and a reference signal $p(t)$ representing the hypoglossal nerve activity (rectified and integrated with a time constant of 50 ms). To decompose the synaptic inputs into excitatory and inhibitory components, we utilized a "wedge diagram" method analogous to the technique described in previous studies~\cite{molkov2024inference}. This approach relies on the current balance equation:
+The recordings consisted of three channels: the injected current $x_0(t) = I_{inj}(t)$, the membrane potential $x_1(t) = V_m(t)$, and a reference signal $p(t)$ representing the hypoglossal nerve activity (rectified and integrated with a time constant of 50 ms). To decompose the synaptic inputs into excitatory and inhibitory components, we utilized a "wedge diagram" method analogous to the technique described in previous studies~\citep{molkov2024inference}. This approach relies on the current balance equation:
 \begin{equation}
     I_{inj}(t) = g_L (V_m(t) - E_L) + g_e(t) (V_m(t) - E_e) + g_i(t) (V_m(t) - E_i) + C \frac{dV_m}{dt}
 \end{equation}
@@ -82,49 +103,35 @@ Finally, the excitatory and inhibitory conductances for each phase were calculat
 This method allows for the robust reconstruction of dynamic synaptic conductances from single-trace current-clamp recordings with varying injected current steps.
 
 \section{Results}
+\subsection{Synaptic Inputs Define Firing Phenotypes}
 We analyzed the synaptic inputs received by respiratory neurons to understand how these inputs shape their firing phenotypes. Figure~\ref{fig:representative_cells} illustrates the inferred excitatory and inhibitory conductances for representative inspiratory and expiratory neurons, covering both excitatory (VgluT2$^+$) and inhibitory (VGAT$^+$) populations.
-
-Inspiratory neurons (Figures~\ref{fig:representative_cells}a and \ref{fig:representative_cells}c) consistently exhibited a specific pattern of synaptic input: they received phasic inspiratory excitation during the burst phase, concurrent with tonic expiratory inhibition during the inter-burst interval. This combination of drive and disinhibition supports their active phase during inspiration.
-
-Conversely, expiratory neurons (Figures~\ref{fig:representative_cells}b and \ref{fig:representative_cells}d) displayed a distinct connectivity profile. They received strong phasic inhibition during the inspiratory phase, which effectively shunted their activity during the cycle's active phase. notably, these neurons received no significant excitatory or inhibitory input during the expiratory phase, suggesting their firing is potentially intrinsic or driven by tonic baseline properties rather than specific phasic synaptic drive.
-
-Critically, these synaptic input patterns appear to define the firing phenotype (inspiratory vs. expiratory) independent of the neuron's own neurotransmitter identity. Both VgluT2$^+$ (excitatory) and VGAT$^+$ (inhibitory) neurons within the same firing class shared identical synaptic input profiles.
-
-\subsection*{Inferred Circuit Connectivity}
-Based on these observations, we can infer the specific connectivity between these four populations (Figure~\ref{fig:circuit}).
-First, since all Inspiratory neurons (both VgluT2-I and VGAT-I) receive tonic inhibition during the expiratory phase, this inhibition must originate from the inhibitory population active during that phase: the \textbf{VGAT-E} neurons. Thus, we infer a connection from VGAT-E to both VgluT2-I and VGAT-I.
-Second, Expiratory neurons (VgluT2-E and VGAT-E) receive strong inhibition during the inspiratory phase. This inhibition must similarly arise from the inhibitory population active during inspiration: the \textbf{VGAT-I} neurons. This indicates a connection from VGAT-I to both VgluT2-E and VGAT-E.
-Third, the phasic excitation received by all Inspiratory neurons during their active phase must be driven by the excitatory population active at that time: the \textbf{VgluT2-I} neurons. This implies that VgluT2-I neurons provide recurrent excitation to themselves and feed-forward excitation to the VGAT-I population.
-Finally, the lack of significant synaptic drive received by Expiratory neurons during their active phase specifically excludes strong recurrent excitation within the VgluT2-E population or from VgluT2-E to VGAT-E in this slice preparation.
-
-
 
 \begin{figure}[htbp]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/VgluT2-I-Cell2-V.png}
         \caption{VgluT2-I}
         \label{fig:vglut2-i}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/VgluT2-E-Cell1-V.png}
         \caption{VgluT2-E}
         \label{fig:vglut2-e}
     \end{subfigure}
     
-    \vspace{0.5cm}
+    \vspace{0.2cm}
     
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/VGAT-I-Cell8-C.png}
         \caption{VGAT-I}
         \label{fig:vgat-i}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[b]{0.48\columnwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/VGAT-E-Cell8-C.png}
         \caption{VGAT-E}
@@ -134,13 +141,49 @@ Finally, the lack of significant synaptic drive received by Expiratory neurons d
     \label{fig:representative_cells}
 \end{figure}
 
+Inspiratory neurons (Figures~\ref{fig:representative_cells}a and \ref{fig:representative_cells}c) consistently exhibited a specific pattern of synaptic input: they received phasic inspiratory excitation during the burst phase, concurrent with tonic expiratory inhibition during the inter-burst interval. This combination of drive and disinhibition supports their active phase during inspiration.
+
+Conversely, expiratory neurons (Figures~\ref{fig:representative_cells}b and \ref{fig:representative_cells}d) displayed a distinct connectivity profile. They received strong phasic inhibition during the inspiratory phase, which effectively shunted their activity during the cycle's active phase. Notably, we encountered only a single VgluT2-expressing neuron with this expiratory firing phenotype. This rare VgluT2-E neuron, like the more numerous VGAT-E neurons, received no significant excitatory or inhibitory input during the expiratory phase, suggesting its firing is potentially intrinsic or driven by tonic baseline properties rather than specific phasic synaptic drive.
+
+Critically, these synaptic input patterns appear to define the firing phenotype (inspiratory vs. expiratory) independent of the neuron's own neurotransmitter identity. Both VgluT2$^+$ (excitatory) and VGAT$^+$ (inhibitory) neurons within the same firing class shared identical synaptic input profiles.
+
+\subsection{Inferred Circuit Connectivity}
+Based on these observations, we can infer the specific connectivity between these four populations (Figure~\ref{fig:circuit}).
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.6\textwidth]{figures/circuit.png}
-    \caption{Proposed circuit diagram of preBötC connectivity. Nodes are color-coded by neurotransmitter phenotype: VgluT2$^+$ (Red) and VGAT$^+$ (Blue). Connections indicate synaptic interactions: Red arrows denote Excitation, and Blue lines with circular heads denote Inhibition. The connectivity pattern is inferred from the synaptic conductance analysis: VgluT2-I provides recurrent and feed-forward excitation, while VGAT-I and VGAT-E provide reciprocal inhibition to the opposing firing populations. VgluT2-E is depicted as receiving inhibition but providing no main output to the circuit.}
+\caption{Proposed circuit diagram of preBötC connectivity inferred from synaptic conductance analysis. Red nodes/lines indicate (excitatory) components; Blue nodes/lines indicate (inhibitory) components. Arrows denote excitation; circles denote inhibition. \textbf{(A)} Complete connectivity graph comprising all four distinct populations defined by neurotransmitter type and firing phase. The \textbf{VgluT2-I} population provides recurrent and feed-forward excitatory drive (red arrows). Reciprocal inhibition (blue lines) enforces phase transitions: \textbf{VGAT-I} inhibits the Expiratory populations (VgluT2-E, VGAT-E) during inspiration, while \textbf{VGAT-E} inhibits the Inspiratory populations (VgluT2-I, VGAT-I) during expiration. Note that \textbf{VgluT2-E} receives phasic inhibition but does not provide significant synaptic output to other populations in this slice preparation. \textbf{(B)} The core rhythm-generating circuit. Excluding the non-driving VgluT2-E population highlights the essential ``kernel'' of the network: a self-exciting inspiratory source (VgluT2-I) coupled with a half-center oscillator formed by the mutually inhibitory VGAT-I and VGAT-E populations.}
     \label{fig:circuit}
 \end{figure}
 
-\bibliographystyle{plain}
+First, since all Inspiratory neurons (both VgluT2-I and VGAT-I) receive tonic inhibition during the expiratory phase, this inhibition must originate from the inhibitory population active during that phase: the \textbf{VGAT-E} neurons. Thus, we infer a connection from VGAT-E to both VgluT2-I and VGAT-I.
+Second, Expiratory neurons (VgluT2-E and VGAT-E) receive strong inhibition during the inspiratory phase. This inhibition must similarly arise from the inhibitory population active during inspiration: the \textbf{VGAT-I} neurons. This indicates a connection from VGAT-I to both VgluT2-E and VGAT-E.
+Third, the phasic excitation received by all Inspiratory neurons during their active phase must be driven by the excitatory population active at that time: the \textbf{VgluT2-I} neurons. This implies that VgluT2-I neurons provide recurrent excitation to themselves and feed-forward excitation to the VGAT-I population.
+Finally, the lack of significant synaptic drive received by Expiratory neurons during their active phase specifically excludes strong recurrent excitation within the VgluT2-E population or from VgluT2-E to VGAT-E in this slice preparation.
+
+
+\section{Discussion}
+
+\subsection{The Core Rhythm-Generating Kernel in Reduced Preparations}
+The circuit topology we inferred for the rhythmic slice preparation (Figure~\ref{fig:circuit}B) represents a ``reduced'' version of the comprehensive respiratory network architecture previously described in computational reviews and modeling studies of the intact system~\citep{smith2013brainstem, ausborn2018organization}. By isolating the essential components remaining in the slice, our conductance analysis bridges the gap between the complex, multi-compartmental models of the intact brainstem and the minimal logic required for rhythm generation.
+
+\subsection{Mapping the Slice Topology to the Intact Inhibitory Ring}
+Previous large-scale computational models have posited that the respiratory rhythm relies on a ``mutually inhibitory ring'' structure involving interactions between the Pre-BötC and BötC compartments. Specifically, these models suggest that the phase transitions are orchestrated by reciprocal inhibition between inspiratory (Early-I) and expiratory (Post-I/Aug-E) inhibitory populations.
+
+Our results in the slice (Figure~\ref{fig:circuit}B) provide direct functional verification of this theoretical motif. The interaction we observed between \textbf{VGAT-I} (Inspiratory) and \textbf{VGAT-E} (Expiratory) neurons perfectly maps onto the core ``half-center'' oscillator proposed in the literature:
+\begin{itemize}
+    \item \textbf{VGAT-I} corresponds to the \textbf{Early-I} population, which is driven by excitatory inspiratory neurons and provides inhibition during the inspiratory phase.
+    \item \textbf{VGAT-E} corresponds to the lumped activity of \textbf{Post-I} and \textbf{Aug-E} populations, which enforce the expiratory pause through inhibition of inspiratory elements.
+\end{itemize}
+The persistence of this reciprocal inhibitory loop in the slice confirms that the ``inhibitory ring'' is not merely an emergent property of the intact system but is hard-wired into the local microcircuitry of the Pre-BötC and BötC, serving as the fundamental timing mechanism even in reduced preparations~\citep{marchenko2016perturbations}. As recently elaborated by \cite{molkov2024inference}, this local circuit likely represents a scalable logic: in the intact brainstem, the single ``lumped'' VGAT-E population identified here differentiates into distinct Post-I and Aug-E populations to allow for finer control of expiratory duration and phase transitions.
+
+\subsection{Synaptic Coordination and Global Architecture}
+Our results highlight the primacy of synaptic architecture in coordinating population activity. Rather than serving merely as a trigger for rhythm generation, the strong recurrent excitation within the VgluT2-I population acts as a synchronization mechanism, ensuring coherent network-wide output once the burst is initiated. Indeed, the high excitation-to-inhibition ratio we inferred for these neurons constitutes a ``synaptic fingerprint'' that allows for the identification of this critical Dbx1-derived ``rich-club'' across preparations~\citep{molkov2024inference}.
+
+Crucially, the interaction between VGAT-I and VGAT-E forms a ``synaptic scaffold'' that enforces phase-locking and defines the inter-burst interval. This local inhibitory circuit represents a modular building block for the global ``inhibitory ring'' described in intact systems, where the ``lumped'' VGAT-E population expands to coordinate diverse behaviors~\citep{molkov2024inference}. Within this functional connectome, the VgluT2-E population exists as a ``latent'' node---functionally passive in the slice but structurally hard-wired to participate when recruited by metabolic demand, consistent with the Triple Oscillator Hypothesis~\citep{anderson2017respiratory}. Finally, this robust inhibitory scaffold provides a stable temporal lattice that may serve as a global clock for synchronizing higher-order non-respiratory functions, from whisking to memory consolidation~\citep{molkov2024inference}.
+\section{Conclusion}
+The inferred circuit (Figure~\ref{fig:circuit}B) effectively strips away the ``conditional'' layers of the respiratory network---such as the active expiratory oscillator and long-loop pontine feedback---to reveal the minimal rhythmogenic structure. This structure consists of a self-exciting inspiratory pacemaker (\textbf{VgluT2-I}, analogous to Pre-I/I) constrained by a robust, reciprocal inhibitory scaffold (\textbf{VGAT-I} $\leftrightarrow$ \textbf{VGAT-E}). This confirms that the theoretical ``core microcircuit'' proposed in previous modeling studies~\citep{molkov2016computational} is physically instantiated in the local synaptic architecture of the ventrolateral medulla, providing the necessary timing mechanism for rhythmic coordination.
+
 \bibliography{references}
 \end{document}

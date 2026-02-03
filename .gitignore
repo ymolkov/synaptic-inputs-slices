@@ -3,3 +3,10 @@ tmp/
 bin/
 results/
 *.rp
+.npm_cache/
+*.aux
+*.bbl
+*.blg
+*.log
+*.pdf
+*.bak
