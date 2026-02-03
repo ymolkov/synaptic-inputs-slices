@@ -128,6 +128,7 @@ def run_job(basename, makefile_flags):
              # 4. Move/Rename final outputs
              shutil.move(tmp_pdf, os.path.join(RESULTS_DIR, f"{basename}.pdf"))
              shutil.move(tmp_png, os.path.join(RESULTS_DIR, f"{basename}.png"))
+             shutil.move(par_file, os.path.join(RESULTS_DIR, f"{basename}.par"))
 
     except Exception as e:
         print(f"[{basename}] Exception: {e}")
