@@ -101,7 +101,8 @@ int main(int argc, char **argv) {
     else if (arg == "-l" && i + 1 < argc)
       max_points = atoi(argv[++i]);
     else if (arg == "-q" && i + 1 < argc)
-      threshold = atof(argv[++i]);
+      // threshold = atof(argv[++i]);
+      i++; // Ignore -q value
     else if (arg == "-p" && i + 1 < argc)
       min_period = atof(argv[++i]);
     else if (arg == "-x" && i + 1 < argc)
