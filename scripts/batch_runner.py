@@ -14,14 +14,14 @@ MAKEFILE = os.path.join(PROJECT_ROOT, "legacy", "Makefile.orig")
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
 BIN_DIR = os.path.join(PROJECT_ROOT, "bin")
-EXE = os.path.join(BIN_DIR, "trace_analyzer.exe")
+EXE = os.path.join(BIN_DIR, "trace_analyzer")
 TMP_DIR = os.path.join(PROJECT_ROOT, "tmp")
 GP_SCRIPT = os.path.join(SCRIPT_DIR, "plot_traces.gp")
 REPORT_GENERATOR = os.path.join(SCRIPT_DIR, "generate_report.py")
 
 # Add Gnuplot to PATH
-GNUPLOT_BIN = r"c:\users\ymolk\home\gnuplot\bin"
-os.environ["PATH"] += os.pathsep + GNUPLOT_BIN
+# GNUPLOT_BIN = r"c:\users\ymolk\home\gnuplot\bin"
+# os.environ["PATH"] += os.pathsep + GNUPLOT_BIN
 
 def parse_makefile():
     # Map basename -> flags string
