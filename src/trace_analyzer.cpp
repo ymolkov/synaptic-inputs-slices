@@ -228,41 +228,16 @@ int main(int argc, char **argv) {
                        sorted_pp.end());
       double median = sorted_pp[mid_idx];
 
-      // 2. Calculate Absolute Deviations
-      vector<double> deviations(n_samples);
-      for (size_t i = 0; i < n_samples; ++i) {
-        deviations[i] = std::abs(pp_filtered[i] - median);
-      }
+      // 2. Calculate Max
+      double max_val = *std::max_element(pp_filtered.begin(), pp_filtered.end());
 
-      // 3. Calculate MAD (Median Absolute Deviation)
-      std::nth_element(deviations.begin(), deviations.begin() + mid_idx,
-                       deviations.end());
-      double mad = deviations[mid_idx];
+      // 3. Set Threshold to 50% of dynamic range (Half-Height)
+      // This is more robust for signals with varying amplitudes and noise levels.
+      threshold = median + 0.5 * (max_val - median);
 
-      // 4. Set Threshold using robust statistics (Gaussian equivalent)
-      // K * 1.4826 * MAD approximates K * Sigma for Gaussian noise.
-      // We use K=threshold_multiplier (default 2.5) to safely clear the noise
-      // floor while catching spikes.
-      const double sigma_est = 1.4826 * mad;
-      threshold = median + threshold_multiplier * sigma_est;
-
-      // Fallback for extremely clean signals where MAD might be 0 due to
-      // quantization
-      if (mad < 1e-9) {
-        // Use Standard Deviation as fallback
-        double mean = 0, sq_sum = 0;
-        for (double v : pp_filtered)
-          mean += v;
-        mean /= n_samples;
-        for (double v : pp_filtered)
-          sq_sum += (v - mean) * (v - mean);
-        double std_dev = sqrt(sq_sum / n_samples);
-        threshold = mean + 3.0 * std_dev;
-
-        // If still zero, just start slightly above median
-        if (threshold <= median)
+      // Fallback if signal is flat
+      if (threshold <= median)
           threshold = median + 1e-6;
-      }
 
     } else {
       threshold = 0;
