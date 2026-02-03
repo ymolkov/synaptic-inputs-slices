@@ -68,6 +68,7 @@ gnuplot -e "par_file='$PAR_FILE'" \
 # Move/Rename final outputs to results directory
 mv "$TMP_PDF" "$RESULTS_DIR/${BASENAME}.pdf"
 mv "$TMP_PNG" "$RESULTS_DIR/${BASENAME}.png"
+cp "$PAR_FILE" "$RESULTS_DIR/${BASENAME}.par"
 
 # Cleanup
 rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE"

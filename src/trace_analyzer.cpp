@@ -49,6 +49,28 @@ void apply_median_filter(const vector<double> &input, vector<double> &output,
   }
 }
 
+void calculate_median_and_mad(const vector<double> &data, double &median,
+                              double &mad) {
+  if (data.empty()) {
+    median = 0;
+    mad = 0;
+    return;
+  }
+  vector<double> sorted = data;
+  size_t n = sorted.size();
+  size_t mid_idx = n / 2;
+  std::nth_element(sorted.begin(), sorted.begin() + mid_idx, sorted.end());
+  median = sorted[mid_idx];
+
+  vector<double> deviations(n);
+  for (size_t i = 0; i < n; ++i) {
+    deviations[i] = std::abs(data[i] - median);
+  }
+  std::nth_element(deviations.begin(), deviations.begin() + mid_idx,
+                   deviations.end());
+  mad = deviations[mid_idx] * 1.4826 * 2.0;
+}
+
 int main(int argc, char **argv) {
   // Default parameters
   int filter_width = 5;       // -f
@@ -60,6 +82,8 @@ int main(int argc, char **argv) {
   int win_width = 1000000;    // -W (default nmax)
   double signal_mix = 0;      // -s
   bool voltage_clamp = false; // -vc
+  double Ei = -80.0;          // -Ei
+  double Ee = -10.0;          // -Ee
   double threshold_multiplier =
       2.5;                     // -m, default lowered from 4.0 (and 3.0) to 2.5
   int min_duration = 10;       // -w, minimum duration in samples
@@ -96,6 +120,10 @@ int main(int argc, char **argv) {
       par_filename = argv[++i];
     else if (arg == "-vc")
       voltage_clamp = true;
+    else if (arg == "-Ei" && i + 1 < argc)
+      Ei = atof(argv[++i]);
+    else if (arg == "-Ee" && i + 1 < argc)
+      Ee = atof(argv[++i]);
     else {
       // Ignore unknown legacy arguments
       if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -243,6 +271,7 @@ int main(int argc, char **argv) {
   // Cycle Detection and Phase Calculation
   vector<double> phase(n, -1.0);
   double T_sum = 0, T2_sum = 0;
+  double D_sum = 0; // Sum of durations
   int cycle_count = 0;
   int prev_idx = 0; // ipre
 
@@ -277,6 +306,31 @@ int main(int argc, char **argv) {
           T_sum += period;
           T2_sum += period * period;
           cycle_count++;
+
+          // Calculate duration of the PREVIOUS pulse
+          // We need to find when the previous pulse ended.
+          // Since we don't track it explicitly, let's look for falling edge
+          // starting from prev_idx.
+          // Note: This simple logic assumes the signal drops below threshold
+          // before the next rising edge, which is guaranteed by the `crossing`
+          // check.
+          double pulse_start_time = raw_data.t[prev_idx];
+          double pulse_end_time = pulse_start_time;
+
+          // Search for falling edge
+          for (int j = prev_idx; j < i; j++) {
+            if (pp_filtered[j] < threshold) {
+              // Interpolate falling edge time? Or just take t[j]?
+              // Let's just take t[j] as the first point below threshold
+              pulse_end_time = raw_data.t[j];
+              break;
+            }
+          }
+          // If we didn't find a falling edge (signal stayed high the whole
+          // time?), then duration is effectively the period. But that shouldn't
+          // happen if we have a rising edge at 'i'.
+
+          D_sum += (pulse_end_time - pulse_start_time);
 
           // Assign phase to previous cycle
           for (int j = prev_idx; j < i; j++) {
@@ -322,7 +376,17 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Output stats to stderr (the 'ph' file content)
+  // Store regression results
+  struct RegResult {
+    double slope;
+    double intercept;
+    double error;
+    int count;
+  };
+  vector<RegResult> results(num_phase_bins);
+  bool has_data = false;
+
+  // Calculate stats first
   for (int l = 0; l < num_phase_bins; l++) {
     if (counts[l] > 0) {
       M0[l] /= counts[l];
@@ -347,17 +411,197 @@ int main(int argc, char **argv) {
       double erer = (var0 != 0) ? sqrt(max(0.0, var1 / var0 - aa * aa)) : 0;
 
       if (voltage_clamp) {
-        cerr << a << '\t' << b << '\t' << err << '\t' << counts[l] << endl;
+        results[l] = {a, b, err, counts[l]};
       } else {
         // Convert Regression 2 back to Ch0 vs Ch1 form
         double inv_aa = (aa != 0) ? 1.0 / aa : 0;    // Slope
         double intercept = (aa != 0) ? -bb / aa : 0; // Intercept
         double error_transformed =
             (aa != 0) ? erer / (aa * aa) : 0; // Error scaling?
-
-        cerr << inv_aa << '\t' << intercept << '\t' << error_transformed << '\t'
-             << counts[l] << endl;
+        results[l] = {inv_aa, intercept, error_transformed, counts[l]};
       }
+      has_data = true;
+    } else {
+      results[l] = {0, 0, 0, 0};
+    }
+  }
+
+  // Calculate derived parameters (replacing Gnuplot stats)
+  double Ii = -1e9, Ie = 1e9; // Initialize with extremes
+  double G_sum = 0, I_sum = 0;
+  long long total_records = 0;
+
+  if (has_data) {
+    // First pass for Ii, Ie (max/min projections)
+    // And Accumulate for G, I (means)
+    for (int l = 0; l < num_phase_bins; l++) {
+      if (results[l].count > 0) {
+        double slope = results[l].slope;
+        double intercept = results[l].intercept;
+
+        double term_i = intercept + Ei * slope;
+        if (term_i > Ii)
+          Ii = term_i; // max
+
+        double term_e = intercept + Ee * slope;
+        if (term_e < Ie)
+          Ie = term_e; // min
+
+        G_sum += slope;
+        I_sum += intercept;
+        total_records++;
+      }
+    }
+  } else {
+    Ii = 0;
+    Ie = 0;
+  }
+
+  double G = (total_records > 0) ? G_sum / total_records : 1e-9;
+  double I = (total_records > 0) ? I_sum / total_records : 0;
+
+  double g = 1e-9;
+  double E = 0;
+  if (Ee != Ei && (Ie - Ii) != 0) {
+    g = (Ie - Ii) / (Ee - Ei);
+    E = Ei - Ii / g;
+  }
+
+  // Pre-calculate Conductances and Collect Stats
+  vector<double> all_Ginh;
+  vector<double> all_Gexc;
+  struct BinData {
+    double G_inh;
+    double G_exc;
+    bool valid;
+  };
+  vector<BinData> bin_data(num_phase_bins);
+
+  for (int l = 0; l < num_phase_bins; l++) {
+    if (results[l].count > 0 && g != 0) {
+      double slope = results[l].slope;
+      double intercept = results[l].intercept;
+      double G_inh = (Ee * (slope - g) - (-intercept - g * E)) / (Ee - Ei) / g;
+      double G_exc =
+          (slope - (Ee * (slope - g) - (-intercept - g * E)) / (Ee - Ei) - g) /
+          g;
+
+      bin_data[l] = {G_inh, G_exc, true};
+      all_Ginh.push_back(G_inh);
+      all_Gexc.push_back(G_exc);
+    } else {
+      bin_data[l] = {0, 0, false};
+    }
+  }
+
+  // Calculate Median/MAD/Sigma
+  double Gi0 = 0, dGi = 0, Ge0 = 0, dGe = 0;
+  calculate_median_and_mad(all_Ginh, Gi0, dGi);
+  calculate_median_and_mad(all_Gexc, Ge0, dGe);
+  // Scale MAD simply by 2 * 1.4826 to get the 2*Sigma threshold directly
+  double dGi_thresh =
+      dGi; // Already scaled in function? Wait, let's check function.
+           // Function (as currently modified) calculates MAD*1.4826*2.
+           // So dGi IS the 2*Sigma threshold. Correct.
+
+  // Determine "Transient" status for each bin
+  vector<bool> is_outside(num_phase_bins, false);
+  for (int l = 0; l < num_phase_bins; ++l) {
+    if (bin_data[l].valid) {
+      if (abs(bin_data[l].G_inh - Gi0) > dGi ||
+          abs(bin_data[l].G_exc - Ge0) > dGe) {
+        is_outside[l] = true;
+      }
+    }
+  }
+
+  // Find Longest Consecutive Chain (Cyclic)
+  int max_len = 0;
+  int best_start = -1;
+
+  // Simple approach for cyclic: concatenate is_outside to itself
+  vector<bool> double_outside = is_outside;
+  double_outside.insert(double_outside.end(), is_outside.begin(),
+                        is_outside.end());
+
+  int current_len = 0;
+  int current_start = -1;
+
+  for (size_t i = 0; i < double_outside.size(); ++i) {
+    if (double_outside[i]) {
+      if (current_len == 0)
+        current_start = i;
+      current_len++;
+    } else {
+      if (current_len > max_len) {
+        max_len = current_len;
+        best_start = current_start;
+      }
+      current_len = 0;
+    }
+  }
+  // Check end case
+  if (current_len > max_len) {
+    max_len = current_len;
+    best_start = current_start;
+  }
+
+  // Determine Transient Start/End
+  int tr_start = -1;
+  int tr_end = -1;
+
+  if (max_len > 0) {
+    tr_start = best_start % num_phase_bins;
+    tr_end = (best_start + max_len - 1) % num_phase_bins;
+  }
+
+  // Calculate Means for Transient (tr) and Stationary (st) intervals
+  double sum_Ginh_tr = 0, sum_Gexc_tr = 0;
+  double sum_Ginh_st = 0, sum_Gexc_st = 0;
+  int count_tr = 0, count_st = 0;
+
+  for (int l = 0; l < num_phase_bins; ++l) {
+    if (bin_data[l].valid) {
+      // Check if bin l is transient
+      bool is_tr = false;
+      if (tr_start != -1) {
+        if (tr_start <= tr_end) {
+          is_tr = (l >= tr_start && l <= tr_end);
+        } else {
+          is_tr = (l >= tr_start || l <= tr_end);
+        }
+      }
+
+      if (is_tr) {
+        sum_Ginh_tr += bin_data[l].G_inh;
+        sum_Gexc_tr += bin_data[l].G_exc;
+        count_tr++;
+      } else {
+        sum_Ginh_st += bin_data[l].G_inh;
+        sum_Gexc_st += bin_data[l].G_exc;
+        count_st++;
+      }
+    }
+  }
+
+  double G_inh_tr = (count_tr > 0) ? sum_Ginh_tr / count_tr : 0;
+  double G_exc_tr = (count_tr > 0) ? sum_Gexc_tr / count_tr : 0;
+  double G_inh_st = (count_st > 0) ? sum_Ginh_st / count_st : 0;
+  double G_exc_st = (count_st > 0) ? sum_Gexc_st / count_st : 0;
+
+  // Output stats to stderr (the 'ph' file content)
+  for (int l = 0; l < num_phase_bins; l++) {
+    if (results[l].count > 0) {
+      double slope = results[l].slope;
+      double intercept = results[l].intercept;
+
+      // Use stored values
+      double G_inh = bin_data[l].G_inh;
+      double G_exc = bin_data[l].G_exc;
+
+      cerr << slope << '\t' << intercept << '\t' << results[l].error << '\t'
+           << results[l].count << '\t' << G_inh << '\t' << G_exc << '\t' << l
+           << endl;
     }
     // Omit empty bins to avoid gnuplot errors
   }
@@ -380,6 +624,32 @@ int main(int argc, char **argv) {
   ofstream par_file(par_filename.c_str());
   par_file << "Ta=" << T_sum << endl;
   par_file << "dTa=" << dT << endl;
+  par_file << "Du=" << (T_sum > 0 ? (D_sum / cycle_count) / T_sum : 0) << endl;
+  par_file << "G=" << G << endl;
+  par_file << "I=" << I << endl;
+  par_file << "g=" << g << endl;
+  par_file << "E=" << E << endl;
+  par_file << "Ii=" << Ii << endl;
+  par_file << "Ie=" << Ie << endl;
+  par_file << "Ei=" << Ei << endl;
+  par_file << "Ee=" << Ee << endl;
+
+  // Output threshold values (remember function scales by 2*1.4826 already)
+  par_file << "Gi0=" << Gi0 << endl;
+  par_file << "dGi=" << dGi << endl;
+  par_file << "Ge0=" << Ge0 << endl;
+  par_file << "dGe=" << dGe << endl;
+
+  // Output Transient Range
+  par_file << "tr_start=" << tr_start << endl;
+  par_file << "tr_end=" << tr_end << endl;
+
+  // Output Interval Means
+  par_file << "G_inh_tr=" << G_inh_tr << endl;
+  par_file << "G_exc_tr=" << G_exc_tr << endl;
+  par_file << "G_inh_st=" << G_inh_st << endl;
+  par_file << "G_exc_st=" << G_exc_st << endl;
+
   par_file << "q=" << threshold << endl;
   par_file.close();
 

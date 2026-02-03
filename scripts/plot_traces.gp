@@ -14,34 +14,18 @@ if (!exists("par_file")) par_file="par"
 if (!exists("out_pdf")) out_pdf="tmp.pdf"
 if (!exists("out_png")) out_png="tmp.png"
 
-# Calculate stats from 'ph_file'
-# Check if file has data first
-# n_lines passed from batch_runner.py
-# n_lines = system(sprintf("grep -c . %s", ph_file)) + 0
-if (n_lines > 0) {
-    stats ph_file u ($2+Ei*$1) nooutput name "S1"
-    Ii=S1_max
+# Calculated derived parameters - now loaded from par_file
+if (!exists("n_lines")) n_lines = system(sprintf("grep -c . %s", ph_file)) + 0
+nph = n_lines / 2.0
 
-    stats ph_file u ($2+Ee*$1) nooutput name "S2"
-    Ie=S2_min
+# Initialize transient variables if not present (safety)
+if (!exists("tr_start")) tr_start=-1
+if (!exists("tr_end")) tr_end=-1
 
-    stats ph_file u 1:2 nooutput name "S3"
-    G=S3_mean_x
-    I=S3_mean_y
-    # ph_file is doubled, so single cycle count is half
-    nph=S3_records / 2.0
-} else {
-    Ii=0; Ie=0; G=1e-9; I=0; nph=0
-}
-
-# Calculated derived parameters
-if (Ee != Ei && (Ie - Ii) != 0) {
-    g=(Ie-Ii)/(Ee-Ei)
-    E=Ei-Ii/g
-} else {
-    g=1e-9
-    E=0
-}
+# Transient Filter Function
+# Use modulo arithmetic to handle both repeated limits (0..nph) and continuous indices (0..2*nph)
+# This works regardless of whether the index column wraps or increments
+is_transient(x) = (tr_start <= tr_end) ? ((int(x)%int(nph)) >= tr_start && (int(x)%int(nph)) <= tr_end) : ((int(x)%int(nph)) >= tr_start || (int(x)%int(nph)) <= tr_end)
 
 # PDF Output Setup
 set term pdfcairo size 5,10 font ",8"
@@ -52,10 +36,10 @@ unset key
 
 # Load calculated parameters (Ta, dTa, q)
 load par_file
-set title sprintf("T=%g dT=%g dT/T=%g",Ta,dTa,dTa/Ta)
+if (!exists("Du")) Du=0 
 
 # Plot 1: Raw trace and trigger
-set title sprintf("T=%g dT=%g dT/T=%g",Ta,dTa,dTa/Ta)
+set title sprintf("T=%g dT=%g dT/T=%g Du=%g",Ta,dTa,dTa/Ta,Du)
 last_ph=1
 plot dat_file u 1:2 w l title "Signal", \
      q w l dt 2 title "Threshold", \
@@ -73,9 +57,31 @@ unset title
 
 # Plot 3: Phase-dependent Inhibition/Excitation
 if (nph > 0 && g != 0) {
-    plot [][0:] ph_file u 0:(0):((Ee*($1-g)-(-$2-g*E))/(Ee-Ei)/g) w filledcurves lc "blue" title "inhibition", \
-                ph_file u 0:(0):(($1-(Ee*($1-g)-(-$2-g*E))/(Ee-Ei)-g)/g) w filledcurves lc "red" title "excitation", \
-                ph_file u ($3/g/sqrt($4)) w l lt -1 title "error"
+    # Add duty factor visualization (shaded area)
+    # Add fixed phase highlight (0.95 to 1.1)
+    set obj 1 rect from tr_start/1000., graph 0 to tr_end/1000.+1, graph 1 fc rgb "gray" fs transparent solid 0.4 noborder back
+    
+    # Initialize mean variables if not present (safety)
+    if (!exists("G_inh_tr")) { G_inh_tr=NaN }
+    if (!exists("G_exc_tr")) { G_exc_tr=NaN }
+    if (!exists("G_inh_st")) { G_inh_st=NaN }
+    if (!exists("G_exc_st")) { G_exc_st=NaN }
+
+    # Draw Mean Lines
+    # Stationary (st) - drawn across full width as baseline reference? Or just outside transient?
+    # User asked for "during transient and stationary... show them by horizontal lines"
+    # To implement "during", we can use vectors/segments.
+    # However, for visual clarity, simply drawing full lines with different styles might be easier.
+    # Let's try drawing segments if possible, but modulo logic is hard for 'set arrow'.
+    # Alternative: Plot constants conditioned on x-range.
+    
+    plot [][0:] ph_file u ($0/1000.):5 w filledcurves y=0 lc "blue" title "inhibition", \
+                ph_file u ($0/1000.):6 w filledcurves y=0 lc "red" title "excitation", \
+                ph_file u ($0/1000.):($3/g/sqrt($4)) w l lt -1 title "error", \
+                ph_file u ($0/1000.):(is_transient($7) ? G_inh_tr : NaN) w l lc "blue" lw 2 dt 1 notitle, \
+                ph_file u ($0/1000.):(is_transient($7) ? G_exc_tr : NaN) w l lc "red" lw 2 dt 1 notitle, \
+                ph_file u ($0/1000.):(!is_transient($7) ? G_inh_st : NaN) w l lc "blue" lw 2 dt 2 notitle, \
+                ph_file u ($0/1000.):(!is_transient($7) ? G_exc_st : NaN) w l lc "red" lw 2 dt 2 notitle
 } else {
     set title "No cycle data"
     plot 0
@@ -93,24 +99,28 @@ if (nph > 0) {
     plot 0
 }
 
-set size .5,.25
-set origin .5,0
-
-set grid polar
+# unset multi # End layout 4,1? No, we extended to 5,1
+# Plot 5: Ginh vs Gexc (Now Plot 4b)
+unset polar
 unset key
-unset border
-unset xtics
-unset ytics
-unset rtics
+set size .5, .25
+set origin .5, 0
+set title "Ginh vs Gexc"
+# Default Median/MAD variables to 0 if not present
+if (!exists("Gi0")) { Gi0=0 }
+if (!exists("dGi")) { dGi=0 }
+if (!exists("Ge0")) { Ge0=0 }
+if (!exists("dGe")) { dGe=0 }
+if (!exists("tr_start")) { tr_start=-1 }
+if (!exists("tr_end")) { tr_end=-1 }
 
-set polar
-unset title
-
-# Polar Plot
 if (nph > 0 && g != 0) {
-    plot ph_file u ($0/nph*2*pi):((Ee*($1-g)-(-$2-g*E))/(Ee-Ei)/g) w filledcurves lc "blue" title "inhibition", \
-         ph_file u ($0/nph*2*pi):(($1-(Ee*($1-g)-(-$2-g*E))/(Ee-Ei)-g)/g) w filledcurves lc "red" title "excitation", \
-         ph_file u ($0/nph*2*pi):($3/g/sqrt($4)) w l lt -1 title "error"
+    # Draw rectangle Median +/- MAD
+    set obj 10 rect from Ge0-dGe, Gi0-dGi to Ge0+dGe, Gi0+dGi fc rgb "green" fs transparent solid 0.3 noborder back
+    
+    # Transient Filter Function defined globally above
+    
+    plot ph_file u 6:5 w l lc "black" title "Trajectory"
 } else {
     plot 0
 }
@@ -131,8 +141,8 @@ unset rtics
 set style fill transparent solid 0.5 noborder
 
 if (nph > 0 && g != 0) {
-    plot ph_file u ($0/nph*2*pi):((Ee*($1-g)-(-$2-g*E))/(Ee-Ei)/g) w filledcurves lc "blue" title "inhibition", \
-         ph_file u ($0/nph*2*pi):(($1-(Ee*($1-g)-(-$2-g*E))/(Ee-Ei)-g)/g) w filledcurves lc "red" title "excitation", \
+    plot ph_file u ($0/nph*2*pi):5 w filledcurves lc "blue" title "inhibition", \
+         ph_file u ($0/nph*2*pi):6 w filledcurves lc "red" title "excitation", \
          ph_file u ($0/nph*2*pi):($3/g/sqrt($4)) w l lt -1 title "error"
 } else {
     plot 0
