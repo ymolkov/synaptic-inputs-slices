@@ -154,6 +154,7 @@ unset border
 unset xtics
 unset ytics
 unset rtics
+unset object
 set style fill transparent solid 0.5 noborder
 
 if (nph > 0 && g != 0) {
