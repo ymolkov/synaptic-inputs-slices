@@ -589,6 +589,26 @@ int main(int argc, char **argv) {
   double G_inh_st = (count_st > 0) ? sum_Ginh_st / count_st : 0;
   double G_exc_st = (count_st > 0) ? sum_Gexc_st / count_st : 0;
 
+  // Calculate Min/Max Conductances
+  double G_inh_min = 1e9, G_inh_max = -1e9;
+  double G_exc_min = 1e9, G_exc_max = -1e9;
+  bool found_valid_cond = false;
+
+  for (const auto& bin : bin_data) {
+      if (bin.valid) {
+          if (bin.G_inh < G_inh_min) G_inh_min = bin.G_inh;
+          if (bin.G_inh > G_inh_max) G_inh_max = bin.G_inh;
+          if (bin.G_exc < G_exc_min) G_exc_min = bin.G_exc;
+          if (bin.G_exc > G_exc_max) G_exc_max = bin.G_exc;
+          found_valid_cond = true;
+      }
+  }
+  
+  if (!found_valid_cond) {
+      G_inh_min = G_inh_max = 0;
+      G_exc_min = G_exc_max = 0;
+  }
+
   // Output stats to stderr (the 'ph' file content)
   for (int l = 0; l < num_phase_bins; l++) {
     if (results[l].count > 0) {
@@ -649,6 +669,12 @@ int main(int argc, char **argv) {
   par_file << "G_exc_tr=" << G_exc_tr << endl;
   par_file << "G_inh_st=" << G_inh_st << endl;
   par_file << "G_exc_st=" << G_exc_st << endl;
+
+  // Output Min/Max Conductances
+  par_file << "G_inh_min=" << G_inh_min << endl;
+  par_file << "G_inh_max=" << G_inh_max << endl;
+  par_file << "G_exc_min=" << G_exc_min << endl;
+  par_file << "G_exc_max=" << G_exc_max << endl;
 
   par_file << "q=" << threshold << endl;
   par_file.close();

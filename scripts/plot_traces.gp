@@ -66,6 +66,10 @@ if (nph > 0 && g != 0) {
     if (!exists("G_exc_tr")) { G_exc_tr=NaN }
     if (!exists("G_inh_st")) { G_inh_st=NaN }
     if (!exists("G_exc_st")) { G_exc_st=NaN }
+    if (!exists("G_inh_min")) { G_inh_min=NaN }
+    if (!exists("G_inh_max")) { G_inh_max=NaN }
+    if (!exists("G_exc_min")) { G_exc_min=NaN }
+    if (!exists("G_exc_max")) { G_exc_max=NaN }
 
     # Draw Mean Lines
     # Stationary (st) - drawn across full width as baseline reference? Or just outside transient?
@@ -81,7 +85,11 @@ if (nph > 0 && g != 0) {
                 ph_file u ($0/1000.):(is_transient($7) ? G_inh_tr : NaN) w l lc "blue" lw 2 dt 1 notitle, \
                 ph_file u ($0/1000.):(is_transient($7) ? G_exc_tr : NaN) w l lc "red" lw 2 dt 1 notitle, \
                 ph_file u ($0/1000.):(!is_transient($7) ? G_inh_st : NaN) w l lc "blue" lw 2 dt 2 notitle, \
-                ph_file u ($0/1000.):(!is_transient($7) ? G_exc_st : NaN) w l lc "red" lw 2 dt 2 notitle
+                ph_file u ($0/1000.):(!is_transient($7) ? G_exc_st : NaN) w l lc "red" lw 2 dt 2 notitle, \
+                G_inh_min w l lc "blue" lw 1 dt 3 notitle, \
+                G_inh_max w l lc "blue" lw 1 dt 3 notitle, \
+                G_exc_min w l lc "red" lw 1 dt 3 notitle, \
+                G_exc_max w l lc "red" lw 1 dt 3 notitle
 } else {
     set title "No cycle data"
     plot 0
