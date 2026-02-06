@@ -230,7 +230,8 @@ int main(int argc, char **argv) {
 
       // 2. Calculate 99th Percentile (Robust Peak)
       size_t p99_idx = (size_t)(n_samples * 0.99);
-      if (p99_idx >= n_samples) p99_idx = n_samples - 1;
+      if (p99_idx >= n_samples)
+        p99_idx = n_samples - 1;
       std::nth_element(sorted_pp.begin(), sorted_pp.begin() + p99_idx,
                        sorted_pp.end());
       double p99 = sorted_pp[p99_idx];
@@ -241,7 +242,7 @@ int main(int argc, char **argv) {
 
       // Fallback if signal is flat
       if (threshold <= median)
-          threshold = median + 1e-6;
+        threshold = median + 1e-6;
 
     } else {
       threshold = 0;
@@ -535,7 +536,8 @@ int main(int argc, char **argv) {
     tr_end = (best_start + max_len - 1) % num_phase_bins;
   }
 
-  // Calculate Means and Min/Max for Transient (tr) and Stationary (st) intervals
+  // Calculate Means and Min/Max for Transient (tr) and Stationary (st)
+  // intervals
   double sum_Ginh_tr = 0, sum_Gexc_tr = 0;
   double sum_Ginh_st = 0, sum_Gexc_st = 0;
   int count_tr = 0, count_st = 0;
@@ -561,22 +563,30 @@ int main(int argc, char **argv) {
       if (is_tr) {
         sum_Ginh_tr += bin_data[l].G_inh;
         sum_Gexc_tr += bin_data[l].G_exc;
-        
-        if (bin_data[l].G_inh < G_inh_tr_min) G_inh_tr_min = bin_data[l].G_inh;
-        if (bin_data[l].G_inh > G_inh_tr_max) G_inh_tr_max = bin_data[l].G_inh;
-        if (bin_data[l].G_exc < G_exc_tr_min) G_exc_tr_min = bin_data[l].G_exc;
-        if (bin_data[l].G_exc > G_exc_tr_max) G_exc_tr_max = bin_data[l].G_exc;
+
+        if (bin_data[l].G_inh < G_inh_tr_min)
+          G_inh_tr_min = bin_data[l].G_inh;
+        if (bin_data[l].G_inh > G_inh_tr_max)
+          G_inh_tr_max = bin_data[l].G_inh;
+        if (bin_data[l].G_exc < G_exc_tr_min)
+          G_exc_tr_min = bin_data[l].G_exc;
+        if (bin_data[l].G_exc > G_exc_tr_max)
+          G_exc_tr_max = bin_data[l].G_exc;
 
         count_tr++;
       } else {
         sum_Ginh_st += bin_data[l].G_inh;
         sum_Gexc_st += bin_data[l].G_exc;
 
-        if (bin_data[l].G_inh < G_inh_st_min) G_inh_st_min = bin_data[l].G_inh;
-        if (bin_data[l].G_inh > G_inh_st_max) G_inh_st_max = bin_data[l].G_inh;
-        if (bin_data[l].G_exc < G_exc_st_min) G_exc_st_min = bin_data[l].G_exc;
-        if (bin_data[l].G_exc > G_exc_st_max) G_exc_st_max = bin_data[l].G_exc;
-        
+        if (bin_data[l].G_inh < G_inh_st_min)
+          G_inh_st_min = bin_data[l].G_inh;
+        if (bin_data[l].G_inh > G_inh_st_max)
+          G_inh_st_max = bin_data[l].G_inh;
+        if (bin_data[l].G_exc < G_exc_st_min)
+          G_exc_st_min = bin_data[l].G_exc;
+        if (bin_data[l].G_exc > G_exc_st_max)
+          G_exc_st_max = bin_data[l].G_exc;
+
         count_st++;
       }
     }
@@ -586,15 +596,15 @@ int main(int argc, char **argv) {
   double G_exc_tr = (count_tr > 0) ? sum_Gexc_tr / count_tr : 0;
   double G_inh_st = (count_st > 0) ? sum_Ginh_st / count_st : 0;
   double G_exc_st = (count_st > 0) ? sum_Gexc_st / count_st : 0;
-  
+
   // Handle empty cases for Min/Max
   if (count_tr == 0) {
-      G_inh_tr_min = G_inh_tr_max = 0;
-      G_exc_tr_min = G_exc_tr_max = 0;
+    G_inh_tr_min = G_inh_tr_max = 0;
+    G_exc_tr_min = G_exc_tr_max = 0;
   }
   if (count_st == 0) {
-      G_inh_st_min = G_inh_st_max = 0;
-      G_exc_st_min = G_exc_st_max = 0;
+    G_inh_st_min = G_inh_st_max = 0;
+    G_exc_st_min = G_exc_st_max = 0;
   }
 
   // Output stats to stderr (the 'ph' file content)
@@ -632,12 +642,13 @@ int main(int argc, char **argv) {
   // Calculate Min/Max Voltage (Channel 1)
   double Vmin = 1e9, Vmax = -1e9;
   if (!filtered_data[1].empty()) {
-      auto minmax = std::minmax_element(filtered_data[1].begin(), filtered_data[1].end());
-      Vmin = *minmax.first;
-      Vmax = *minmax.second;
+    auto minmax =
+        std::minmax_element(filtered_data[1].begin(), filtered_data[1].end());
+    Vmin = *minmax.first;
+    Vmax = *minmax.second;
   } else {
-      Vmin = 0;
-      Vmax = 0;
+    Vmin = 0;
+    Vmax = 0;
   }
 
   ofstream par_file(par_filename.c_str());
@@ -681,6 +692,16 @@ int main(int argc, char **argv) {
   par_file << "G_inh_st_max=" << G_inh_st_max << endl;
   par_file << "G_exc_st_min=" << G_exc_st_min << endl;
   par_file << "G_exc_st_max=" << G_exc_st_max << endl;
+
+  // Output Phase 0 Conductances (Bin 0)
+  double G_inh_ph0 = 0;
+  double G_exc_ph0 = 0;
+  if (!bin_data.empty() && bin_data[0].valid) {
+    G_inh_ph0 = bin_data[0].G_inh;
+    G_exc_ph0 = bin_data[0].G_exc;
+  }
+  par_file << "G_inh_ph0=" << G_inh_ph0 << endl;
+  par_file << "G_exc_ph0=" << G_exc_ph0 << endl;
 
   par_file << "q=" << threshold << endl;
   par_file.close();
