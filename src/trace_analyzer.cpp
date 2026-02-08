@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
       2.5;                     // -m, default lowered from 4.0 (and 3.0) to 2.5
   int min_duration = 10;       // -w, minimum duration in samples
   string par_filename = "par"; // Default par filename
+  string trig_filename = "";   // Optional trigger filename
 
   // Hardcoded constants from original
   const int num_channels = 2;
@@ -119,6 +120,8 @@ int main(int argc, char **argv) {
       min_duration = atoi(argv[++i]);
     else if (arg == "-par" && i + 1 < argc)
       par_filename = argv[++i];
+    else if (arg == "-trig" && i + 1 < argc)
+      trig_filename = argv[++i];
     else if (arg == "-vc")
       voltage_clamp = true;
     else if (arg == "-Ei" && i + 1 < argc)
@@ -249,6 +252,13 @@ int main(int argc, char **argv) {
     }
   }
 
+  // Output trig file
+  ofstream trig_file;
+  if (!trig_filename.empty()) {
+    trig_file.open(trig_filename.c_str());
+    trig_file << setprecision(6) << fixed;
+  }
+
   // Cycle Detection and Phase Calculation
   vector<double> phase(n, -1.0);
   double T_sum = 0, T2_sum = 0;
@@ -279,48 +289,55 @@ int main(int argc, char **argv) {
       }
 
       if (valid_pulse) {
-        double current_time = raw_data.t[i];
-        double prev_time = raw_data.t[prev_idx];
+        // Interpolate crossing time
+        double y1 = pp_filtered[i - 1];
+        double y2 = pp_filtered[i];
+        double t1 = raw_data.t[i - 1];
+        double t2 = raw_data.t[i];
+        double fraction = (threshold - y1) / (y2 - y1);
+        double current_interpolated_time = t1 + fraction * (t2 - t1);
 
-        if (prev_idx != 0 && (current_time - prev_time) > min_period) {
-          double period = current_time - prev_time;
+        static double prev_interpolated_time = -1.0;
+
+        // Initialize on first valid pulse
+        if (prev_idx == 0) {
+          prev_interpolated_time =
+              current_interpolated_time; // First pulse start
+          if (trig_file.is_open())
+            trig_file << prev_interpolated_time << endl;
+        }
+
+        if (prev_idx != 0 &&
+            (current_interpolated_time - prev_interpolated_time) > min_period) {
+          double period = current_interpolated_time - prev_interpolated_time;
           T_sum += period;
           T2_sum += period * period;
           cycle_count++;
 
-          // Calculate duration of the PREVIOUS pulse
-          // We need to find when the previous pulse ended.
-          // Since we don't track it explicitly, let's look for falling edge
-          // starting from prev_idx.
-          // Note: This simple logic assumes the signal drops below threshold
-          // before the next rising edge, which is guaranteed by the `crossing`
-          // check.
+          // duration calculation ...
           double pulse_start_time = raw_data.t[prev_idx];
+          // ... logic for D_sum ...
           double pulse_end_time = pulse_start_time;
-
-          // Search for falling edge
           for (int j = prev_idx; j < i; j++) {
             if (pp_filtered[j] < threshold) {
-              // Interpolate falling edge time? Or just take t[j]?
-              // Let's just take t[j] as the first point below threshold
               pulse_end_time = raw_data.t[j];
               break;
             }
           }
-          // If we didn't find a falling edge (signal stayed high the whole
-          // time?), then duration is effectively the period. But that shouldn't
-          // happen if we have a rising edge at 'i'.
-
           D_sum += (pulse_end_time - pulse_start_time);
 
-          // Assign phase to previous cycle
+          // Assign phase to previous cycle using INTERPOLATED start time
           for (int j = prev_idx; j < i; j++) {
-            phase[j] = (raw_data.t[j] - prev_time) / period;
+            phase[j] = (raw_data.t[j] - prev_interpolated_time) / period;
           }
         }
 
-        if (prev_idx == 0 || (current_time - prev_time) > min_period) {
+        if (prev_idx == 0 ||
+            (current_interpolated_time - prev_interpolated_time) > min_period) {
           prev_idx = i;
+          prev_interpolated_time = current_interpolated_time;
+          if (trig_file.is_open())
+            trig_file << prev_interpolated_time << endl;
         }
 
         // Fast forward to end of pulse to avoid re-triggering?
@@ -705,6 +722,8 @@ int main(int argc, char **argv) {
 
   par_file << "q=" << threshold << endl;
   par_file.close();
+  if (trig_file.is_open())
+    trig_file.close();
 
   return 0;
 }

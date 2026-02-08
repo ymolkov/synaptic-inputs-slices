@@ -38,12 +38,14 @@ unset key
 load par_file
 if (!exists("Du")) Du=0 
 
+if (!exists("trig_file")) trig_file=""
+
 # Plot 1: Raw trace and trigger
 set title sprintf("T=%g dT=%g dT/T=%g Du=%g",Ta,dTa,dTa/Ta,Du)
 last_ph=1
 plot dat_file u 1:2 w l title "Signal", \
      q w l dt 2 title "Threshold", \
-     dat_file u 1:(curr_ph=$3, val=($3==0 && last_ph!=0 ? $2 : NaN), last_ph=curr_ph, val) w p pt 7 ps 0.25 lc "red" title "Trigger"
+     (trig_file ne "" ? trig_file : "NaN") u 1:(q) w p pt 7 ps 0.25 lc "red" title "Trigger"
 
 set style fill transparent solid .5 noborder
 

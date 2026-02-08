@@ -66,13 +66,16 @@ def run_job(basename, makefile_flags):
     ph_file = os.path.join(TMP_DIR, f"{job_uuid}.ph")
     ph_dbl_file = os.path.join(TMP_DIR, f"{job_uuid}.ph_doubled")
     tmp_pdf = os.path.join(TMP_DIR, f"{job_uuid}.pdf")
+    tmp_pdf = os.path.join(TMP_DIR, f"{job_uuid}.pdf")
     tmp_png = os.path.join(TMP_DIR, f"{job_uuid}.png")
+    trig_file = os.path.join(TMP_DIR, f"{job_uuid}.trig")
     
     print(f"[{basename}] Processing with flags: {flags_str}")
     
     # 1. Run Analyzer
     # cmd: trace_analyzer.exe <args> -par <par_file> < <data_file> > <dat_file> 2> <ph_file>
-    analyzer_args = flags_str.split() + ["-par", par_file]
+    # cmd: trace_analyzer.exe <args> -par <par_file> -trig <trig_file> < <data_file> > <dat_file> 2> <ph_file>
+    analyzer_args = flags_str.split() + ["-par", par_file, "-trig", trig_file]
     
     try:
         with open(data_path, 'r') as fin, \
@@ -113,6 +116,8 @@ def run_job(basename, makefile_flags):
             "-e", f"par_file='{gp_path(par_file)}'",
             "-e", f"dat_file='{gp_path(dat_file)}'",
             "-e", f"ph_file='{gp_path(ph_dbl_file)}'",
+            "-e", f"ph_file='{gp_path(ph_dbl_file)}'",
+            "-e", f"trig_file='{gp_path(trig_file)}'",
             "-e", f"out_pdf='{gp_path(tmp_pdf)}'",
             "-e", f"out_png='{gp_path(tmp_png)}'",
             "-e", f"n_lines={n_lines}",
@@ -135,7 +140,7 @@ def run_job(basename, makefile_flags):
         return False
     finally:
         # Cleanup
-        for f in [par_file, dat_file, ph_file, ph_dbl_file]:
+        for f in [par_file, dat_file, ph_file, ph_dbl_file, trig_file]:
             if os.path.exists(f):
                 os.remove(f)
                 

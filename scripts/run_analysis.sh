@@ -45,6 +45,7 @@ DAT_FILE="$TMP_DIR/${UUID}.dat"
 PH_FILE="$TMP_DIR/${UUID}.ph"
 PH_DBL_FILE="$TMP_DIR/${UUID}.ph_doubled"
 PAR_FILE="$TMP_DIR/${UUID}.par"
+TRIG_FILE="$TMP_DIR/${UUID}.trig"
 TMP_PDF="$TMP_DIR/${UUID}.pdf"
 TMP_PNG="$TMP_DIR/${UUID}.png"
 
@@ -52,7 +53,7 @@ echo "[${BASENAME}] Processing..."
 
 # Run Analyzer
 # Pass -par argument for the unique parameter file
-"$EXE" $ARGS -par "$PAR_FILE" < "$DATA_FILE_PATH" > "$DAT_FILE" 2> "$PH_FILE"
+"$EXE" $ARGS -par "$PAR_FILE" -trig "$TRIG_FILE" < "$DATA_FILE_PATH" > "$DAT_FILE" 2> "$PH_FILE"
 
 # Prepare doubled ph file for cyclic plots
 cat "$PH_FILE" "$PH_FILE" > "$PH_DBL_FILE"
@@ -61,6 +62,7 @@ cat "$PH_FILE" "$PH_FILE" > "$PH_DBL_FILE"
 gnuplot -e "par_file='$PAR_FILE'" \
         -e "dat_file='$DAT_FILE'" \
         -e "ph_file='$PH_DBL_FILE'" \
+        -e "trig_file='$TRIG_FILE'" \
         -e "out_pdf='$TMP_PDF'" \
         -e "out_png='$TMP_PNG'" \
         "$GP_SCRIPT"
@@ -71,6 +73,6 @@ mv "$TMP_PNG" "$RESULTS_DIR/${BASENAME}.png"
 cp "$PAR_FILE" "$RESULTS_DIR/${BASENAME}.par"
 
 # Cleanup
-rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE"
+rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE" "$TRIG_FILE"
 
 echo "[${BASENAME}] Done."
