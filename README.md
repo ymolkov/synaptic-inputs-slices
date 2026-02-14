@@ -12,6 +12,9 @@ This project implements a data analysis pipeline for electrophysiological record
     *   `generate_report.py`: Generates an HTML gallery of the results.
 *   **`data/`**: Directory containing the raw experimental data files (e.g., `VGAT-*-*`, `VgluT2-*-*`).
 *   **`results/`**: Output directory where generated PDFs, PNG thumbnails, and the `index.html` report are stored.
+*   **`publication/`**: Dedicated folder for publication-ready figures and captions.
+    *   `figures/`: Generated figure files (PNG).
+    *   `captions.md`: Figure captions.
 *   **`legacy/`**: Contains original Makefiles and older code versions for reference.
 *   **`bin/`**: Destination for compiled executables.
 
@@ -44,7 +47,22 @@ The batch runner automatically invokes the report generator, but you can run it 
 python3 scripts/generate_report.py
 ```
 
-### 3. View Results
+### 3. Generate Publication Figures
+To generate all figures and captions:
+
+```bash
+python3 scripts/make_publication_figures.py
+```
+
+To regenerate a specific figure (e.g., Figure 1):
+
+```bash
+python3 scripts/make_publication_figures.py --fig1
+```
+
+Options: `--fig1`, `--fig2`, `--fig3`, `--supp1`, `--supp2`, `--captions`.
+
+### 4. View Results
 Open `results/index.html` in your web browser to view the organized gallery of analysis results.
 
 ## Analysis Details

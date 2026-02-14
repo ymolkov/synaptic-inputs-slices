@@ -1,0 +1,414 @@
+#!/usr/bin/env python3
+import os
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import csv
+from figure_utils import run_analysis, load_params, TMP_DIR, RESULTS_DIR, PROJECT_ROOT
+
+PUBLICATION_DIR = os.path.join(PROJECT_ROOT, "publication")
+FIG_DIR = os.path.join(PUBLICATION_DIR, "figures")
+CAPTIONS_FILE = os.path.join(PUBLICATION_DIR, "captions.md")
+
+os.makedirs(FIG_DIR, exist_ok=True)
+
+def robust_polyfit(x, y, deg=1, iterations=1):
+    """Linear regression with outlier detection based on residuals."""
+    if len(x) < 3:
+        return np.polyfit(x, y, deg)
+    
+    # First pass
+    coeffs = np.polyfit(x, y, deg)
+    p = np.poly1d(coeffs)
+    residuals = y - p(x)
+    sigma = np.std(residuals)
+    
+    # Second pass: exclude outliers
+    threshold = 2.5 * sigma
+    mask = np.abs(residuals) <= threshold
+    
+    if np.sum(mask) < 3: # Fallback if too many outliers
+        return coeffs
+        
+    return np.polyfit(x[mask], y[mask], deg)
+
+def figure_1_method_illustration():
+    """Figure 1: Method Illustration using VgluT2-I-Cell2-C."""
+    print("Generating Figure 1: Method Illustration...")
+    basename = "VgluT2-I-Cell2-C"
+    dat_path, ph_path, par_path = run_analysis(basename)
+    
+    dat = np.loadtxt(dat_path)
+    ph = np.loadtxt(ph_path)
+    params = load_params(par_path)
+    
+    fig = plt.figure(figsize=(15, 4))
+    gs = gridspec.GridSpec(1, 3, width_ratios=[1, 1, 2], wspace=0.25)
+    
+    # Filter valid bins
+    ph_valid = ph[ph[:, 3] > 0]
+    
+    import matplotlib.ticker as ticker
+    
+    # --- Panel A: Linear Regressions ---
+    ax1 = fig.add_subplot(gs[0])
+    ax1.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
+    target_phases = [0.0, 0.5]
+    colors = ['red', 'blue']
+    window = 0.001 
+    
+    for phi, color in zip(target_phases, colors):
+        mask = (dat[:, 2] >= phi) & (dat[:, 2] < phi + window)
+        pts = dat[mask]
+        if len(pts) == 0: continue
+            
+        I_pts = pts[:, 3]
+        V_pts = pts[:, 4]
+        ax1.scatter(V_pts, I_pts, s=10, alpha=0.5, color=color, label=rf"$\phi \approx {phi}$", edgecolors='none')
+        
+        slope_py, intercept_py = robust_polyfit(V_pts, I_pts, 1)
+        v_line = np.array([V_pts.min(), V_pts.max()])
+        i_line = slope_py * v_line + intercept_py
+        ax1.plot(v_line, i_line, color=color, linewidth=2, linestyle='--')
+
+    ax1.set_xlabel("V (mV)")
+    ax1.set_ylabel("I (nA)")
+    ax1.set_title("I-V Regressions")
+    ax1.legend(loc='upper left')
+    ax1.grid(True, alpha=0.3)
+    ax1.text(-0.15, 1.05, "A", transform=ax1.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
+
+    # --- Panel B: Wedge Plot ---
+    ax2 = fig.add_subplot(gs[1])
+    ax2.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
+    G_vals = ph_valid[:, 0] * 1000.0 # uS -> nS
+    I0_vals = ph_valid[:, 1]         # nA
+    
+    G_traj = np.concatenate([G_vals, [G_vals[0]]])
+    I0_traj = np.concatenate([I0_vals, [I0_vals[0]]])
+    ax2.plot(G_traj, I0_traj, color='black', linewidth=1, alpha=0.6)
+    ax2.scatter(G_vals, I0_vals, color='black', s=5, alpha=0.6)
+    
+    Ei, Ee = params.get('Ei', -80.0), params.get('Ee', 0.0)
+    g_start, E_leak = params.get('g', 0.0), params.get('E', -60.0)
+    
+    g_line = np.array([G_vals.min()*0.9, G_vals.max()*1.1])
+    offset_i = g_start * (Ei - E_leak)
+    ax2.plot(g_line, (-Ei/1000.0)*g_line + offset_i, color='blue', linestyle='--', label='Pure Inh')
+    
+    offset_e = g_start * (Ee - E_leak)
+    ax2.plot(g_line, (-Ee/1000.0)*g_line + offset_e, color='red', linestyle='--', label='Pure Exc')
+
+    ax2.set_ylim(min(I0_vals.min(), ((-Ei/1000.0)*g_line + offset_i).min())*1.1, I0_vals.max()*1.1)
+    ax2.set_xlabel("$G_{tot}$ (nS)")
+    ax2.set_ylabel("$I_0$ (nA)")
+    ax2.set_title("Wedge Plot")
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    ax2.text(-0.15, 1.05, "B", transform=ax2.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
+    
+    # --- Panel C: Reconstructed Conductances ---
+    ax3 = fig.add_subplot(gs[2])
+    ax3.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
+    g_ns_factor = params.get('g', 1.0) * 1000.0
+    phs = ph_valid[:, 6] / 1000.0
+    gi = ph_valid[:, 4] * g_ns_factor
+    ge = ph_valid[:, 5] * g_ns_factor
+    sem = (ph_valid[:, 2] / np.sqrt(ph_valid[:, 3])) * 1000.0
+    
+    phs2 = np.concatenate([phs, phs + 1.0])
+    gi2, ge2, sem2 = np.tile(gi, 2), np.tile(ge, 2), np.tile(sem, 2)
+    
+    ax3.fill_between(phs2, ge2, 0, color='red', alpha=0.5, label='$G_{exc}$', linewidth=0)
+    ax3.fill_between(phs2, gi2, 0, color='blue', alpha=0.5, label='$G_{inh}$', linewidth=0)
+    ax3.plot(phs2, sem2, color='black', linewidth=1, label='Error')
+    
+    ax3.set_xticks(np.arange(0, 2.1, 0.5))
+    ax3.set_xlabel("Phase (2 cycles)")
+    ax3.set_ylabel("Conductance (nS)")
+    ax3.set_title("Reconstructed Conductances")
+    ax3.legend(loc='upper right')
+    ax3.grid(True, alpha=0.3)
+    ax3.text(-0.05, 1.05, "C", transform=ax3.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
+    
+    plt.tight_layout(pad=0.5)
+    plt.savefig(os.path.join(FIG_DIR, "figure1_method.png"), dpi=300, bbox_inches='tight', pad_inches=0.02)
+    plt.close()
+
+def figure_2_selected_conductances():
+    """Figure 2: Selected Conductances from various cell types."""
+    print("Generating Figure 2: Selected Conductances...")
+    cells = ["VgluT2-I-Cell2", "VgluT2-E-Cell1", "VGAT-I-Cell9", "VGAT-E-Cell8"]
+    fig, axes = plt.subplots(4, 2, figsize=(12, 10), sharex=True)
+    
+    import matplotlib.ticker as ticker
+    for i, cell in enumerate(cells):
+        max_g = 0
+        row_data = []
+        for j, suffix in enumerate(["-C", "-V"]):
+            basename = cell + suffix
+            ax = axes[i, j]
+            ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
+            try:
+                # Add specific overrides as in original script
+                extra = ""
+                if basename == "VgluT2-E-Cell1-V": extra = "-l 100000"
+                if basename == "VgluT2-I-Cell2-V": extra = "-x 100000"
+                if basename == "VGAT-I-Cell9-C": extra = "-l 500000"
+                
+                _, ph_path, par_path = run_analysis(basename, extra)
+                data = np.loadtxt(ph_path)
+                params = load_params(par_path)
+                g_ns = params.get('g', 1.0) * 1000.0
+                row_data.append((basename, data, g_ns))
+                max_g = max(max_g, np.max(data[:, 4]*g_ns), np.max(data[:, 5]*g_ns))
+            except Exception as e:
+                print(f"Error processing {basename}: {e}")
+                row_data.append((basename, None, None))
+        
+        for j, (basename, data, g_ns) in enumerate(row_data):
+            ax = axes[i, j]
+            if data is not None:
+                n = data.shape[0]
+                phase = np.linspace(0, 2, 2*n)
+                gi = np.tile(data[:, 4] * g_ns, 2)
+                ge = np.tile(data[:, 5] * g_ns, 2)
+                err = np.tile((data[:, 2] / np.sqrt(data[:, 3])) * 1000.0, 2)
+                
+                ax.fill_between(phase, 0, gi, color='blue', alpha=0.5, label='Inh' if i==0 and j==0 else "", linewidth=0)
+                ax.fill_between(phase, 0, ge, color='red', alpha=0.5, label='Exc' if i==0 and j==0 else "", linewidth=0)
+                ax.plot(phase, err, color='black', linewidth=0.5)
+                ax.set_ylim(0, max_g * 1.1)
+                ax.set_title(basename, fontsize=10)
+            if j == 0: ax.set_ylabel("Cond. (nS)")
+            if i == 3: 
+                ax.set_xlabel("Phase (2 cycles)")
+                ax.set_xticks(np.arange(0, 2.1, 0.5))
+            if i == 0 and j == 0: ax.legend(loc='upper right')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIG_DIR, "figure2_selected.png"), dpi=300)
+    plt.close()
+
+def figure_3_combined_summary():
+    """Figure 3: Population summary of conductances."""
+    print("Generating Figure 3: Combined Summary...")
+    groups = ["VGAT-I", "VgluT2-I", "VGAT-E"]
+    fig, axes = plt.subplots(1, 3, figsize=(16, 6), sharey=True)
+    labels = ['gExc\n(Exp)', 'gInh\n(Exp)', 'gExc\n(Insp)', 'gInh\n(Insp)']
+    colors = ['salmon', 'skyblue', 'red', 'blue']
+    
+    for i, group in enumerate(groups):
+        ax = axes[i]
+        csv_path = os.path.join(RESULTS_DIR, f"{group.replace('-', '_')}_conductances.csv")
+        if not os.path.exists(csv_path):
+            ax.text(0.5, 0.5, f"Missing {group} data", ha='center')
+            continue
+            
+        data = []
+        with open(csv_path, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                data.append([float(row['Mean_gExc_Stat']), float(row['Mean_gInh_Stat']), 
+                             float(row['gExc_Phase0']), float(row['gInh_Phase0'])])
+        
+        data = np.array(data)
+        means, sems, inliers, outliers = [], [], [], []
+        for j in range(4):
+            m = data[:, j]
+            q1, q3 = np.percentile(m, [25, 75])
+            iqr = q3 - q1
+            mask = (m >= q1 - 1.5*iqr) & (m <= q3 + 1.5*iqr)
+            clean = m[mask]
+            outs = m[~mask]
+            means.append(np.mean(clean) if len(clean)>0 else 0)
+            sems.append(np.std(clean, ddof=1)/np.sqrt(len(clean)) if len(clean)>1 else 0)
+            inliers.append(clean)
+            outliers.append(outs)
+            
+        x = np.arange(4)
+        ax.bar(x, means, yerr=sems, alpha=0.8, color=colors, capsize=5)
+        
+        n_inliers = 0
+        for j in range(4):
+            n_inliers = max(n_inliers, len(inliers[j])) # Use max number of inliers across metrics
+            # Plot inliers
+            ax.scatter(np.random.normal(j, 0.04, len(inliers[j])), inliers[j], color='black', alpha=0.3, s=10)
+            # Plot outliers
+            if len(outliers[j]) > 0:
+                ax.scatter(np.random.normal(j, 0.04, len(outliers[j])), outliers[j], color='magenta', marker='x', s=30, linewidth=1.5)
+            
+        ax.set_title(f"{group} (N={n_inliers})", fontsize=14)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, fontsize=12)
+        ax.set_ylim(0, 0.5)
+        if i == 0: 
+            ax.set_ylabel("Synaptic conductance / Leak conductance", fontsize=14)
+            ax.tick_params(axis='y', labelsize=12)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIG_DIR, "figure3_summary.png"), dpi=300)
+    plt.close()
+
+def supplemental_figure_1_sensitivity():
+    """Supplemental Figure 1: Sensitivity to Ei and Ee variations."""
+    print("Generating Supplemental Figure 1: Sensitivity Analysis...")
+    basename = "VgluT2-I-Cell2-C"
+    
+    # Get default values first
+    _, _, par_path_def = run_analysis(basename)
+    params_def = load_params(par_path_def)
+    Ei_def = params_def.get('Ei', -80.0)
+    Ee_def = params_def.get('Ee', 0.0)
+    g_scale = params_def.get('g', 1.0)
+    g_ns_factor = g_scale * 1000.0
+    
+    Ei_vals = [Ei_def - 10, Ei_def, Ei_def + 10]
+    Ee_vals = [Ee_def - 10, Ee_def, Ee_def + 10]
+    
+    fig, axes = plt.subplots(3, 3, figsize=(15, 12), sharex=True, sharey=True)
+    import matplotlib.ticker as ticker
+
+    for i, ee in enumerate(Ee_vals):
+        for j, ei in enumerate(Ei_vals):
+            ax = axes[i, j]
+            ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
+            
+            # Run analysis for this specific combination
+            _, ph_path, _ = run_analysis(basename, Ee=ee, Ei=ei)
+            ph = np.loadtxt(ph_path)
+            ph_valid = ph[ph[:, 3] > 0]
+            
+            phs = ph_valid[:, 6] / 1000.0
+            gi = ph_valid[:, 4] * g_ns_factor
+            ge = ph_valid[:, 5] * g_ns_factor
+            
+            phs2 = np.concatenate([phs, phs + 1.0])
+            gi2, ge2 = np.tile(gi, 2), np.tile(ge, 2)
+            
+            ax.fill_between(phs2, ge2, 0, color='red', alpha=0.5, label='$G_{exc}$', linewidth=0)
+            ax.fill_between(phs2, gi2, 0, color='blue', alpha=0.5, label='$G_{inh}$', linewidth=0)
+            
+            ax.set_title(f"$E_e={ee}, E_i={ei}$", fontsize=12)
+            if i == 2: 
+                ax.set_xlabel("Phase")
+                ax.set_xticks(np.arange(0, 2.1, 0.5))
+            if j == 0: ax.set_ylabel("Cond. (nS)")
+            if i == 0 and j == 2: ax.legend(loc='upper right')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIG_DIR, "supp_figure1_sensitivity.png"), dpi=300)
+    plt.close()
+
+def supplemental_figure_2_linearity():
+    """Supplemental Figure 2: Linearity of I-V regressions for all cells in Figure 2."""
+    print("Generating Supplemental Figure 2: Linearity Analysis...")
+    cells = ["VgluT2-I-Cell2", "VgluT2-E-Cell1", "VGAT-I-Cell9", "VGAT-E-Cell8"]
+    fig, axes = plt.subplots(4, 2, figsize=(12, 14))
+    import matplotlib.ticker as ticker
+
+    target_phases = [0.0, 0.5]
+    colors = ['red', 'blue']
+    window = 0.001 
+
+    for i, cell in enumerate(cells):
+        v_min, v_max = np.inf, -np.inf
+        i_min, i_max = np.inf, -np.inf
+        
+        # First pass to find scales
+        cell_results = []
+        for j, suffix in enumerate(["-C", "-V"]):
+            basename = cell + suffix
+            try:
+                extra = ""
+                if basename == "VgluT2-E-Cell1-V": extra = "-l 100000"
+                if basename == "VgluT2-I-Cell2-V": extra = "-x 100000"
+                if basename == "VGAT-I-Cell9-C": extra = "-l 500000"
+                
+                dat_path, _, _ = run_analysis(basename, extra)
+                dat = np.loadtxt(dat_path)
+                cell_results.append(dat)
+                
+                v_min = min(v_min, dat[:, 4].min())
+                v_max = max(v_max, dat[:, 4].max())
+                i_min = min(i_min, dat[:, 3].min())
+                i_max = max(i_max, dat[:, 3].max())
+            except:
+                cell_results.append(None)
+
+        # Second pass to plot
+        for j, dat in enumerate(cell_results):
+            basename = cell + (["-C", "-V"][j])
+            ax = axes[i, j]
+            ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
+            
+            if dat is not None:
+                for phi, color in zip(target_phases, colors):
+                    mask = (dat[:, 2] >= phi) & (dat[:, 2] < phi + window)
+                    pts = dat[mask]
+                    if len(pts) == 0: continue
+                    
+                    I_pts = pts[:, 3]
+                    V_pts = pts[:, 4]
+                    ax.scatter(V_pts, I_pts, s=15, alpha=0.4, color=color, edgecolors='none', label=rf"$\phi \approx {phi}$")
+                    
+                    slope_py, intercept_py = robust_polyfit(V_pts, I_pts, 1)
+                    # Use shared range for lines
+                    v_line = np.array([v_min, v_max])
+                    i_line = slope_py * v_line + intercept_py
+                    ax.plot(v_line, i_line, color=color, linewidth=1.5, linestyle='--')
+                
+                ax.set_xlim(v_min - 5, v_max + 5)
+                ax.set_ylim(i_min - 0.1*(i_max-i_min), i_max + 0.1*(i_max-i_min))
+                ax.set_title(basename, fontsize=14)
+                if i == 3: ax.set_xlabel("V (mV)", fontsize=14)
+                if j == 0: ax.set_ylabel("I (nA)", fontsize=14)
+                if i == 0 and j == 0: ax.legend(loc='upper left', fontsize=12)
+                ax.tick_params(axis='both', which='major', labelsize=12)
+                ax.grid(True, alpha=0.2)
+            else:
+                ax.text(0.5, 0.5, "Error", ha='center')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIG_DIR, "supp_figure2_linearity.png"), dpi=300)
+    plt.close()
+
+def generate_captions():
+    print("Generating captions...")
+    with open(CAPTIONS_FILE, "w") as f:
+        f.write("# Figure Captions\n\n")
+        f.write("## Figure 1: Method Illustration\n")
+        f.write("A) Linear regressions of I-V curves at different phases. B) Wedge plot showing the trajectory of G_tot vs I_0. C) Reconstructed excitatory (red) and inhibitory (blue) conductances over two cycles.\n\n")
+        f.write("## Figure 2: Selected Conductances\n")
+        f.write("Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).\n\n")
+        f.write("## Figure 3: Combined Summary\n")
+        f.write("Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method).\n\n")
+        f.write("## Supplemental Figure 1: Sensitivity Analysis\n")
+        f.write("Sensitivity of reconstructed conductances to variations in reversal potentials ($E_e$ and $E_i$). The grid shows results for variations of ±10 mV from default values.\n\n")
+        f.write("## Supplemental Figure 2: Linearity Analysis\n")
+        f.write("I-V regressions for all cells and recording modes presented in Figure 2. Scatter points represent data from specific phase bins ($\phi \\approx 0.0$ in red, $\phi \\approx 0.5$ in blue), with dashed lines indicating the corresponding linear fits.\n")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate publication figures and captions.")
+    parser.add_argument('--fig1', action='store_true', help="Generate Figure 1 (Method)")
+    parser.add_argument('--fig2', action='store_true', help="Generate Figure 2 (Selected)")
+    parser.add_argument('--fig3', action='store_true', help="Generate Figure 3 (Summary)")
+    parser.add_argument('--supp1', action='store_true', help="Generate Supplemental Figure 1 (Sensitivity)")
+    parser.add_argument('--supp2', action='store_true', help="Generate Supplemental Figure 2 (Linearity)")
+    parser.add_argument('--captions', action='store_true', help="Generate captions.md")
+    args = parser.parse_args()
+
+    # If no flags are provided, run all
+    if not any([args.fig1, args.fig2, args.fig3, args.supp1, args.supp2, args.captions]):
+        args.fig1 = args.fig2 = args.fig3 = args.supp1 = args.supp2 = args.captions = True
+
+    if args.fig1: figure_1_method_illustration()
+    if args.fig2: figure_2_selected_conductances()
+    if args.fig3: figure_3_combined_summary()
+    if args.supp1: supplemental_figure_1_sensitivity()
+    if args.supp2: supplemental_figure_2_linearity()
+    if args.captions: generate_captions()
+    
+    print(f"Done! Output in {PUBLICATION_DIR}")

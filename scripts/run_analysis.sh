@@ -46,8 +46,8 @@ PH_FILE="$TMP_DIR/${UUID}.ph"
 PH_DBL_FILE="$TMP_DIR/${UUID}.ph_doubled"
 PAR_FILE="$TMP_DIR/${UUID}.par"
 TRIG_FILE="$TMP_DIR/${UUID}.trig"
-TMP_PDF="$TMP_DIR/${UUID}.pdf"
-TMP_PNG="$TMP_DIR/${UUID}.png"
+TMP_FULL="$TMP_DIR/${UUID}_full.png"
+TMP_THUMB="$TMP_DIR/${UUID}_thumb.png"
 
 echo "[${BASENAME}] Processing..."
 
@@ -63,13 +63,13 @@ gnuplot -e "par_file='$PAR_FILE'" \
         -e "dat_file='$DAT_FILE'" \
         -e "ph_file='$PH_DBL_FILE'" \
         -e "trig_file='$TRIG_FILE'" \
-        -e "out_pdf='$TMP_PDF'" \
-        -e "out_png='$TMP_PNG'" \
+        -e "out_full='$TMP_FULL'" \
+        -e "out_thumb='$TMP_THUMB'" \
         "$GP_SCRIPT"
 
 # Move/Rename final outputs to results directory
-mv "$TMP_PDF" "$RESULTS_DIR/${BASENAME}.pdf"
-mv "$TMP_PNG" "$RESULTS_DIR/${BASENAME}.png"
+mv "$TMP_FULL" "$RESULTS_DIR/${BASENAME}_full.png"
+mv "$TMP_THUMB" "$RESULTS_DIR/${BASENAME}_thumb.png"
 cp "$PAR_FILE" "$RESULTS_DIR/${BASENAME}.par"
 
 # Cleanup

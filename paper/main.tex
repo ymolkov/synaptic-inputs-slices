@@ -46,20 +46,16 @@ Inspiratory motor output was recorded from hypoglossal (XII) nerve rootlets usin
 Whole-cell voltage- and current-clamp recordings were performed using a HEKA EPC-9 amplifier and PatchMaster software. Recording electrodes (borosilicate glass, 4--6 M$\Omega$) contained (in mM): 130 K-gluconate, 5 Na-gluconate, 3 NaCl, 10 HEPES, 4 Mg-ATP, 0.3 Na-GTP, and 4 sodium phosphocreatine (pH 7.3 with KOH). Measured potentials were corrected for a liquid junction potential of --10 mV. Series resistance was compensated on-line by $\sim$80\%.
 
 \subsection{Data Preprocessing}
-Raw experimental data consisting of time series recordings from two channels ($x_0(t)$ and $x_1(t)$) and a control/phase signal ($p(t)$) were processed to extract cycle-dependent characteristics. To reduce high-frequency noise while preserving edge information, a median filter was applied to all channels. For a window size of $2k+1$ (default $k=5$), the filtered value $y[i]$ at index $i$ is given by the median of the input vector window $[x[i-k], \dots, x[i+k]]$.
+Raw experimental data consisting of time series recordings of injected current ($I_{inj}(t)$), membrane potential ($V_m(t)$) and integrated hypoglossal nerve activity ($p(t) = \int \text{XII}(t)$) were processed to extract cycle-dependent characteristics. To reduce high-frequency noise while preserving edge information, a median filter was applied to all channels.
 
 \subsection{Cycle Detection and Phase definition}
-Cycles were defined based on the periodic activity observed in the control signal $p(t)$. The signal was first preprocessed (optionally mixed with channel data to enhance signal-to-noise ratio) and smoothed using a median filter (width $k=10$). A robust threshold detection algorithm was employed to identify cycle onsets.
+Cycles were defined based on the periodic activity observed in the control signal $p(t)$. The signal was first preprocessed and smoothed using a median filter. A robust threshold detection algorithm was employed to identify cycle onsets.
 
-The detection threshold $\theta$ was determined automatically using Median Absolute Deviation (MAD) to ensure robustness against outliers and varying noise levels. For the signal $p(t)$, we calculated the median $M = \text{median}(p)$ and the MAD:
+The detection threshold $\theta$ was determined automatically to ensure robustness against outliers and varying background noise. We calculated the median $M = \text{median}(p)$ and the $99^{th}$ percentile $P_{99}$ of the signal distribution. The detection threshold was defined as the midpoint of the robust dynamic range:
 \begin{equation}
-    \text{MAD} = \text{median}(|p_i - M|)
+    \theta = M + 0.5 \cdot (P_{99} - M)
 \end{equation}
-The noise standard deviation was estimated as $\sigma \approx 1.4826 \cdot \text{MAD}$. The detection threshold was set to:
-\begin{equation}
-    \theta = M + m \cdot \sigma
-\end{equation}
-where $m$ is a multiplier (default $m=2.5$).
+This approach effectively identifies the active phase of the cycle while ignoring high-amplitude artifacts or baseline fluctuations.
 
 A cycle start event was defined as a rising edge crossing $\theta$ (i.e., $p[i-1] < \theta \leq p[i]$), with the additional constraint that the signal must remain above the threshold for a minimum duration (default 10 samples) to reject transient spikes.
 
@@ -70,7 +66,7 @@ The phase $\phi(t)$ was calculated linearly between consecutive cycle start time
 where $t$ is the time, and $T_{n+1} - T_n$ represents the period of the $n$-th cycle.
 
 \subsection{Synaptic Conductance Reconstruction}
-The recordings consisted of three channels: the injected current $x_0(t) = I_{inj}(t)$, the membrane potential $x_1(t) = V_m(t)$, and a reference signal $p(t)$ representing the hypoglossal nerve activity (rectified and integrated with a time constant of 50 ms). To decompose the synaptic inputs into excitatory and inhibitory components, we utilized a "wedge diagram" method analogous to the technique described in previous studies~\citep{molkov2024inference}. This approach relies on the current balance equation:
+To decompose the synaptic inputs into excitatory and inhibitory components, we utilized a "wedge diagram" method analogous to the technique described in previous studies~\citep{molkov2024inference}. This approach relies on the current balance equation:
 \begin{equation}
     I_{inj}(t) = g_L (V_m(t) - E_L) + g_e(t) (V_m(t) - E_e) + g_i(t) (V_m(t) - E_i) + C \frac{dV_m}{dt}
 \end{equation}
@@ -78,9 +74,9 @@ where $g_L, g_e(t), g_i(t)$ are leak, excitatory, and inhibitory conductances, a
 \begin{equation}
     I_{inj}(t) \approx G_{tot}(\phi) V_m(t) + I_{0}(\phi)
 \end{equation}
-where $G_{tot}(\phi) = g_L + g_e(\phi) + g_i(\phi)$ is the total conductance and $I_{0}(\phi)$ represents the regression intercept (effective resting current).
+where $G_{tot}(\phi) = g_L + g_e(\phi) + g_i(\phi)$ is the total conductance and $I_{0}(\phi)$ represents the regression intercept (current y-intercept).
 
-To estimate these parameters, we discretized the cycle phase $\phi \in [0, 1)$ into 1000 bins. For each phase bin, we collected all data points $(V_m(t_k), I_{inj}(t_k))$ where the phase $\phi(t_k)$ fell within that bin. A simple linear regression of $I_{inj}$ versus $V_m$ was performed on these points to determine the slope $G_{tot}(\phi)$ and the intercept $I_0(\phi)$.
+To estimate these parameters, we discretized the cycle phase $\phi \in [0, 1)$ into 1000 bins. For each phase bin, we collected all data points $(V_m(t_k), I_{inj}(t_k))$ where the phase $\phi(t_k)$ fell within that bin. A simple linear regression of $I_{inj}$ versus $V_m$ was performed on these points to determine the slope $G_{tot}(\phi)$ and the intercept $I_0(\phi)$ (Figure~\ref{fig:method}A).
 
 The leak parameters ($g_L$ and $E_L$) were estimated by evaluating the total current at the reversal potentials of the synaptic currents. We calculated the theoretical currents at the inhibitory and excitatory reversal potentials for each phase:
 \begin{align}
@@ -100,7 +96,14 @@ Finally, the excitatory and inhibitory conductances for each phase were calculat
     g_e(\phi) &= \frac{Q_i(\phi) - I_{Li}}{E_i - E_e} \\
     g_i(\phi) &= \frac{Q_e(\phi) - I_{Le}}{E_e - E_i}
 \end{align}
-This method allows for the robust reconstruction of dynamic synaptic conductances from single-trace current-clamp recordings with varying injected current steps.
+This method allows for the robust reconstruction of dynamic synaptic conductances from single-trace current-clamp recordings with varying injected current steps or from voltage-clamp recordings with varying voltage steps~\citep{molkov2024inference}. The geometric relationship between total conductance ($G_{tot}$) and the current y-intercept ($I_0$) is visualized in the "wedge plot" (Figure~\ref{fig:method}B), where the trajectory is bounded by the limits of pure excitation and inhibition. The final reconstructed conductances $G_{exc}(\phi)$ and $G_{inh}(\phi)$ are shown in Figure~\ref{fig:method}C.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/method_illustration.png}
+    \caption{Illustration of the synaptic conductance reconstruction methodology. \textbf{(A)} Representative linear regressions of injected current ($I$) versus membrane potential ($V$) for two different phases of the respiratory cycle ($\phi \approx 0$, red; $\phi \approx 0.5$, blue). The slope corresponds to the total conductance $G_{tot}$, and the intercept represents the current y-intercept $I_0$. \textbf{(B)} "Wedge plot" showing the trajectory of the system in the $G_{tot}$ vs.~$I_0$ plane across the respiratory cycle (black loop). Theoretical boundaries for pure excitation ($G_{inh}=0$, red dashed line) and pure inhibition ($G_{exc}=0$, blue dashed line) are determined by the leak parameters. The position of the trajectory relative to these boundaries dictates the decomposition into excitatory and inhibitory components. \textbf{(C)} Reconstructed time course of excitatory ($G_{exc}$, red) and inhibitory ($G_{inh}$, blue) conductances over two respiratory cycles. The black line indicates the standard error of the estimation.}
+    \label{fig:method}
+\end{figure}
 
 \section{Results}
 \subsection{Synaptic Inputs Define Firing Phenotypes}

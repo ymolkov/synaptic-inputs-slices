@@ -351,10 +351,11 @@ int main(int argc, char **argv) {
 
   // Binning and Regression
   // Stats accumulators
-  vector<double> M0(num_phase_bins, 0.0), M1(num_phase_bins, 0.0);
-  vector<double> X00(num_phase_bins, 0.0), X01(num_phase_bins, 0.0),
-      X11(num_phase_bins, 0.0);
-  vector<int> counts(num_phase_bins, 0);
+  struct BinPoints {
+    vector<double> v;
+    vector<double> i;
+  };
+  vector<BinPoints> bin_points(num_phase_bins);
 
   for (int i = 0; i < n; i++) {
     if (phase[i] >= 0) {
@@ -362,15 +363,8 @@ int main(int argc, char **argv) {
       if (bin >= num_phase_bins)
         bin = num_phase_bins - 1; // Clamp
 
-      double y0 = filtered_data[0][i];
-      double y1 = filtered_data[1][i];
-
-      M0[bin] += y0;
-      M1[bin] += y1;
-      X00[bin] += y0 * y0;
-      X01[bin] += y0 * y1;
-      X11[bin] += y1 * y1;
-      counts[bin]++;
+      bin_points[bin].i.push_back(filtered_data[0][i]);
+      bin_points[bin].v.push_back(filtered_data[1][i]);
     }
   }
 
@@ -384,41 +378,81 @@ int main(int argc, char **argv) {
   vector<RegResult> results(num_phase_bins);
   bool has_data = false;
 
-  // Calculate stats first
   for (int l = 0; l < num_phase_bins; l++) {
-    if (counts[l] > 0) {
-      M0[l] /= counts[l];
-      M1[l] /= counts[l];
-      X00[l] /= counts[l];
-      X01[l] /= counts[l];
-      X11[l] /= counts[l];
-
-      double cov = X01[l] - M0[l] * M1[l];
-      double var1 = X11[l] - M1[l] * M1[l];
-      double var0 = X00[l] - M0[l] * M0[l];
-
-      // Regression 1: Ch0 = a * Ch1 + b
-      // Slope a
-      double a = (var1 != 0) ? cov / var1 : 0;
-      double b = M0[l] - a * M1[l];
-      double err = (var1 != 0) ? sqrt(max(0.0, var0 / var1 - a * a)) : 0;
-
-      // Regression 2: Ch1 = aa * Ch0 + bb
-      double aa = (var0 != 0) ? cov / var0 : 0;
-      double bb = M1[l] - aa * M0[l];
-      double erer = (var0 != 0) ? sqrt(max(0.0, var1 / var0 - aa * aa)) : 0;
-
-      if (voltage_clamp) {
-        results[l] = {a, b, err, counts[l]};
-      } else {
-        // Convert Regression 2 back to Ch0 vs Ch1 form
-        double inv_aa = (aa != 0) ? 1.0 / aa : 0;    // Slope
-        double intercept = (aa != 0) ? -bb / aa : 0; // Intercept
-        double error_transformed =
-            (aa != 0) ? erer / (aa * aa) : 0; // Error scaling?
-        results[l] = {inv_aa, intercept, error_transformed, counts[l]};
+    int bin_count = bin_points[l].v.size();
+    if (bin_count > 2) {
+      // First pass: Simple linear regression
+      double m0 = 0, m1 = 0, x00 = 0, x01 = 0, x11 = 0;
+      for (int i = 0; i < bin_count; i++) {
+        double y0 = bin_points[l].i[i];
+        double y1 = bin_points[l].v[i];
+        m0 += y0; m1 += y1;
+        x00 += y0 * y0; x01 += y0 * y1; x11 += y1 * y1;
       }
-      has_data = true;
+      m0 /= bin_count; m1 /= bin_count;
+      x00 /= bin_count; x01 /= bin_count; x11 /= bin_count;
+
+      double cov = x01 - m0 * m1;
+      double var1 = x11 - m1 * m1;
+      double var0 = x00 - m0 * m0;
+
+      double a = (var1 != 0) ? cov / var1 : 0;
+      double b = m0 - a * m1;
+      
+      // Calculate Residuals and their standard deviation
+      vector<double> residuals(bin_count);
+      double res_sum = 0;
+      for (int i = 0; i < bin_count; i++) {
+        residuals[i] = bin_points[l].i[i] - (a * bin_points[l].v[i] + b);
+        res_sum += residuals[i] * residuals[i];
+      }
+      double sigma = sqrt(res_sum / bin_count);
+
+      // Second pass: Robust regression excluding outliers (> 2.5 sigma)
+      double rm0 = 0, rm1 = 0, rx00 = 0, rx01 = 0, rx11 = 0;
+      int rcount = 0;
+      double threshold_sigma = 2.5 * sigma;
+      if (threshold_sigma < 1e-9) threshold_sigma = 1e-9;
+
+      for (int i = 0; i < bin_count; i++) {
+        if (abs(residuals[i]) <= threshold_sigma) {
+          double y0 = bin_points[l].i[i];
+          double y1 = bin_points[l].v[i];
+          rm0 += y0; rm1 += y1;
+          rx00 += y0 * y0; rx01 += y0 * y1; rx11 += y1 * y1;
+          rcount++;
+        }
+      }
+
+      if (rcount > 2) {
+        rm0 /= rcount; rm1 /= rcount;
+        rx00 /= rcount; rx01 /= rcount; rx11 /= rcount;
+        double rcov = rx01 - rm0 * rm1;
+        double rvar1 = rx11 - rm1 * rm1;
+        double rvar0 = rx00 - rm0 * rm0;
+
+        double ra = (rvar1 != 0) ? rcov / rvar1 : 0;
+        double rb = rm0 - ra * rm1;
+        double rerr = (rvar1 != 0) ? sqrt(max(0.0, rvar0 / rvar1 - ra * ra)) : 0;
+
+        if (voltage_clamp) {
+          results[l] = {ra, rb, rerr, rcount};
+        } else {
+          // Robust Regression 2 for Current Clamp: Ch1 = aa * Ch0 + bb
+          // We already have the points, let's just do it directly
+          double raa = (rvar0 != 0) ? rcov / rvar0 : 0;
+          double rbb = rm1 - raa * rm0;
+          double rerer = (rvar0 != 0) ? sqrt(max(0.0, rvar1 / rvar0 - raa * raa)) : 0;
+          
+          double inv_aa = (raa != 0) ? 1.0 / raa : 0;
+          double intercept = (raa != 0) ? -rbb / raa : 0;
+          double error_transformed = (raa != 0) ? rerer / (raa * raa) : 0;
+          results[l] = {inv_aa, intercept, error_transformed, rcount};
+        }
+        has_data = true;
+      } else {
+        results[l] = {0, 0, 0, 0};
+      }
     } else {
       results[l] = {0, 0, 0, 0};
     }
