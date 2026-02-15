@@ -194,10 +194,19 @@ def figure_2_selected_conductances():
 def figure_3_combined_summary():
     """Figure 3: Population summary of conductances."""
     print("Generating Figure 3: Combined Summary...")
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "axes.titlesize": 19,
+        "axes.labelsize": 18,
+        "xtick.labelsize": 16,
+        "ytick.labelsize": 16
+    })
     groups = ["VGAT-I", "VgluT2-I", "VGAT-E"]
-    fig, axes = plt.subplots(1, 3, figsize=(16, 6), sharey=True)
-    labels = ['gExc\n(Exp)', 'gInh\n(Exp)', 'gExc\n(Insp)', 'gInh\n(Insp)']
-    colors = ['salmon', 'skyblue', 'red', 'blue']
+    fig, axes = plt.subplots(1, 3, figsize=(16.5, 6.6), sharey=True)
+    phase_ticks = [0.5, 2.5]
+    phase_labels = ['Expiration', 'Inspiration']
+    # Use the same colors for Exp and Insp within each modality.
+    colors = ['#D62728', '#56B4E9', '#D62728', '#56B4E9']
     
     for i, group in enumerate(groups):
         ax = axes[i]
@@ -228,26 +237,44 @@ def figure_3_combined_summary():
             outliers.append(outs)
             
         x = np.arange(4)
-        ax.bar(x, means, yerr=sems, alpha=0.8, color=colors, capsize=5)
+        ax.bar(
+            x, means, yerr=sems, alpha=0.9, color=colors, capsize=4, width=0.8,
+            ecolor='#1A1A1A', error_kw={"elinewidth": 1.5, "capthick": 1.5}
+        )
         
         n_inliers = 0
+        rng = np.random.default_rng(100 + i)
         for j in range(4):
             n_inliers = max(n_inliers, len(inliers[j])) # Use max number of inliers across metrics
             # Plot inliers
-            ax.scatter(np.random.normal(j, 0.04, len(inliers[j])), inliers[j], color='black', alpha=0.3, s=10)
+            ax.scatter(
+                rng.normal(j, 0.04, len(inliers[j])), inliers[j],
+                color='#2E2E2E', alpha=0.45, s=16, linewidth=0
+            )
             # Plot outliers
             if len(outliers[j]) > 0:
-                ax.scatter(np.random.normal(j, 0.04, len(outliers[j])), outliers[j], color='magenta', marker='x', s=30, linewidth=1.5)
+                ax.scatter(
+                    rng.normal(j, 0.04, len(outliers[j])), outliers[j],
+                    color='magenta', marker='x', s=28, linewidth=1.25
+                )
             
-        ax.set_title(f"{group} (N={n_inliers})", fontsize=14)
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, fontsize=12)
+        ax.set_title(f"{group} (N={n_inliers})", fontsize=19)
+        ax.set_xticks(phase_ticks)
+        ax.set_xticklabels(phase_labels, fontsize=16)
+        ax.set_xlim(-0.6, 3.6)
         ax.set_ylim(0, 0.5)
+        ax.grid(axis='y', alpha=0.22, linestyle='-', linewidth=0.8)
+        ax.set_axisbelow(True)
         if i == 0: 
-            ax.set_ylabel("Synaptic conductance / Leak conductance", fontsize=14)
-            ax.tick_params(axis='y', labelsize=12)
+            ax.set_ylabel("Synaptic conductance / Leak conductance", fontsize=18)
+            ax.tick_params(axis='y', labelsize=16)
+            legend_handles = [
+                plt.Rectangle((0, 0), 1, 1, color='#D62728', alpha=0.9, label='Excitation'),
+                plt.Rectangle((0, 0), 1, 1, color='#56B4E9', alpha=0.9, label='Inhibition')
+            ]
+            ax.legend(handles=legend_handles, loc='upper left', frameon=False, fontsize=16)
 
-    plt.tight_layout()
+    fig.subplots_adjust(wspace=0.22, bottom=0.12, left=0.07, right=0.98, top=0.92)
     plt.savefig(os.path.join(FIG_DIR, "figure3_summary.png"), dpi=300)
     plt.close()
 
