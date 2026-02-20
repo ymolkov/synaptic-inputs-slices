@@ -1,10 +1,10 @@
-import re
 import subprocess
 import multiprocessing
 import os
 import sys
 import shutil
 import uuid
+from analysis_options import get_flags_map, resolve_flags
 
 # Define input Makefile and Runner script paths relative to project root
 # This script is in scripts/, so root is ..
@@ -24,40 +24,18 @@ REPORT_GENERATOR = os.path.join(SCRIPT_DIR, "generate_report.py")
 # os.environ["PATH"] += os.pathsep + GNUPLOT_BIN
 
 def parse_makefile():
-    # Map basename -> flags string
-    makefile_flags = {}
-    
-    try:
-        with open(MAKEFILE, 'r') as f:
-            content = f.read()
-    except FileNotFoundError:
-        print(f"Warning: {MAKEFILE} not found. Using defaults for all files.")
-        return makefile_flags
-
-    # Regex to capture target and the med2 command line
-    pattern = re.compile(r"^([\w-]+)\.pdf:.*?\n\s+\./med2\s+(.*?)<", re.MULTILINE)
-    matches = pattern.findall(content)
-    
-    for basename, flags in matches:
-        # Strip -q value to force automatic threshold calculation
-        flags = re.sub(r"-q\s+[\d\.]+", "", flags)
-        makefile_flags[basename] = flags.strip()
-        
-    return makefile_flags
+    return get_flags_map(PROJECT_ROOT, strip_q=True)
 
 def run_job(basename, makefile_flags):
     data_path = os.path.join(DATA_DIR, basename)
     
     # Determine flags
-    if basename in makefile_flags:
-        flags_str = makefile_flags[basename]
-    else:
-        # Default flags for unknown files
-        flags = ["-f", "25"]
-        # Auto-apply -vc for Voltage Clamp files
-        if basename.endswith("-V"):
-            flags.append("-vc")
-        flags_str = " ".join(flags)
+    flags_str = resolve_flags(
+        basename,
+        makefile_flags,
+        default_flags="-f 25",
+        infer_vc_from_name=True
+    )
         
     # Unique temporary files
     job_uuid = f"{basename}_{uuid.uuid4().hex[:8]}"

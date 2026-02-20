@@ -43,8 +43,14 @@ def figure_1_method_illustration():
     ph = np.loadtxt(ph_path)
     params = load_params(par_path)
     
-    fig = plt.figure(figsize=(15, 4))
-    gs = gridspec.GridSpec(1, 3, width_ratios=[1, 1, 2], wspace=0.25)
+    plt.rcParams.update({
+        "axes.labelsize": 16,
+        "xtick.labelsize": 13,
+        "ytick.labelsize": 13,
+        "legend.fontsize": 13
+    })
+    fig = plt.figure(figsize=(13, 10))
+    gs = gridspec.GridSpec(2, 2, wspace=0.28, hspace=0.32)
     
     # Filter valid bins
     ph_valid = ph[ph[:, 3] > 0]
@@ -52,7 +58,7 @@ def figure_1_method_illustration():
     import matplotlib.ticker as ticker
     
     # --- Panel A: Linear Regressions ---
-    ax1 = fig.add_subplot(gs[0])
+    ax1 = fig.add_subplot(gs[0, 0])
     ax1.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
     target_phases = [0.0, 0.5]
     colors = ['red', 'blue']
@@ -74,13 +80,11 @@ def figure_1_method_illustration():
 
     ax1.set_xlabel("V (mV)")
     ax1.set_ylabel("I (nA)")
-    ax1.set_title("I-V Regressions")
     ax1.legend(loc='upper left')
     ax1.grid(True, alpha=0.3)
-    ax1.text(-0.15, 1.05, "A", transform=ax1.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
 
     # --- Panel B: Wedge Plot ---
-    ax2 = fig.add_subplot(gs[1])
+    ax2 = fig.add_subplot(gs[0, 1])
     ax2.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
     G_vals = ph_valid[:, 0] * 1000.0 # uS -> nS
     I0_vals = ph_valid[:, 1]         # nA
@@ -95,21 +99,19 @@ def figure_1_method_illustration():
     
     g_line = np.array([G_vals.min()*0.9, G_vals.max()*1.1])
     offset_i = g_start * (Ei - E_leak)
-    ax2.plot(g_line, (-Ei/1000.0)*g_line + offset_i, color='blue', linestyle='--', label='Pure Inh')
+    ax2.plot(g_line, (-Ei/1000.0)*g_line + offset_i, color='blue', linestyle='--', label='Pure Inhibition')
     
     offset_e = g_start * (Ee - E_leak)
-    ax2.plot(g_line, (-Ee/1000.0)*g_line + offset_e, color='red', linestyle='--', label='Pure Exc')
+    ax2.plot(g_line, (-Ee/1000.0)*g_line + offset_e, color='red', linestyle='--', label='Pure Excitation')
 
     ax2.set_ylim(min(I0_vals.min(), ((-Ei/1000.0)*g_line + offset_i).min())*1.1, I0_vals.max()*1.1)
     ax2.set_xlabel("$G_{tot}$ (nS)")
     ax2.set_ylabel("$I_0$ (nA)")
-    ax2.set_title("Wedge Plot")
     ax2.legend()
     ax2.grid(True, alpha=0.3)
-    ax2.text(-0.15, 1.05, "B", transform=ax2.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
     
     # --- Panel C: Reconstructed Conductances ---
-    ax3 = fig.add_subplot(gs[2])
+    ax3 = fig.add_subplot(gs[1, 0])
     ax3.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
     g_ns_factor = params.get('g', 1.0) * 1000.0
     phs = ph_valid[:, 6] / 1000.0
@@ -127,12 +129,52 @@ def figure_1_method_illustration():
     ax3.set_xticks(np.arange(0, 2.1, 0.5))
     ax3.set_xlabel("Phase (2 cycles)")
     ax3.set_ylabel("Conductance (nS)")
-    ax3.set_title("Reconstructed Conductances")
-    ax3.legend(loc='upper right')
     ax3.grid(True, alpha=0.3)
-    ax3.text(-0.05, 1.05, "C", transform=ax3.transAxes, fontsize=16, fontweight='bold', va='top', ha='right')
+
+    # --- Panel D: Polar Conductance Plot ---
+    ax4 = fig.add_subplot(gs[1, 1], projection='polar')
+    theta = 2.0 * np.pi * phs
+    theta_closed = np.concatenate([theta, [theta[0]]])
+    ge_closed = np.concatenate([ge, [ge[0]]])
+    gi_closed = np.concatenate([gi, [gi[0]]])
+    sem_closed = np.concatenate([sem, [sem[0]]])
+    max_cond = max(np.max(ge), np.max(gi)) if len(ge) > 0 else 1.0
+
+    h_ge = ax4.fill(theta_closed, ge_closed, color='red', alpha=0.5, linewidth=0, label='$G_{exc}$')[0]
+    h_gi = ax4.fill(theta_closed, gi_closed, color='blue', alpha=0.5, linewidth=0, label='$G_{inh}$')[0]
+    h_err, = ax4.plot(theta_closed, sem_closed, color='black', linewidth=1.0, label='Error')
+    ax4.set_ylim(0, max_cond * 1.1)
+    ax4.set_theta_zero_location('E')
+    ax4.set_theta_direction(1)
+    ax4.set_xticks(np.deg2rad([0, 90, 180, 270]))
+    ax4.set_xticklabels(['0', '0.25', '0.5', '0.75'])
+    ax4.set_yticklabels([])
+    ax4.grid(True, alpha=0.3)
+    # Shared legend for panels C and D.
+    fig.legend(
+        handles=[h_ge, h_gi, h_err],
+        labels=['$G_{exc}$', '$G_{inh}$', 'Error'],
+        loc='center left',
+        bbox_to_anchor=(0.505, 0.31),
+        ncol=1,
+        frameon=True,
+        fontsize=12
+    )
     
-    plt.tight_layout(pad=0.5)
+    fig.subplots_adjust(left=0.06, right=0.98, top=0.96, bottom=0.08, wspace=0.28, hspace=0.32)
+    # Figure-level panel labels for strict row/column alignment.
+    pos_a = ax1.get_position()
+    pos_b = ax2.get_position()
+    pos_c = ax3.get_position()
+    pos_d = ax4.get_position()
+    x_left = min(pos_a.x0, pos_c.x0) - 0.04
+    x_right = min(pos_b.x0, pos_d.x0) - 0.042
+    y_top = max(pos_a.y1, pos_b.y1) + 0.01
+    y_bottom = max(pos_c.y1, pos_d.y1) + 0.01
+    fig.text(x_left, y_top, "A", fontsize=18, fontweight='bold', va='top', ha='right')
+    fig.text(x_right, y_top, "B", fontsize=18, fontweight='bold', va='top', ha='right')
+    fig.text(x_left, y_bottom, "C", fontsize=18, fontweight='bold', va='top', ha='right')
+    fig.text(x_right, y_bottom, "D", fontsize=18, fontweight='bold', va='top', ha='right')
     plt.savefig(os.path.join(FIG_DIR, "figure1_method.png"), dpi=300, bbox_inches='tight', pad_inches=0.02)
     plt.close()
 
@@ -406,7 +448,7 @@ def generate_captions():
     with open(CAPTIONS_FILE, "w") as f:
         f.write("# Figure Captions\n\n")
         f.write("## Figure 1: Method Illustration\n")
-        f.write("A) Linear regressions of I-V curves at different phases. B) Wedge plot showing the trajectory of G_tot vs I_0. C) Reconstructed excitatory (red) and inhibitory (blue) conductances over two cycles.\n\n")
+        f.write("A) Linear regressions of I-V curves at different phases. B) Wedge plot showing the trajectory of G_tot vs I_0. C) Reconstructed excitatory (red) and inhibitory (blue) conductances over two cycles. D) Polar representation of excitatory and inhibitory conductance profiles over one normalized cycle.\n\n")
         f.write("## Figure 2: Selected Conductances\n")
         f.write("Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).\n\n")
         f.write("## Figure 3: Combined Summary\n")

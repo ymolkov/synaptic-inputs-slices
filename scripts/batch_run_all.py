@@ -1,31 +1,13 @@
 #!/usr/bin/env python3
 import os
-import re
 import subprocess
 import glob
 import multiprocessing
+from analysis_options import get_flags_map, resolve_flags
 
-def parse_makefile(makefile_path):
-    options_map = {}
-    if not os.path.exists(makefile_path):
-        return options_map
-    with open(makefile_path, 'r') as f:
-        lines = f.readlines()
-    current_target = None
-    target_regex = re.compile(r'^([a-zA-Z0-9_-]+)\.pdf:')
-    command_regex = re.compile(r'\./med2\s+(.*?)\s*<')
-    for line in lines:
-        target_match = target_regex.match(line)
-        if target_match:
-            current_target = target_match.group(1)
-            continue
-        if current_target:
-            command_match = command_regex.search(line)
-            if command_match:
-                options = command_match.group(1).strip()
-                options_map[current_target] = options
-                current_target = None
-    return options_map
+def parse_makefile(_makefile_path):
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return get_flags_map(project_root, strip_q=True)
 
 def run_single_analysis(args):
     data_file, run_script, options, i, total = args
@@ -56,7 +38,12 @@ def main():
     tasks = []
     for i, data_file in enumerate(data_files):
         basename = os.path.basename(data_file)
-        options = file_options.get(basename, "-f 25 -h 1000 -vc")
+        options = resolve_flags(
+            basename,
+            file_options,
+            default_flags="-f 25",
+            infer_vc_from_name=True
+        )
         tasks.append((data_file, run_script, options, i, total_files))
 
     # Determine number of processes (CPU count)

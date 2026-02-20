@@ -46,6 +46,7 @@ PH_FILE="$TMP_DIR/${UUID}.ph"
 PH_DBL_FILE="$TMP_DIR/${UUID}.ph_doubled"
 PAR_FILE="$TMP_DIR/${UUID}.par"
 TRIG_FILE="$TMP_DIR/${UUID}.trig"
+TRIG_Y_FILE="$TMP_DIR/${UUID}.trig_y"
 TMP_FULL="$TMP_DIR/${UUID}_full.png"
 TMP_THUMB="$TMP_DIR/${UUID}_thumb.png"
 
@@ -58,9 +59,35 @@ echo "[${BASENAME}] Processing..."
 # Prepare doubled ph file for cyclic plots
 cat "$PH_FILE" "$PH_FILE" > "$PH_DBL_FILE"
 
+# Map trigger timestamps to raw reference values (col 4) for plotting in raw units.
+if [ -s "$TRIG_FILE" ]; then
+    awk '
+      FNR==NR {tr[++m]=$1; next}
+      {n++; t[n]=$1; y[n]=$4}
+      END {
+        if (n < 1 || m < 1) exit;
+        i=1;
+        for (k=1; k<=m; k++) {
+          tt=tr[k];
+          while (i < n && t[i+1] < tt) i++;
+          if (i < n && t[i+1] != t[i]) {
+            yy = y[i] + (tt - t[i]) * (y[i+1] - y[i]) / (t[i+1] - t[i]);
+          } else {
+            yy = y[i];
+          }
+          printf "%.6f\t%.10g\n", tt, yy;
+        }
+      }
+    ' "$TRIG_FILE" "$DATA_FILE_PATH" > "$TRIG_Y_FILE"
+else
+    : > "$TRIG_Y_FILE"
+fi
+
 # Run Gnuplot
 gnuplot -e "par_file='$PAR_FILE'" \
         -e "dat_file='$DAT_FILE'" \
+        -e "raw_file='$DATA_FILE_PATH'" \
+        -e "trig_y_file='$TRIG_Y_FILE'" \
         -e "ph_file='$PH_DBL_FILE'" \
         -e "trig_file='$TRIG_FILE'" \
         -e "out_full='$TMP_FULL'" \
@@ -73,6 +100,6 @@ mv "$TMP_THUMB" "$RESULTS_DIR/${BASENAME}_thumb.png"
 cp "$PAR_FILE" "$RESULTS_DIR/${BASENAME}.par"
 
 # Cleanup
-rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE" "$TRIG_FILE"
+rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE" "$TRIG_FILE" "$TRIG_Y_FILE"
 
 echo "[${BASENAME}] Done."

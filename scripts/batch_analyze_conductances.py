@@ -6,10 +6,12 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+from analysis_options import get_flags_map, resolve_flags
 
 # Setup Argparse
 parser = argparse.ArgumentParser(description='Batch analyze conductances for a specific cell group.')
 parser.add_argument('--group', type=str, default='VGAT-I', help='Cell group prefix (e.g., VGAT-I, VgluT2-I)')
+parser.add_argument('--force-rerun', action='store_true', help='Recompute .par even when results/<basename>.par exists')
 args = parser.parse_args()
 
 GROUP = args.group
@@ -19,7 +21,6 @@ GROUP_Clean = GROUP.replace('-', '_') # For filenames
 DATA_DIR = "data"
 RESULTS_DIR = "results"
 BIN_ANALYZER = "bin/trace_analyzer"
-MAKEFILE_PATH = "legacy/Makefile.orig"
 OUTPUT_CSV = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances.csv")
 OUTPUT_PLOT = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances.png")
 VIOLIN_PLOT = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances_violin.png")
@@ -27,29 +28,24 @@ VIOLIN_PLOT = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances_violin.png"
 # Ensure results directory exists
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-def parse_makefile(makefile_path):
-    """Parse legacy Makefile to get flags for each file."""
-    flags_map = {}
-    if not os.path.exists(makefile_path):
-        print(f"Warning: {makefile_path} not found.")
-        return flags_map
 
-    with open(makefile_path, 'r') as f:
-        content = f.read()
+def load_par_file(par_path):
+    """Load numeric key=value pairs from analyzer .par output."""
+    data = {}
+    if not os.path.exists(par_path):
+        return data
+    with open(par_path, 'r') as f:
+        for line in f:
+            if '=' in line:
+                key, val = line.strip().split('=')
+                try:
+                    data[key] = float(val)
+                except ValueError:
+                    pass
+    return data
 
-    # Regex to capture target and the med2 command line
-    pattern = re.compile(r"^([\w-]+)\.pdf:.*?\n\s+\./med2\s+(.*?)<", re.MULTILINE)
-    matches = pattern.findall(content)
-
-    for basename, flags in matches:
-        # Strip -q value to force automatic threshold calculation
-        flags = re.sub(r"-q\s+[\d\.]+", "", flags)
-        flags_map[basename] = flags.strip()
-    
-    return flags_map
-
-# Load flags
-makefile_flags = parse_makefile(MAKEFILE_PATH)
+# Load flags from Makefile + overrides
+makefile_flags = get_flags_map(project_root=".", strip_q=True)
 
 # Find all files for the group (both C and V)
 # Pattern: GROUP-Cell*
@@ -85,43 +81,44 @@ for file_path in files:
     rec_type = match.group(2) # e.g. "C", "V", "C-1"
     
     # Determine flags
-    flags_str = "-f 25" # Default
-    if filename in makefile_flags:
-        flags_str = makefile_flags[filename]
-    else:
-        # Fallback logic from batch_runner if not in Makefile
-        if filename.endswith("-V") or "-V-" in filename: # loosely check for V
-             if "-vc" not in flags_str:
-                 flags_str += " -vc"
-        print(f"Warning: No flags found for {filename}, using default/inferred: {flags_str}")
+    flags_str = resolve_flags(
+        filename,
+        makefile_flags,
+        default_flags="-f 25",
+        infer_vc_from_name=True
+    )
+    if filename not in makefile_flags:
+        print(f"Warning: No configured flags for {filename}, using default/inferred: {flags_str}")
     
     print(f"Processing Cell {cell_id} ({filename}) with flags: {flags_str}")
     
-    temp_par = os.path.join(RESULTS_DIR, f"temp_{filename}.par")
-    
-    args = flags_str.split()
-    cmd = [BIN_ANALYZER] + args + ["-par", temp_par]
-    
-    try:
-        with open(file_path, 'r') as stdin_f:
-            subprocess.run(cmd, stdin=stdin_f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error processing {filename}: {e}")
+    existing_par = os.path.join(RESULTS_DIR, f"{filename}.par")
+    data = {}
+    source = None
+
+    if (not args.force_rerun) and os.path.exists(existing_par):
+        data = load_par_file(existing_par)
+        source = "existing"
+    else:
+        temp_par = os.path.join(RESULTS_DIR, f"temp_{filename}.par")
+        analyzer_args = flags_str.split()
+        cmd = [BIN_ANALYZER] + analyzer_args + ["-par", temp_par]
+        try:
+            with open(file_path, 'r') as stdin_f:
+                subprocess.run(cmd, stdin=stdin_f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error processing {filename}: {e}")
+            if os.path.exists(temp_par):
+                os.remove(temp_par)
+            continue
+        data = load_par_file(temp_par)
+        source = "rerun"
         if os.path.exists(temp_par):
             os.remove(temp_par)
+
+    if not data:
+        print(f"  -> Skipping Cell {cell_id} ({rec_type}): no .par data ({source})")
         continue
-        
-    data = {}
-    if os.path.exists(temp_par):
-        with open(temp_par, 'r') as f:
-            for line in f:
-                if '=' in line:
-                    key, val = line.strip().split('=')
-                    try:
-                        data[key] = float(val)
-                    except ValueError:
-                        pass # Ignore non-numeric
-        os.remove(temp_par)
     
     # Filter by Cycle Count N >= 30
     cycles_n = int(data.get('N', 0))
@@ -129,7 +126,7 @@ for file_path in files:
         print(f"  -> Skipping Cell {cell_id} ({rec_type}): N={cycles_n} (< 30)")
         continue
         
-    print(f"  -> Accepted: N={cycles_n}")
+    print(f"  -> Accepted: N={cycles_n} ({source})")
 
     res_entry = {
         'CellID_Str': f"Cell {cell_id} ({rec_type})",

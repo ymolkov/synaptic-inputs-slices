@@ -1,7 +1,7 @@
 import os
 import subprocess
 import numpy as np
-import re
+from analysis_options import get_flags_map, resolve_flags
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -15,23 +15,8 @@ def ensure_dirs():
     os.makedirs(TMP_DIR, exist_ok=True)
 
 def parse_makefile():
-    """Parse legacy Makefile to get flags for each file."""
-    flags_map = {}
-    if not os.path.exists(MAKEFILE_PATH):
-        return flags_map
-
-    with open(MAKEFILE_PATH, 'r') as f:
-        content = f.read()
-
-    pattern = re.compile(r"^([\w-]+)\.pdf:.*?\n\s+\./med2\s+(.*?)<", re.MULTILINE)
-    matches = pattern.findall(content)
-
-    for basename, flags in matches:
-        # Strip -q value to force automatic threshold calculation
-        flags = re.sub(r"-q\s+[\d\.]+", "", flags)
-        flags_map[basename] = flags.strip()
-    
-    return flags_map
+    """Load per-file flags from Makefile + overrides."""
+    return get_flags_map(PROJECT_ROOT, strip_q=True)
 
 def run_analysis(basename, extra_flags=None, Ee=None, Ei=None):
     """
@@ -44,11 +29,7 @@ def run_analysis(basename, extra_flags=None, Ee=None, Ei=None):
         raise FileNotFoundError(f"Data file not found: {data_path}")
 
     flags_map = parse_makefile()
-    flags_str = flags_map.get(basename, "-f 25")
-    
-    # Heuristic for V-clamp if not in Makefile
-    if "-V" in basename and "-vc" not in flags_str:
-        flags_str += " -vc"
+    flags_str = resolve_flags(basename, flags_map, default_flags="-f 25", infer_vc_from_name=True)
     
     if Ee is not None:
         flags_str += f" -Ee {Ee}"

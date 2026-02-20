@@ -7,9 +7,12 @@ This project implements a data analysis pipeline for electrophysiological record
 *   **`src/`**: Contains the core C++ source code (`trace_analyzer.cpp`) for signal processing, median filtering, and phase-dependent regression.
 *   **`scripts/`**: Python and Shell scripts for orchestration and visualization.
     *   `batch_runner.py`: The main entry point. Orchestrates parallel analysis of all data files.
+    *   `analysis_options.py`: Shared parser/resolver for per-file processing flags.
     *   `run_analysis.sh`: Wrapper script that compiles the C++ tool and runs the pipeline for a single file.
     *   `plot_traces.gp`: Gnuplot script for generating visualization (linear and polar plots).
     *   `generate_report.py`: Generates an HTML gallery of the results.
+*   **`config/`**:
+    *   `analysis_flags_overrides.txt`: Sole source of per-file processing options (one `basename = flags` entry per data file).
 *   **`data/`**: Directory containing the raw experimental data files (e.g., `VGAT-*-*`, `VgluT2-*-*`).
 *   **`results/`**: Output directory where generated PDFs, PNG thumbnails, and the `index.html` report are stored.
 *   **`publication/`**: Dedicated folder for publication-ready figures and captions.
@@ -32,6 +35,12 @@ To process all data files in the `data/` directory in parallel and generate the 
 
 ```bash
 python3 scripts/batch_runner.py
+```
+
+Equivalent command (same behavior) used in publication runs:
+
+```bash
+python3 scripts/batch_run_all.py
 ```
 
 This script will:
@@ -62,7 +71,44 @@ python3 scripts/make_publication_figures.py --fig1
 
 Options: `--fig1`, `--fig2`, `--fig3`, `--supp1`, `--supp2`, `--captions`.
 
-### 4. View Results
+### 4. Configure Per-File Processing Flags
+All per-file analyzer flags are resolved from:
+
+```text
+config/analysis_flags_overrides.txt
+```
+
+Format:
+
+```text
+<data basename> = <flags>
+```
+
+Example:
+
+```text
+VgluT2-I-Cell6-V = -f 25 -h 1000 -vc -k 150 -s -1 -W 2000 -Ei -60
+```
+
+Notes:
+1. This file is the only place to edit custom processing options.
+2. For `*-V*` files, `-vc` is auto-added if missing.
+3. If a basename is not listed, default flags `-f 25` are used.
+
+### 5. Rebuild Group Conductance CSV/Plots (Figure 3 inputs)
+Per-group CSVs/plots are generated with:
+
+```bash
+python3 scripts/batch_analyze_conductances.py --group VGAT-I
+python3 scripts/batch_analyze_conductances.py --group VgluT2-I
+python3 scripts/batch_analyze_conductances.py --group VGAT-E
+```
+
+Behavior:
+1. By default, it reuses existing `results/<basename>.par` files (fast, reproducible).
+2. Use `--force-rerun` to recompute `.par` from raw data with current flags.
+
+### 6. View Results
 Open `results/index.html` in your web browser to view the organized gallery of analysis results.
 
 ## Analysis Details

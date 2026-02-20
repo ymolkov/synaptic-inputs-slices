@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import shutil
 import uuid
+from analysis_options import get_flags_map, resolve_flags
 
 # Configuration
 CELLS = ["VgluT2-I-Cell2", "VgluT2-E-Cell1", "VGAT-I-Cell9", "VGAT-E-Cell8"]
@@ -14,26 +15,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
-MAKEFILE = os.path.join(PROJECT_ROOT, "legacy", "Makefile.orig")
 EXE = os.path.join(PROJECT_ROOT, "bin", "trace_analyzer")
 TMP_DIR = os.path.join(PROJECT_ROOT, "tmp")
-
-def parse_makefile():
-    makefile_flags = {}
-    try:
-        with open(MAKEFILE, 'r') as f:
-            content = f.read()
-    except FileNotFoundError:
-        return makefile_flags
-
-    # Regex to capture target and the med2 command line
-    pattern = re.compile(r"^([\w-]+)\.pdf:.*?\n\s+\./med2\s+(.*?)<", re.MULTILINE)
-    matches = pattern.findall(content)
-    
-    for basename, flags in matches:
-        flags = re.sub(r"-q\s+[\d\.]+", "", flags)
-        makefile_flags[basename] = flags.strip()
-    return makefile_flags
 
 def run_analysis_to_get_files(basename, flags):
     """
@@ -99,7 +82,7 @@ def main():
     if not os.path.exists(TMP_DIR):
         os.makedirs(TMP_DIR)
         
-    makefile_flags = parse_makefile()
+    makefile_flags = get_flags_map(PROJECT_ROOT, strip_q=True)
     
     # Prepare list of jobs
     job_args = []
@@ -109,9 +92,12 @@ def main():
     for i, cell in enumerate(CELLS):
         files = [f"{cell}-C", f"{cell}-V"]
         for j, basename in enumerate(files):
-            flags = makefile_flags.get(basename, "-f 25")
-            if "-V" in basename and "-vc" not in flags:
-                 flags += " -vc"
+            flags = resolve_flags(
+                basename,
+                makefile_flags,
+                default_flags="-f 25",
+                infer_vc_from_name=True
+            )
                  
             # Overrides
             if basename == "VgluT2-E-Cell1-V":

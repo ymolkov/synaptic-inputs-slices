@@ -11,6 +11,8 @@ if (!exists("Ee")) Ee=-10
 if (!exists("dat_file")) dat_file="dat"
 if (!exists("ph_file")) ph_file="ph"
 if (!exists("par_file")) par_file="par"
+if (!exists("raw_file")) raw_file=""
+if (!exists("trig_y_file")) trig_y_file=""
 if (!exists("out_full")) out_full="tmp_full.png"
 if (!exists("out_thumb")) out_thumb="tmp_thumb.png"
 
@@ -40,7 +42,13 @@ if (!exists("trig_file")) trig_file=""
 # --- Row 1: Raw trace and trigger ---
 set size 1.0, 0.33
 set origin 0.0, 0.66
-set title sprintf("T=%g dT=%g dT/T=%g Du=%g N=%d",Ta,dTa,dTa/Ta,Du,int(N))
+# Force consistent top-row geometry so panel 1 and 2 x-axes align.
+set lmargin at screen 0.07
+set rmargin at screen 0.92
+set title sprintf("Mean cycle period: %.2g s    CV: %.2g    Number of cycles detected: %d", Ta, (Ta != 0 ? dTa/Ta : 0), int(N))
+set ylabel "Reference Signal (a.u.)"
+set xlabel "Recording Time (s)"
+set xtics
 unset key
 plot dat_file u 1:2 w l lc "black" title "Signal", \
      q w l dt 2 lc "gray" title "Threshold", \
@@ -49,19 +57,46 @@ plot dat_file u 1:2 w l lc "black" title "Signal", \
 # --- Row 2: Conductance/Current traces ---
 set size 1.0, 0.33
 set origin 0.0, 0.33
-set title sprintf("G=%g E=%g",G,-I/G)
+set lmargin at screen 0.07
+set rmargin at screen 0.92
+set xtics
+unset xlabel
+unset ylabel
+set title sprintf("Estimated G_{leak}: %.2g nS    E_{leak}: %.2g mV", 1000.0*G, -I/G)
 set style fill transparent solid .5 noborder
-plot dat_file u 1:5 w l lc "blue", dat_file u 1:(($4-I)/G) w l lc "red"
+# Keep left axis as plotted voltage-equivalent scale, and expose actual current on right.
+set ylabel "Voltage (mV)"
+set y2label "Current (nA)"
+set ytics nomirror
+set y2tics
+set y2tics 0.1
+set format y2 "%.1f"
+set link y2 via (G*y + I) inverse ((y - I)/G)
+set key top left
+plot dat_file u 1:5 w l lc "blue" title "Voltage", \
+     dat_file u 1:(($4-I)/G) w l lc "red" title "Current"
 
 # --- Row 3 Left: Wedge Plot (Regression stats and Polar Plot) ---
 set size 0.5, 0.33
 set origin 0.0, 0.0
-set title sprintf("Wedge Plot (Ee=%g Ei=%g)",Ee,Ei)
+# Force consistent bottom-row geometry so x-axes align.
+set lmargin at screen 0.07
+set rmargin at screen 0.49
+set bmargin at screen 0.05
+set tmargin at screen 0.28
+unset key
+unset y2tics
+unset y2label
+unset format y2
+unset link y2
+set title sprintf("Wedge Plot (E_e=%.2g mV, E_i=%.2g mV)", Ee, Ei)
+set xlabel "G_{tot} (nS)"
+set ylabel "I_0 (nA)"
 set key top left font ",8"
 if (nph > 0) {
-    plot ph_file w lp pt 7 ps 0.4 lc "black" title "Data", \
-         -Ei*x+Ii w l lc "blue" dt 2 title "Inh", \
-         -Ee*x+Ie w l lc "red" dt 2 title "Exc"
+    plot ph_file u ($1*1000.0):2 w lp pt 7 ps 0.4 lc "black" notitle, \
+         (-Ei*(x/1000.0)+Ii) w l lc "blue" title "Pure Inhibition", \
+         (-Ee*(x/1000.0)+Ie) w l lc "red" title "Pure Excitation"
 } else {
     plot 0
 }
@@ -69,25 +104,22 @@ if (nph > 0) {
 # --- Row 3 Right: Phase-dependent Inhibition/Excitation ---
 set size 0.5, 0.33
 set origin 0.5, 0.0
+set lmargin at screen 0.56
+set rmargin at screen 0.98
+set bmargin at screen 0.05
+set tmargin at screen 0.28
 set title "Reconstructed Conductances"
+set xlabel "Phase (2 cycles)"
+set ylabel "Synaptic / Leak Conductance" offset 1,0
+set ytics 0.1
+set xtics 0.5
+set xrange [0:2]
 set key top right font ",8"
 unset obj 1
 if (nph > 0 && g != 0) {
-    set obj 1 rect from tr_start/1000., graph 0 to tr_end/1000.+1, graph 1 fc rgb "gray" fs transparent solid 0.2 noborder back
-    
-    # Initialize mean variables
-    if (!exists("G_inh_tr")) { G_inh_tr=NaN }
-    if (!exists("G_exc_tr")) { G_exc_tr=NaN }
-    if (!exists("G_inh_st")) { G_inh_st=NaN }
-    if (!exists("G_exc_st")) { G_exc_st=NaN }
-
     plot [][0:] ph_file u ($0/1000.):5 w filledcurves y=0 lc "blue" title "inhibition", \
                 ph_file u ($0/1000.):6 w filledcurves y=0 lc "red" title "excitation", \
-                ph_file u ($0/1000.):($3/g/sqrt($4)) w l lt -1 title "error", \
-                ph_file u ($0/1000.):(is_transient($7) ? G_inh_tr : NaN) w l lc "blue" lw 2 notitle, \
-                ph_file u ($0/1000.):(is_transient($7) ? G_exc_tr : NaN) w l lc "red" lw 2 notitle, \
-                ph_file u ($0/1000.):(!is_transient($7) ? G_inh_st : NaN) w l lc "blue" lw 2 dt 2 notitle, \
-                ph_file u ($0/1000.):(!is_transient($7) ? G_exc_st : NaN) w l lc "red" lw 2 dt 2 notitle
+                ph_file u ($0/1000.):($3/g/sqrt($4)) w l lt -1 title "error"
 } else {
     plot 0
 }
@@ -100,7 +132,21 @@ unset object
 unset arrow
 unset label
 unset title
-set margin 0,0,0,0
+unset key
+unset xlabel
+unset ylabel
+unset x2label
+unset y2label
+unset xrange
+unset yrange
+unset x2range
+unset y2range
+set autoscale x
+set autoscale y
+unset lmargin
+unset rmargin
+unset tmargin
+unset bmargin
 set origin 0,0
 set size 1,1
 
