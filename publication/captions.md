@@ -10,7 +10,7 @@ Representative 25-second rhythmic episodes highlighting the firing patterns of t
 Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).
 
 ## Figure 4: Combined Summary
-Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Box plots represent the median and interquartile range (IQR) of inliers, with whiskers extending to 1.5 times the IQR. Individual cells are overlaid as dots (inliers) and 'x' markers (outliers).
+Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method).
 
 ## Supplemental Figure 1: Sensitivity Analysis
 Sensitivity of reconstructed conductances to variations in reversal potentials ($E_e$ and $E_i$). The grid shows results for variations of ±10 mV from default values.
