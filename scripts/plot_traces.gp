@@ -169,10 +169,3 @@ if (nph > 0 && g != 0) {
     plot 0
 }
 
-# Report Output
-set print "tmp.rp"
-print "Ee=",Ee
-print "Ei=",Ei
-print "g=",g
-print "E=",E
-set print

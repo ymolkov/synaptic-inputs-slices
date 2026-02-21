@@ -86,6 +86,9 @@ dashboard: $(BIN_DIR)/trace_analyzer
 	python3 $(SCRIPT_DIR)/batch_run_all.py --outdir $(WEB_DIR)
 	python3 $(SCRIPT_DIR)/generate_report.py --outdir $(WEB_DIR)
 
+deploy:
+	bash $(SCRIPT_DIR)/deploy_web.sh
+
 push:
 	git add -A
 	git commit -m "Build update via Makefile"
