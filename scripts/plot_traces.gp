@@ -69,7 +69,6 @@ set ylabel "Voltage (mV)"
 set y2label "Current (nA)"
 set ytics nomirror
 set y2tics
-set y2tics 0.1
 set format y2 "%.1f"
 set link y2 via (G*y + I) inverse ((y - I)/G)
 set key top left
