@@ -5,6 +5,7 @@ SCRIPT_DIR  = scripts
 RESULTS_DIR = results
 PUB_DIR     = publication
 PAPER_DIR   = paper
+DASHBOARD_DIR = web_deploy
 
 # List of groups to process
 GROUPS = VGAT-I VgluT2-I VGAT-E VgluT2-E
@@ -80,6 +81,13 @@ figures:  $(PUB_DIR)/figures/figure1_method.png \
 table:    $(PUB_DIR)/conductance_table.tex
 paper:    $(PAPER_DIR)/main.pdf
 
+dashboard: $(BIN_DIR)/trace_analyzer
+	@mkdir -p $(DASHBOARD_DIR)
+	python3 $(SCRIPT_DIR)/batch_run_all.py
+	@echo "Copying snapshots to dashboard directory..."
+	cp $(RESULTS_DIR)/*_full.png $(RESULTS_DIR)/*_thumb.png $(DASHBOARD_DIR)/
+	python3 $(SCRIPT_DIR)/generate_report.py --outdir $(DASHBOARD_DIR)
+
 push:
 	git add -A
 	git commit -m "Build update via Makefile"
@@ -88,8 +96,7 @@ push:
 clean:
 	rm -rf $(BIN_DIR)/*
 	rm -rf tmp/*
-	# Keep results/ unless explicitly told to purge them to save time
-	# rm -f $(RESULTS_DIR)/*.csv
+	rm -rf $(DASHBOARD_DIR)
 
 help:
 	@echo "Available targets:"
@@ -98,5 +105,6 @@ help:
 	@echo "  figures   : Generate publication figures"
 	@echo "  table     : Generate summary tables"
 	@echo "  paper     : Compile LaTeX manuscript"
+	@echo "  dashboard : Generate standalone web-deployable dashboard"
 	@echo "  push      : Commit and push all changes"
-	@echo "  clean     : Remove binaries and temporary files"
+	@echo "  clean     : Remove binaries, temporary files and dashboard"

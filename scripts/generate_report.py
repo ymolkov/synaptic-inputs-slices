@@ -18,10 +18,10 @@ def get_category(basename):
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
-def generate_report():
-    print("Generating high-res PNG dashboard...")
+def generate_report(target_dir=RESULTS_DIR):
+    print(f"Generating high-res PNG dashboard in {target_dir}...")
     
-    thumb_files = sorted(glob.glob(os.path.join(RESULTS_DIR, "*_thumb.png")))
+    thumb_files = sorted(glob.glob(os.path.join(target_dir, "*_thumb.png")))
     categories = defaultdict(lambda: defaultdict(list))
     
     for thumb_path in thumb_files:
@@ -141,10 +141,19 @@ def generate_report():
 </html>
 """)
 
-    with open(INDEX_HTML, 'w') as f:
+    index_path = os.path.join(target_dir, "index.html")
+    with open(index_path, 'w') as f:
         f.write("\n".join(html))
     
-    print(f"Interactive high-res PNG dashboard generated at: {INDEX_HTML}")
+    print(f"Interactive high-res PNG dashboard generated at: {index_path}")
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate interactive dashboard.")
+    parser.add_argument('--outdir', type=str, default=RESULTS_DIR, help="Directory to save index.html and scan for images")
+    args = parser.parse_args()
+    
+    generate_report(args.outdir)
 
 if __name__ == "__main__":
-    generate_report()
+    main()

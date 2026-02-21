@@ -46,6 +46,11 @@ def main():
         )
         tasks.append((data_file, run_script, options, i, total_files))
 
+    import argparse
+    parser = argparse.ArgumentParser(description="Batch run analysis and plotting.")
+    parser.add_argument('--outdir', type=str, default=None, help="Optional separate directory for web deployment")
+    args_cli = parser.parse_args()
+
     # Determine number of processes (CPU count)
     num_processes = multiprocessing.cpu_count()
     print(f"Using {num_processes} parallel processes.")
@@ -62,7 +67,10 @@ def main():
 
     # Automatically regenerate report at the end
     print("Updating report...")
-    subprocess.run(["/usr/bin/python3", os.path.join(script_dir, "generate_report.py")])
+    report_cmd = ["python3", os.path.join(script_dir, "generate_report.py")]
+    if args_cli.outdir:
+        report_cmd += ["--outdir", args_cli.outdir]
+    subprocess.run(report_cmd)
 
 if __name__ == "__main__":
     main()
