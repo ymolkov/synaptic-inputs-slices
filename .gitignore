@@ -10,3 +10,5 @@ results/
 *.log
 *.pdf
 *.bak
+web/
+web_deploy/
