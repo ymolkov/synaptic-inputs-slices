@@ -18,10 +18,16 @@ def get_category(basename):
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
-def generate_report(target_dir=RESULTS_DIR):
-    print(f"Generating high-res PNG dashboard in {target_dir}...")
+INDIVIDUAL_DIR = os.path.join(RESULTS_DIR, "individual")
+
+def generate_report(target_dir=INDIVIDUAL_DIR):
+    # Always scan and save in the same place.
+    save_dir = target_dir
+    scan_dir = target_dir
     
-    thumb_files = sorted(glob.glob(os.path.join(target_dir, "*_thumb.png")))
+    print(f"Generating high-res PNG dashboard. Scanning {scan_dir}, saving to {save_dir}...")
+    
+    thumb_files = sorted(glob.glob(os.path.join(scan_dir, "*_thumb.png")))
     categories = defaultdict(lambda: defaultdict(list))
     
     for thumb_path in thumb_files:
@@ -31,10 +37,18 @@ def generate_report(target_dir=RESULTS_DIR):
         cell_match = re.match(r"^(.+)-[CV]", basename)
         cell_id = cell_match.group(1) if cell_match else basename
         
+        # In the HTML, image paths should be relative to index.html
+        if save_dir != scan_dir:
+            full_path = os.path.join("individual", f"{basename}_full.png")
+            thumb_path_rel = os.path.join("individual", f"{basename}_thumb.png")
+        else:
+            full_path = f"{basename}_full.png"
+            thumb_path_rel = f"{basename}_thumb.png"
+            
         categories[cat][cell_id].append({
             'basename': basename,
-            'full': f"{basename}_full.png",
-            'thumb': f"{basename}_thumb.png",
+            'full': full_path,
+            'thumb': thumb_path_rel,
             'type': 'V' if '-V' in basename else 'C'
         })
 
@@ -150,7 +164,7 @@ def generate_report(target_dir=RESULTS_DIR):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Generate interactive dashboard.")
-    parser.add_argument('--outdir', type=str, default=RESULTS_DIR, help="Directory to save index.html and scan for images")
+    parser.add_argument('--outdir', type=str, default=INDIVIDUAL_DIR, help="Directory to scan for images")
     args = parser.parse_args()
     
     generate_report(args.outdir)

@@ -85,7 +85,7 @@ dashboard: $(BIN_DIR)/trace_analyzer
 	@mkdir -p $(DASHBOARD_DIR)
 	python3 $(SCRIPT_DIR)/batch_run_all.py
 	@echo "Copying snapshots to dashboard directory..."
-	cp $(RESULTS_DIR)/*_full.png $(RESULTS_DIR)/*_thumb.png $(DASHBOARD_DIR)/
+	cp $(RESULTS_DIR)/individual/*_full.png $(RESULTS_DIR)/individual/*_thumb.png $(DASHBOARD_DIR)/
 	python3 $(SCRIPT_DIR)/generate_report.py --outdir $(DASHBOARD_DIR)
 
 push:

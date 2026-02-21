@@ -95,9 +95,11 @@ gnuplot -e "par_file='$PAR_FILE'" \
         "$GP_SCRIPT"
 
 # Move/Rename final outputs to results directory
-mv "$TMP_FULL" "$RESULTS_DIR/${BASENAME}_full.png"
-mv "$TMP_THUMB" "$RESULTS_DIR/${BASENAME}_thumb.png"
-cp "$PAR_FILE" "$RESULTS_DIR/${BASENAME}.par"
+INDIVIDUAL_DIR="$RESULTS_DIR/individual"
+mkdir -p "$INDIVIDUAL_DIR"
+mv "$TMP_FULL" "$INDIVIDUAL_DIR/${BASENAME}_full.png"
+mv "$TMP_THUMB" "$INDIVIDUAL_DIR/${BASENAME}_thumb.png"
+cp "$PAR_FILE" "$INDIVIDUAL_DIR/${BASENAME}.par"
 
 # Cleanup
 rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE" "$TRIG_FILE" "$TRIG_Y_FILE"

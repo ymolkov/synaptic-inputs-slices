@@ -20,13 +20,14 @@ GROUP_Clean = GROUP.replace('-', '_') # For filenames
 # Configuration
 DATA_DIR = "data"
 RESULTS_DIR = "results"
+INDIVIDUAL_DIR = os.path.join(RESULTS_DIR, "individual")
 BIN_ANALYZER = "bin/trace_analyzer"
 OUTPUT_CSV = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances.csv")
-OUTPUT_PLOT = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances.png")
-VIOLIN_PLOT = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances_violin.png")
+OUTPUT_PLOT = os.path.join(INDIVIDUAL_DIR, f"{GROUP_Clean}_conductances.png")
+VIOLIN_PLOT = os.path.join(INDIVIDUAL_DIR, f"{GROUP_Clean}_conductances_violin.png")
 
-# Ensure results directory exists
-os.makedirs(RESULTS_DIR, exist_ok=True)
+# Ensure results directories exist
+os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
 
 
 def load_par_file(par_path):
@@ -92,7 +93,7 @@ for file_path in files:
     
     print(f"Processing Cell {cell_id} ({filename}) with flags: {flags_str}")
     
-    existing_par = os.path.join(RESULTS_DIR, f"{filename}.par")
+    existing_par = os.path.join(INDIVIDUAL_DIR, f"{filename}.par")
     data = {}
     source = None
 
@@ -100,7 +101,7 @@ for file_path in files:
         data = load_par_file(existing_par)
         source = "existing"
     else:
-        temp_par = os.path.join(RESULTS_DIR, f"temp_{filename}.par")
+        temp_par = os.path.join(INDIVIDUAL_DIR, f"temp_{filename}.par")
         analyzer_args = flags_str.split()
         cmd = [BIN_ANALYZER] + analyzer_args + ["-par", temp_par]
         try:
