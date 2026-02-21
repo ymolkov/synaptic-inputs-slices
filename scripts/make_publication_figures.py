@@ -244,14 +244,14 @@ def figure_4_combined_summary():
         "ytick.labelsize": 16
     })
     groups = ["VGAT-I", "VgluT2-I", "VGAT-E", "VgluT2-E"]
-    fig, axes = plt.subplots(1, 4, figsize=(20, 6.6), sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=(10, 11), sharey=True)
     phase_ticks = [0.5, 2.5]
     phase_labels = ['Expiration', 'Inspiration']
     # Use the same colors for Exp and Insp within each modality.
     colors = ['#D62728', '#56B4E9', '#D62728', '#56B4E9']
     
     for i, group in enumerate(groups):
-        ax = axes[i]
+        ax = axes[i // 2, i % 2]
         csv_path = os.path.join(RESULTS_DIR, f"{group.replace('-', '_')}_conductances.csv")
         if not os.path.exists(csv_path):
             ax.text(0.5, 0.5, f"Missing {group} data", ha='center')
@@ -307,16 +307,20 @@ def figure_4_combined_summary():
         ax.set_ylim(0, 0.5)
         ax.grid(axis='y', alpha=0.22, linestyle='-', linewidth=0.8)
         ax.set_axisbelow(True)
-        if i == 0: 
-            ax.set_ylabel("Synaptic / Leak Conductance", fontsize=18)
+        
+        # Labels for outer edges
+        if i % 2 == 0: 
+            ax.set_ylabel("Conductance (nS)", fontsize=18)
             ax.tick_params(axis='y', labelsize=16)
+        
+        if i == 0:
             legend_handles = [
                 plt.Rectangle((0, 0), 1, 1, color='#D62728', alpha=0.9, label='Excitation'),
                 plt.Rectangle((0, 0), 1, 1, color='#56B4E9', alpha=0.9, label='Inhibition')
             ]
             ax.legend(handles=legend_handles, loc='upper left', frameon=False, fontsize=16)
 
-    fig.subplots_adjust(wspace=0.22, bottom=0.12, left=0.07, right=0.98, top=0.92)
+    fig.subplots_adjust(wspace=0.15, hspace=0.28, bottom=0.08, left=0.10, right=0.97, top=0.94)
     plt.savefig(os.path.join(FIG_DIR, "figure4_summary.png"), dpi=300)
     plt.close()
 

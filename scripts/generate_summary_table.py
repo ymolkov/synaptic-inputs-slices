@@ -37,6 +37,7 @@ for group, filename in zip(groups, files):
     
     # Extract stats using IQR filtering as in the plotting script
     stats = []
+    n_inliers_list = []
     for j in range(4):
         m = data[:, j]
         q1, q3 = np.percentile(m, [25, 75])
@@ -46,11 +47,9 @@ for group, filename in zip(groups, files):
         mean = np.mean(clean) if len(clean) > 0 else 0
         sem = np.std(clean, ddof=1) / np.sqrt(len(clean)) if len(clean) > 1 else 0
         stats.append((mean, sem))
+        n_inliers_list.append(len(clean))
         
-    m = data[:, 0]
-    q1, q3 = np.percentile(m, [25, 75])
-    iqr = q3 - q1
-    n_filtered = np.sum((m >= q1 - 1.5*iqr) & (m <= q3 + 1.5*iqr))
+    n_filtered = max(n_inliers_list)
 
     # Markdown rows
     print(f"| {group} | {n_filtered} | Expiration | {stats[0][0]:.4f} ± {stats[0][1]:.4f} | {stats[1][0]:.4f} ± {stats[1][1]:.4f} |")
