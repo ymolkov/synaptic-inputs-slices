@@ -178,9 +178,9 @@ def figure_1_method_illustration():
     plt.savefig(os.path.join(FIG_DIR, "figure1_method.png"), dpi=300, bbox_inches='tight', pad_inches=0.02)
     plt.close()
 
-def figure_2_selected_conductances():
-    """Figure 2: Selected Conductances from various cell types."""
-    print("Generating Figure 2: Selected Conductances...")
+def figure_3_selected_conductances():
+    """Figure 3: Selected Conductances from various cell types."""
+    print("Generating Figure 3: Selected Conductances...")
     cells = ["VgluT2-I-Cell2", "VgluT2-E-Cell1", "VGAT-I-Cell9", "VGAT-E-Cell8"]
     fig, axes = plt.subplots(4, 2, figsize=(12, 10), sharex=True)
     
@@ -230,12 +230,12 @@ def figure_2_selected_conductances():
             if i == 0 and j == 0: ax.legend(loc='upper right')
 
     plt.tight_layout()
-    plt.savefig(os.path.join(FIG_DIR, "figure2_selected.png"), dpi=300)
+    plt.savefig(os.path.join(FIG_DIR, "figure3_selected.png"), dpi=300)
     plt.close()
 
-def figure_3_combined_summary():
-    """Figure 3: Population summary of conductances."""
-    print("Generating Figure 3: Combined Summary...")
+def figure_4_combined_summary():
+    """Figure 4: Population summary of conductances."""
+    print("Generating Figure 4: Combined Summary...")
     plt.rcParams.update({
         "font.family": "DejaVu Sans",
         "axes.titlesize": 19,
@@ -317,7 +317,185 @@ def figure_3_combined_summary():
             ax.legend(handles=legend_handles, loc='upper left', frameon=False, fontsize=16)
 
     fig.subplots_adjust(wspace=0.22, bottom=0.12, left=0.07, right=0.98, top=0.92)
-    plt.savefig(os.path.join(FIG_DIR, "figure3_summary.png"), dpi=300)
+    plt.savefig(os.path.join(FIG_DIR, "figure4_summary.png"), dpi=300)
+    plt.close()
+
+def figure_2_four_populations():
+    """Figure 2: Four Population Episodes."""
+    print("Generating Figure 2: Four Population Episodes...")
+    episodes = [
+        ('VGAT-E', 'VGAT-E-Cell4-C', 1575.8, 1600.8),
+        ('VGAT-I', 'VGAT-I-Cell9-C', 3313.8, 3338.8),
+        ('VgluT2-I', 'VgluT2-I-Cell10-C-1', 3003.6, 3028.6), 
+        ('VgluT2-E', 'VgluT2-E-Cell1-C', 278.1, 303.1)
+    ]
+
+    def find_peaks(vm, threshold=-20.0, min_distance=10):
+        peaks = []
+        last_peak = -min_distance
+        for i in range(1, len(vm) - 1):
+            if vm[i] > threshold and vm[i] > vm[i-1] and vm[i] >= vm[i+1]:
+                if i - last_peak >= min_distance:
+                    peaks.append(i)
+                    last_peak = i
+        return np.array(peaks)
+
+    def get_normalized_episode(basename, t_start, t_end):
+        path = os.path.join(PROJECT_ROOT, "data", basename)
+        data = []
+        with open(path, 'r') as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 4:
+                    try:
+                        t = float(parts[0])
+                        if t >= t_start and t <= t_end:
+                            vm = float(parts[2])
+                            ref = float(parts[3])
+                            data.append((t, vm, ref))
+                        elif t > t_end:
+                            break
+                    except ValueError:
+                        pass
+        
+        data = np.array(data)
+        if len(data) == 0: return None, None, None
+        
+        t = data[:, 0]
+        vm = data[:, 1]
+        ref = data[:, 2]
+        
+        dt = (t[-1] - t[0]) / len(t)
+        if dt == 0: dt = 0.0001
+        min_dist_pts = int(0.005 / dt)
+        
+        peaks_idx = find_peaks(vm, threshold=-20.0, min_distance=min_dist_pts)
+        if len(peaks_idx) == 0: return t, vm, ref
+        
+        inferred_peaks = []
+        for idx in peaks_idx:
+            t_pts = t[idx-1:idx+2]
+            v_pts = vm[idx-1:idx+2]
+            x_centered = np.array([-1.0, 0.0, 1.0])
+            coeffs = np.polyfit(x_centered, v_pts, 2)
+            
+            a, b, c = coeffs
+            if a < 0:
+                x_max = -b / (2*a)
+                if abs(x_max) > 1.0:
+                    inferred_peaks.append(v_pts[1])
+                else:
+                    v_max = a*(x_max**2) + b*x_max + c
+                    inferred_peaks.append(max(v_pts[1], v_max))
+            else:
+                inferred_peaks.append(v_pts[1])
+                
+        mean_raw_peak = np.mean(vm[peaks_idx])
+        mean_inferred_peak = np.mean(inferred_peaks)
+        
+        v_norm = np.copy(vm)
+        threshold_base = -30.0
+        
+        for i, idx in enumerate(peaks_idx):
+            left = idx
+            while left > 0 and vm[left] > threshold_base:
+                left -= 1
+            right = idx
+            while right < len(vm)-1 and vm[right] > threshold_base:
+                right += 1
+                
+            raw_peak = vm[idx]
+            target_peak = inferred_peaks[i]
+            
+            if raw_peak > threshold_base:
+                # Scale each individual spike to its OWN inferred true peak
+                # This precisely corrects undersampling while preserving the true natural physiological variance
+                scale_factor = (target_peak - threshold_base) / (raw_peak - threshold_base)
+                
+                # Soft bounds just in case of weird interpolation artifacts
+                if scale_factor < 1.0: 
+                    scale_factor = 1.0
+                elif scale_factor > 3.0: 
+                    scale_factor = 3.0
+                    
+                for j in range(left, right+1):
+                    if vm[j] > threshold_base:
+                        v_norm[j] = threshold_base + (vm[j] - threshold_base) * scale_factor
+                
+        return t, v_norm, ref
+
+    plt.rcParams.update({
+        "axes.labelsize": 16,
+        "axes.titlesize": 16,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 14,
+        "font.family": "DejaVu Sans"
+    })
+    
+    fig, axes = plt.subplots(4, 1, figsize=(15, 12), sharex=True)
+
+    for i, (name, basename, start, end) in enumerate(episodes):
+        t, v_norm, ref = get_normalized_episode(basename, start, end)
+        if t is None:
+            print(f'Failed to load {basename}')
+            continue
+            
+        t_aligned = t - t[0]
+        
+        window = int(0.1 / ((t[-1]-t[0])/len(t))) # 100ms window
+        if window > 0:
+            ref_smooth = np.convolve(ref, np.ones(window)/window, mode='same')
+        else:
+            ref_smooth = ref
+            
+        # Scale green signal to be strictly below the blue signal
+        vm_min = np.min(v_norm)
+        # Give it a 25mV amplitude to make the bumps more prominent, ending 5mV below the minimum of Vm
+        ref_max = vm_min - 5
+        ref_min = ref_max - 25
+        
+        ref_norm = (ref_smooth - np.min(ref_smooth)) / (np.max(ref_smooth) - np.min(ref_smooth) + 1e-6)
+        ref_mapped = ref_norm * (ref_max - ref_min) + ref_min
+        
+        ax = axes[i]
+        
+        # Hide the borders for a cleaner aesthetic
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        
+        if i < 3:
+            ax.xaxis.set_visible(False)
+            
+        ax.plot(t_aligned, ref_mapped, color='#2ca02c', lw=2, alpha=0.8, label=r'$\int$ HNA' if i==0 else "")
+        ax.plot(t_aligned, v_norm, color='#1f77b4', lw=1, alpha=0.9, label='Membrane Potential' if i==0 else "")
+        
+        # Use simple titles, shift inside the plot area for cleaner look
+        ax.text(0.01, 0.95, name, transform=ax.transAxes, fontsize=18, fontweight='bold', 
+                va='top', ha='left', bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=2))
+                
+        # Set y limits based on the traces
+        ax.set_ylim(ref_min - 5, 40)
+        ax.set_xlim(0, 25)
+        
+        # Set custom y-ticks starting from -60
+        # Determine max Vm to see how high ticks should go
+        vm_max = np.max(v_norm)
+        ytick_max = 20 if vm_max < 30 else 40
+        ax.set_yticks(np.arange(-60, ytick_max + 1, 20))
+        
+        if i == 0:
+            ax.legend(loc='upper right', frameon=False, ncol=2)
+            
+        # Draw a horizontal line at 0 mV as a visual reference
+        ax.axhline(0, color='gray', linestyle='--', lw=0.5, alpha=0.5)
+
+    axes[-1].spines['bottom'].set_visible(True)
+    axes[-1].set_xlabel('Time (s)')
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.1) # compress space between
+    plt.savefig(os.path.join(FIG_DIR, "figure2_four_populations.png"), dpi=300)
     plt.close()
 
 def supplemental_figure_1_sensitivity():
@@ -449,33 +627,37 @@ def generate_captions():
         f.write("# Figure Captions\n\n")
         f.write("## Figure 1: Method Illustration\n")
         f.write("A) Linear regressions of I-V curves at different phases. B) Wedge plot showing the trajectory of G_tot vs I_0. C) Reconstructed excitatory (red) and inhibitory (blue) conductances over two cycles. D) Polar representation of excitatory and inhibitory conductance profiles over one normalized cycle.\n\n")
-        f.write("## Figure 2: Selected Conductances\n")
+        f.write("## Figure 2: Four Population Episodes\n")
+        f.write(r"Representative 25-second rhythmic episodes highlighting the firing patterns of typical neurons in the VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations. The blue trace illustrates the membrane potential ($V_m$) exhibiting distinct bursting dynamics time-aligned with the network rhythm. The green trace represents the integrated Hypoglossal Nerve Activity ($\int$ HNA), providing a global reference for the inspiratory phase. Action potential peaks have been individually corrected via parabolic interpolation to physiological maximums to accurately visualize the natural burst structures and mitigate continuous voltage undersampling artifacts inherent to the recording resolution." + "\n\n")
+        f.write("## Figure 3: Selected Conductances\n")
         f.write("Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).\n\n")
-        f.write("## Figure 3: Combined Summary\n")
+        f.write("## Figure 4: Combined Summary\n")
         f.write("Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method).\n\n")
         f.write("## Supplemental Figure 1: Sensitivity Analysis\n")
         f.write("Sensitivity of reconstructed conductances to variations in reversal potentials ($E_e$ and $E_i$). The grid shows results for variations of ±10 mV from default values.\n\n")
         f.write("## Supplemental Figure 2: Linearity Analysis\n")
-        f.write("I-V regressions for all cells and recording modes presented in Figure 2. Scatter points represent data from specific phase bins ($\phi \\approx 0.0$ in red, $\phi \\approx 0.5$ in blue), with dashed lines indicating the corresponding linear fits.\n")
+        f.write(r"I-V regressions for all cells and recording modes presented in Figure 2. Scatter points represent data from specific phase bins ($\phi \approx 0.0$ in red, $\phi \approx 0.5$ in blue), with dashed lines indicating the corresponding linear fits." + "\n")
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Generate publication figures and captions.")
     parser.add_argument('--fig1', action='store_true', help="Generate Figure 1 (Method)")
-    parser.add_argument('--fig2', action='store_true', help="Generate Figure 2 (Selected)")
-    parser.add_argument('--fig3', action='store_true', help="Generate Figure 3 (Summary)")
+    parser.add_argument('--fig2', action='store_true', help="Generate Figure 2 (Four Populations)")
+    parser.add_argument('--fig3', action='store_true', help="Generate Figure 3 (Selected Conductances)")
+    parser.add_argument('--fig4', action='store_true', help="Generate Figure 4 (Summary)")
     parser.add_argument('--supp1', action='store_true', help="Generate Supplemental Figure 1 (Sensitivity)")
     parser.add_argument('--supp2', action='store_true', help="Generate Supplemental Figure 2 (Linearity)")
     parser.add_argument('--captions', action='store_true', help="Generate captions.md")
     args = parser.parse_args()
 
     # If no flags are provided, run all
-    if not any([args.fig1, args.fig2, args.fig3, args.supp1, args.supp2, args.captions]):
-        args.fig1 = args.fig2 = args.fig3 = args.supp1 = args.supp2 = args.captions = True
+    if not any([args.fig1, args.fig2, args.fig3, args.fig4, args.supp1, args.supp2, args.captions]):
+        args.fig1 = args.fig2 = args.fig3 = args.fig4 = args.supp1 = args.supp2 = args.captions = True
 
     if args.fig1: figure_1_method_illustration()
-    if args.fig2: figure_2_selected_conductances()
-    if args.fig3: figure_3_combined_summary()
+    if args.fig2: figure_2_four_populations()
+    if args.fig3: figure_3_selected_conductances()
+    if args.fig4: figure_4_combined_summary()
     if args.supp1: supplemental_figure_1_sensitivity()
     if args.supp2: supplemental_figure_2_linearity()
     if args.captions: generate_captions()
