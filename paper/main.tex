@@ -150,6 +150,16 @@ Conversely, expiratory neurons (Figures~\ref{fig:representative_cells}b and \ref
 
 Critically, these synaptic input patterns appear to define the firing phenotype (inspiratory vs. expiratory) independent of the neuron's own neurotransmitter identity. Both VgluT2$^+$ (excitatory) and VGAT$^+$ (inhibitory) neurons within the same firing class shared identical synaptic input profiles.
 
+\subsection{Population Summary of Conductances}
+To quantify the synaptic drive across the network, we aggregated the estimated excitatory and inhibitory conductances for the three main neuronal populations identified in the slice: VGAT-I, VgluT2-I, and VGAT-E (Figure~\ref{fig:summary}). In all populations, the reconstructed conductances exhibited significant variance, yet the phasic coordination was robustly maintained. Specifically, inspiratory-active populations (VGAT-I and VgluT2-I) received maximal excitatory drive during inspiration, while the VGAT-E population received strong inhibitory shunting during the same phase. The use of box-and-whisker plots highlights the median synaptic strength and the inter-quartile range, providing a comprehensive view of the synaptic heterogeneity within each genetically defined group.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/figure4_summary.png}
+    \caption{Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups (VGAT-I, VgluT2-I, VGAT-E). Box plots represent the median and interquartile range (IQR) of inliers, with whiskers extending to 1.5 times the IQR. Individual cells are overlaid as dots (inliers) and 'x' markers (outliers). Synaptic conductances are normalized to the leak conductance of each cell.}
+    \label{fig:summary}
+\end{figure}
+
 \subsection{Inferred Circuit Connectivity}
 Based on these observations, we can infer the specific connectivity between these four populations (Figure~\ref{fig:circuit}).
 

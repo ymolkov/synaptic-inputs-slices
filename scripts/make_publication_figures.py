@@ -278,26 +278,38 @@ def figure_4_combined_summary():
             inliers.append(clean)
             outliers.append(outs)
             
-        x = np.arange(4)
-        ax.bar(
-            x, means, yerr=sems, alpha=0.9, color=colors, capsize=4, width=0.8,
-            ecolor='#1A1A1A', error_kw={"elinewidth": 1.5, "capthick": 1.5}
+        # Prepare data for boxplot: filter out empty lists and align with positions j
+        box_data = [inliers[j] for j in range(4)]
+        
+        # Create boxplot
+        bp = ax.boxplot(
+            box_data, positions=np.arange(4), widths=0.6, patch_artist=True,
+            showfliers=False,# We plot outliers manually as 'x'
+            medianprops={'color': 'black', 'linewidth': 2},
+            whiskerprops={'color': '#1A1A1A', 'linewidth': 1.5},
+            capprops={'color': '#1A1A1A', 'linewidth': 1.5},
+            boxprops={'linewidth': 1.5}
         )
+        
+        # Color the boxes
+        for patch, color in zip(bp['boxes'], colors):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.8)
         
         n_inliers = 0
         rng = np.random.default_rng(100 + i)
         for j in range(4):
-            n_inliers = max(n_inliers, len(inliers[j])) # Use max number of inliers across metrics
+            n_inliers = max(n_inliers, len(inliers[j]))
             # Plot inliers
             ax.scatter(
-                rng.normal(j, 0.04, len(inliers[j])), inliers[j],
-                color='#2E2E2E', alpha=0.45, s=16, linewidth=0
+                rng.normal(j, 0.08, len(inliers[j])), inliers[j],
+                color='#2E2E2E', alpha=0.5, s=16, linewidth=0, zorder=3
             )
             # Plot outliers
             if len(outliers[j]) > 0:
                 ax.scatter(
-                    rng.normal(j, 0.04, len(outliers[j])), outliers[j],
-                    color='magenta', marker='x', s=28, linewidth=1.25
+                    rng.normal(j, 0.08, len(outliers[j])), outliers[j],
+                    color='magenta', marker='x', s=28, linewidth=1.25, zorder=3
                 )
             
         ax.set_title(f"{group} (N={n_inliers})", fontsize=19)
@@ -632,7 +644,7 @@ def generate_captions():
         f.write("## Figure 3: Selected Conductances\n")
         f.write("Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).\n\n")
         f.write("## Figure 4: Combined Summary\n")
-        f.write("Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method).\n\n")
+        f.write("Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Box plots represent the median and interquartile range (IQR) of inliers, with whiskers extending to 1.5 times the IQR. Individual cells are overlaid as dots (inliers) and 'x' markers (outliers).\n\n")
         f.write("## Supplemental Figure 1: Sensitivity Analysis\n")
         f.write("Sensitivity of reconstructed conductances to variations in reversal potentials ($E_e$ and $E_i$). The grid shows results for variations of ±10 mV from default values.\n\n")
         f.write("## Supplemental Figure 2: Linearity Analysis\n")
