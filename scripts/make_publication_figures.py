@@ -310,7 +310,7 @@ def figure_4_combined_summary():
         
         # Labels for outer edges
         if i % 2 == 0: 
-            ax.set_ylabel("Conductance (nS)", fontsize=18)
+            ax.set_ylabel("Synaptic / Leak Conductance", fontsize=18)
             ax.tick_params(axis='y', labelsize=16)
         
         if i == 0:
