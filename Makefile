@@ -5,7 +5,7 @@ SCRIPT_DIR  = scripts
 RESULTS_DIR = results
 PUB_DIR     = publication
 PAPER_DIR   = paper
-DASHBOARD_DIR = web_deploy
+WEB_DIR = web
 
 # List of groups to process
 GROUPS = VGAT-I VgluT2-I VGAT-E VgluT2-E
@@ -82,11 +82,9 @@ table:    $(PUB_DIR)/conductance_table.tex
 paper:    $(PAPER_DIR)/main.pdf
 
 dashboard: $(BIN_DIR)/trace_analyzer
-	@mkdir -p $(DASHBOARD_DIR)
-	python3 $(SCRIPT_DIR)/batch_run_all.py
-	@echo "Copying snapshots to dashboard directory..."
-	cp $(RESULTS_DIR)/individual/*_full.png $(RESULTS_DIR)/individual/*_thumb.png $(DASHBOARD_DIR)/
-	python3 $(SCRIPT_DIR)/generate_report.py --outdir $(DASHBOARD_DIR)
+	@mkdir -p $(WEB_DIR)
+	python3 $(SCRIPT_DIR)/batch_run_all.py --outdir $(WEB_DIR)
+	python3 $(SCRIPT_DIR)/generate_report.py --outdir $(WEB_DIR)
 
 push:
 	git add -A
@@ -96,7 +94,7 @@ push:
 clean:
 	rm -rf $(BIN_DIR)/*
 	rm -rf tmp/*
-	rm -rf $(DASHBOARD_DIR)
+	rm -rf $(WEB_DIR)
 
 help:
 	@echo "Available targets:"

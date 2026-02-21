@@ -6,8 +6,7 @@ from collections import defaultdict
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
-INDEX_HTML = os.path.join(RESULTS_DIR, "index.html")
+WEB_DIR = os.path.join(PROJECT_ROOT, "web")
 
 def get_category(basename):
     match = re.match(r"^([a-zA-Z0-9]+-[a-zA-Z0-9]+)", basename)
@@ -18,14 +17,12 @@ def get_category(basename):
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
-INDIVIDUAL_DIR = os.path.join(RESULTS_DIR, "individual")
-
-def generate_report(target_dir=INDIVIDUAL_DIR):
+def generate_report(target_dir=WEB_DIR):
     # Always scan and save in the same place.
     save_dir = target_dir
     scan_dir = target_dir
     
-    print(f"Generating high-res PNG dashboard. Scanning {scan_dir}, saving to {save_dir}...")
+    print(f"Generating analysis dashboard. Scanning {scan_dir}, saving to {save_dir}...")
     
     thumb_files = sorted(glob.glob(os.path.join(scan_dir, "*_thumb.png")))
     categories = defaultdict(lambda: defaultdict(list))
@@ -37,13 +34,8 @@ def generate_report(target_dir=INDIVIDUAL_DIR):
         cell_match = re.match(r"^(.+)-[CV]", basename)
         cell_id = cell_match.group(1) if cell_match else basename
         
-        # In the HTML, image paths should be relative to index.html
-        if save_dir != scan_dir:
-            full_path = os.path.join("individual", f"{basename}_full.png")
-            thumb_path_rel = os.path.join("individual", f"{basename}_thumb.png")
-        else:
-            full_path = f"{basename}_full.png"
-            thumb_path_rel = f"{basename}_thumb.png"
+        full_path = f"{basename}_full.png"
+        thumb_path_rel = f"{basename}_thumb.png"
             
         categories[cat][cell_id].append({
             'basename': basename,
@@ -159,12 +151,12 @@ def generate_report(target_dir=INDIVIDUAL_DIR):
     with open(index_path, 'w') as f:
         f.write("\n".join(html))
     
-    print(f"Interactive high-res PNG dashboard generated at: {index_path}")
+    print(f"Interactive dashboard generated at: {index_path}")
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Generate interactive dashboard.")
-    parser.add_argument('--outdir', type=str, default=INDIVIDUAL_DIR, help="Directory to scan for images")
+    parser.add_argument('--outdir', type=str, default=WEB_DIR, help="Directory to scan for images")
     args = parser.parse_args()
     
     generate_report(args.outdir)

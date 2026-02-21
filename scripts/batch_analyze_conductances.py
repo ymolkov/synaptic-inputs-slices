@@ -3,8 +3,6 @@ import subprocess
 import glob
 import re
 import csv
-import matplotlib.pyplot as plt
-import numpy as np
 import argparse
 from analysis_options import get_flags_map, resolve_flags
 
@@ -20,14 +18,13 @@ GROUP_Clean = GROUP.replace('-', '_') # For filenames
 # Configuration
 DATA_DIR = "data"
 RESULTS_DIR = "results"
-INDIVIDUAL_DIR = os.path.join(RESULTS_DIR, "individual")
+WEB_DIR = "web"
 BIN_ANALYZER = "bin/trace_analyzer"
 OUTPUT_CSV = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances.csv")
-OUTPUT_PLOT = os.path.join(INDIVIDUAL_DIR, f"{GROUP_Clean}_conductances.png")
-VIOLIN_PLOT = os.path.join(INDIVIDUAL_DIR, f"{GROUP_Clean}_conductances_violin.png")
 
-# Ensure results directories exist
-os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
+# Ensure directories exist
+os.makedirs(WEB_DIR, exist_ok=True)
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
 def load_par_file(par_path):
@@ -38,11 +35,13 @@ def load_par_file(par_path):
     with open(par_path, 'r') as f:
         for line in f:
             if '=' in line:
-                key, val = line.strip().split('=')
-                try:
-                    data[key] = float(val)
-                except ValueError:
-                    pass
+                parts = line.strip().split('=')
+                if len(parts) == 2:
+                    key, val = parts
+                    try:
+                        data[key] = float(val)
+                    except ValueError:
+                        pass
     return data
 
 # Load flags from Makefile + overrides
@@ -65,13 +64,6 @@ for file_path in files:
         continue
     
     # Extract Cell ID and Type (C/V) for sorting/labeling
-    # Try to parse "GROUP-Cell<ID>-<Type>"
-    # Type could be C, V, C-1, V-2 etc.
-    # Regex needs to be flexible for the group name
-    # We essentially want the part after "{GROUP}-Cell"
-    # e.g. VGAT-I-Cell1-C -> ID=1, Type=C
-    
-    # Escape group name for regex just in case
     escaped_group = re.escape(GROUP)
     match = re.search(fr"{escaped_group}-Cell(\d+)-([A-Za-z0-9-]+)", filename)
     if not match:
@@ -93,7 +85,7 @@ for file_path in files:
     
     print(f"Processing Cell {cell_id} ({filename}) with flags: {flags_str}")
     
-    existing_par = os.path.join(INDIVIDUAL_DIR, f"{filename}.par")
+    existing_par = os.path.join(WEB_DIR, f"{filename}.par")
     data = {}
     source = None
 
@@ -101,7 +93,7 @@ for file_path in files:
         data = load_par_file(existing_par)
         source = "existing"
     else:
-        temp_par = os.path.join(INDIVIDUAL_DIR, f"temp_{filename}.par")
+        temp_par = os.path.join(WEB_DIR, f"temp_{filename}.par")
         analyzer_args = flags_str.split()
         cmd = [BIN_ANALYZER] + analyzer_args + ["-par", temp_par]
         try:
@@ -159,71 +151,3 @@ with open(OUTPUT_CSV, 'w', newline='') as csvfile:
             'gInh_Phase0': row['gInh_Phase0']
         })
 print(f"Saved data to {OUTPUT_CSV}")
-
-if not results:
-    print("No data to plot.")
-    exit()
-
-# Plotting
-cell_ids = [r['CellID_Str'] for r in results]
-mean_exc = [r['Mean_gExc_Stat'] for r in results]
-mean_inh = [r['Mean_gInh_Stat'] for r in results]
-ph0_exc = [r['gExc_Phase0'] for r in results]
-ph0_inh = [r['gInh_Phase0'] for r in results]
-
-fig, ax = plt.subplots(figsize=(14, 7)) # Increased width for more bars
-
-x = np.arange(len(cell_ids))
-width = 0.2
-
-rects1 = ax.bar(x - 1.5*width, mean_exc, width, label='Mean gExc (Stationary)', color='salmon')
-rects2 = ax.bar(x - 0.5*width, mean_inh, width, label='Mean gInh (Stationary)', color='skyblue')
-rects3 = ax.bar(x + 0.5*width, ph0_exc, width, label='gExc (Phase 0)', color='red', alpha=0.9)
-rects4 = ax.bar(x + 1.5*width, ph0_inh, width, label='gInh (Phase 0)', color='blue', alpha=0.9)
-
-ax.set_ylabel('Synaptic / Leak Conductance')
-ax.set_title(f'{GROUP} Neurons (N >= 30): Stationary Mean vs Phase 0 Conductances')
-ax.set_xticks(x)
-ax.set_xticklabels(cell_ids, rotation=45, ha='right')
-ax.legend()
-
-ax.yaxis.grid(True, linestyle='--', alpha=0.7)
-
-plt.tight_layout()
-plt.savefig(OUTPUT_PLOT)
-print(f"Saved plot to {OUTPUT_PLOT}")
-
-# Violin Plot
-data_to_plot = [mean_exc, mean_inh, ph0_exc, ph0_inh]
-labels = ['Mean gExc (Stat)', 'Mean gInh (Stat)', 'gExc (Phase 0)', 'gInh (Phase 0)']
-
-fig, ax = plt.subplots(figsize=(10, 6))
-
-# Create violin plot
-parts = ax.violinplot(data_to_plot, showmeans=False, showmedians=True, showextrema=False)
-
-# Customize colors
-colors = ['salmon', 'skyblue', 'red', 'blue']
-for i, pc in enumerate(parts['bodies']):
-    pc.set_facecolor(colors[i])
-    pc.set_edgecolor('black')
-    pc.set_alpha(0.7)
-
-# Add jittered individual points
-for i, data in enumerate(data_to_plot):
-    y = data
-    x = np.random.normal(i + 1, 0.04, size=len(y))
-    ax.scatter(x, y, alpha=0.9, s=20, color='darkslategrey', zorder=10)
-
-# Set labels
-ax.set_xticks(np.arange(1, len(labels) + 1))
-ax.set_xticklabels(labels)
-ax.set_ylabel('Synaptic / Leak Conductance')
-ax.set_title(f'{GROUP} Conductance Distributions (N >= 30)')
-
-# Grid
-ax.yaxis.grid(True, linestyle='--', alpha=0.7)
-
-plt.tight_layout()
-plt.savefig(VIOLIN_PLOT)
-print(f"Saved violin plot to {VIOLIN_PLOT}")
