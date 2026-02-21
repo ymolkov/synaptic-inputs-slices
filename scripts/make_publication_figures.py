@@ -308,7 +308,7 @@ def figure_4_combined_summary():
         ax.grid(axis='y', alpha=0.22, linestyle='-', linewidth=0.8)
         ax.set_axisbelow(True)
         if i == 0: 
-            ax.set_ylabel("Synaptic conductance / Leak conductance", fontsize=18)
+            ax.set_ylabel("Synaptic / Leak Conductance", fontsize=18)
             ax.tick_params(axis='y', labelsize=16)
             legend_handles = [
                 plt.Rectangle((0, 0), 1, 1, color='#D62728', alpha=0.9, label='Excitation'),

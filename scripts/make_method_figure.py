@@ -10,7 +10,7 @@ from matplotlib.cm import viridis
 BASENAME = "VgluT2-I-Cell2-C"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", BASENAME)
-BIN_PATH = os.path.join(PROJECT_ROOT, "bin", "trace_analyzer")
+BIN_PATH = os.path.join(PROJECT_ROOT, "scripts", "trace_analyzer")
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
 TMP_PH = os.path.join(PROJECT_ROOT, "tmp", "method_illust.ph")
 TMP_DAT = os.path.join(PROJECT_ROOT, "tmp", "method_illust.dat")
@@ -23,6 +23,7 @@ def run_analysis():
         BIN_PATH,
         "-f", "25",
         "-l", "300000",
+        "-auto_Ei",
         "-par", TMP_PAR,
         "-trig", TMP_TRIG
     ]

@@ -42,4 +42,6 @@ def resolve_flags(
     flags = flags_map.get(basename, default_flags).strip()
     if infer_vc_from_name and ("-V" in basename) and ("-vc" not in flags):
         flags += " -vc"
+    if "-auto_Ei" not in flags:
+        flags += " -auto_Ei"
     return flags

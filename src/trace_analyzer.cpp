@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
   bool voltage_clamp = false; // -vc
   double Ei = -80.0;          // -Ei
   double Ee = -10.0;          // -Ee
+  bool auto_Ei = false;       // -auto_Ei
   double threshold_multiplier =
       2.5;                     // -m, default lowered from 4.0 (and 3.0) to 2.5
   int min_duration = 10;       // -w, minimum duration in samples
@@ -126,6 +127,8 @@ int main(int argc, char **argv) {
       voltage_clamp = true;
     else if (arg == "-Ei" && i + 1 < argc)
       Ei = atof(argv[++i]);
+    else if (arg == "-auto_Ei")
+      auto_Ei = true;
     else if (arg == "-Ee" && i + 1 < argc)
       Ee = atof(argv[++i]);
     else {
@@ -386,11 +389,17 @@ int main(int argc, char **argv) {
       for (int i = 0; i < bin_count; i++) {
         double y0 = bin_points[l].i[i];
         double y1 = bin_points[l].v[i];
-        m0 += y0; m1 += y1;
-        x00 += y0 * y0; x01 += y0 * y1; x11 += y1 * y1;
+        m0 += y0;
+        m1 += y1;
+        x00 += y0 * y0;
+        x01 += y0 * y1;
+        x11 += y1 * y1;
       }
-      m0 /= bin_count; m1 /= bin_count;
-      x00 /= bin_count; x01 /= bin_count; x11 /= bin_count;
+      m0 /= bin_count;
+      m1 /= bin_count;
+      x00 /= bin_count;
+      x01 /= bin_count;
+      x11 /= bin_count;
 
       double cov = x01 - m0 * m1;
       double var1 = x11 - m1 * m1;
@@ -398,7 +407,7 @@ int main(int argc, char **argv) {
 
       double a = (var1 != 0) ? cov / var1 : 0;
       double b = m0 - a * m1;
-      
+
       // Calculate Residuals and their standard deviation
       vector<double> residuals(bin_count);
       double res_sum = 0;
@@ -412,28 +421,36 @@ int main(int argc, char **argv) {
       double rm0 = 0, rm1 = 0, rx00 = 0, rx01 = 0, rx11 = 0;
       int rcount = 0;
       double threshold_sigma = 2.5 * sigma;
-      if (threshold_sigma < 1e-9) threshold_sigma = 1e-9;
+      if (threshold_sigma < 1e-9)
+        threshold_sigma = 1e-9;
 
       for (int i = 0; i < bin_count; i++) {
         if (abs(residuals[i]) <= threshold_sigma) {
           double y0 = bin_points[l].i[i];
           double y1 = bin_points[l].v[i];
-          rm0 += y0; rm1 += y1;
-          rx00 += y0 * y0; rx01 += y0 * y1; rx11 += y1 * y1;
+          rm0 += y0;
+          rm1 += y1;
+          rx00 += y0 * y0;
+          rx01 += y0 * y1;
+          rx11 += y1 * y1;
           rcount++;
         }
       }
 
       if (rcount > 2) {
-        rm0 /= rcount; rm1 /= rcount;
-        rx00 /= rcount; rx01 /= rcount; rx11 /= rcount;
+        rm0 /= rcount;
+        rm1 /= rcount;
+        rx00 /= rcount;
+        rx01 /= rcount;
+        rx11 /= rcount;
         double rcov = rx01 - rm0 * rm1;
         double rvar1 = rx11 - rm1 * rm1;
         double rvar0 = rx00 - rm0 * rm0;
 
         double ra = (rvar1 != 0) ? rcov / rvar1 : 0;
         double rb = rm0 - ra * rm1;
-        double rerr = (rvar1 != 0) ? sqrt(max(0.0, rvar0 / rvar1 - ra * ra)) : 0;
+        double rerr =
+            (rvar1 != 0) ? sqrt(max(0.0, rvar0 / rvar1 - ra * ra)) : 0;
 
         if (voltage_clamp) {
           results[l] = {ra, rb, rerr, rcount};
@@ -442,8 +459,9 @@ int main(int argc, char **argv) {
           // We already have the points, let's just do it directly
           double raa = (rvar0 != 0) ? rcov / rvar0 : 0;
           double rbb = rm1 - raa * rm0;
-          double rerer = (rvar0 != 0) ? sqrt(max(0.0, rvar1 / rvar0 - raa * raa)) : 0;
-          
+          double rerer =
+              (rvar0 != 0) ? sqrt(max(0.0, rvar1 / rvar0 - raa * raa)) : 0;
+
           double inv_aa = (raa != 0) ? 1.0 / raa : 0;
           double intercept = (raa != 0) ? -rbb / raa : 0;
           double error_transformed = (raa != 0) ? rerer / (raa * raa) : 0;
@@ -455,6 +473,96 @@ int main(int argc, char **argv) {
       }
     } else {
       results[l] = {0, 0, 0, 0};
+    }
+  }
+
+  // Auto Ei Estimation via Global Geometric Pivoting
+  if (auto_Ei && has_data) {
+    // Collect all valid regression points (slope = G_tot, intercept = I0)
+    struct RegressionPoint {
+      double G_tot;
+      double I0;
+    };
+    vector<RegressionPoint> pts;
+    for (int l = 0; l < num_phase_bins; l++) {
+      if (results[l].count > 0) {
+        pts.push_back({results[l].slope * 1000.0, results[l].intercept});
+      }
+    }
+
+    if (pts.size() > 2) { // Need a few points to estimate a boundary
+      double best_m = 0;
+      bool found_boundary = false;
+      double min_area_proxy = 1e12; // Must be outside the loop!
+
+      // Treat every point as a potential anchor
+      for (size_t anchor_idx = 0; anchor_idx < pts.size(); anchor_idx++) {
+        double g0 = pts[anchor_idx].G_tot;
+        double i0 = pts[anchor_idx].I0;
+
+        double min_m_required = -1e12;
+        double max_m_allowed = 1e12;
+
+        for (size_t j = 0; j < pts.size(); j++) {
+          if (j == anchor_idx)
+            continue;
+          double gj = pts[j].G_tot;
+          double ij = pts[j].I0;
+
+          if (gj > g0) {
+            double required = (ij - i0) / (gj - g0);
+            if (required > min_m_required)
+              min_m_required = required;
+          } else if (gj < g0) {
+            double allowed = (ij - i0) / (gj - g0);
+            if (allowed < max_m_allowed)
+              max_m_allowed = allowed;
+          }
+        }
+
+        if (min_m_required <= max_m_allowed) {
+          // Valid anchor found. Test slopes to find the tightest global
+          // boundary.
+          int num_tests = 50;
+          std::vector<double> test_slopes;
+          test_slopes.reserve(num_tests + 2);
+
+          if (min_m_required != -1e12)
+            test_slopes.push_back(min_m_required);
+          if (max_m_allowed != 1e12)
+            test_slopes.push_back(max_m_allowed);
+
+          if (min_m_required != -1e12 && max_m_allowed != 1e12) {
+            double step = (max_m_allowed - min_m_required) / (num_tests - 1);
+            for (int k = 0; k < num_tests; k++) {
+              test_slopes.push_back(min_m_required + k * step);
+            }
+          }
+
+          for (size_t k = 0; k < test_slopes.size(); k++) {
+            double m = test_slopes[k];
+            double area_proxy = 0;
+
+            for (size_t j = 0; j < pts.size(); j++) {
+              double predicted_y = (m * (pts[j].G_tot - g0) + i0);
+              double dist = predicted_y - pts[j].I0;
+              area_proxy += dist;
+            }
+
+            if (area_proxy < min_area_proxy) {
+              min_area_proxy = area_proxy;
+              best_m = m;
+              found_boundary = true;
+            }
+          }
+        }
+      }
+
+      if (found_boundary) {
+        // Overwrite the globally assumed Ei with the geometrically optimal one
+        // m = -Ei / 1000 => Ei = -m * 1000
+        Ei = -best_m * 1000.0;
+      }
     }
   }
 

@@ -180,7 +180,7 @@ rects2 = ax.bar(x - 0.5*width, mean_inh, width, label='Mean gInh (Stationary)', 
 rects3 = ax.bar(x + 0.5*width, ph0_exc, width, label='gExc (Phase 0)', color='red', alpha=0.9)
 rects4 = ax.bar(x + 1.5*width, ph0_inh, width, label='gInh (Phase 0)', color='blue', alpha=0.9)
 
-ax.set_ylabel('Conductance (nS)')
+ax.set_ylabel('Synaptic / Leak Conductance')
 ax.set_title(f'{GROUP} Neurons (N >= 30): Stationary Mean vs Phase 0 Conductances')
 ax.set_xticks(x)
 ax.set_xticklabels(cell_ids, rotation=45, ha='right')
@@ -217,7 +217,7 @@ for i, data in enumerate(data_to_plot):
 # Set labels
 ax.set_xticks(np.arange(1, len(labels) + 1))
 ax.set_xticklabels(labels)
-ax.set_ylabel('Conductance (nS)')
+ax.set_ylabel('Synaptic / Leak Conductance')
 ax.set_title(f'{GROUP} Conductance Distributions (N >= 30)')
 
 # Grid
