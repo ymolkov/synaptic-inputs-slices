@@ -5,7 +5,7 @@ from analysis_options import get_flags_map, resolve_flags
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-BIN_ANALYZER = os.path.join(PROJECT_ROOT, "scripts", "trace_analyzer")
+BIN_ANALYZER = os.path.join(PROJECT_ROOT, "bin", "trace_analyzer")
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "results")
 TMP_DIR = os.path.join(PROJECT_ROOT, "tmp")
 MAKEFILE_PATH = os.path.join(PROJECT_ROOT, "legacy", "Makefile.orig")
