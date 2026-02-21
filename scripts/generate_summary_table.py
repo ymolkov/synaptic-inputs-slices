@@ -3,8 +3,8 @@ import numpy as np
 import os
 
 results_dir = "/Users/ymolkov/clamp/results"
-groups = ["VGAT-I", "VgluT2-I", "VGAT-E"]
-files = ["VGAT_I_conductances.csv", "VgluT2_I_conductances.csv", "VGAT_E_conductances.csv"]
+groups = ["VGAT-I", "VgluT2-I", "VGAT-E", "VgluT2-E"]
+files = ["VGAT_I_conductances.csv", "VgluT2_I_conductances.csv", "VGAT_E_conductances.csv", "VgluT2_E_conductances.csv"]
 
 print("| Group | N | Phase | Excitation (nS) | Inhibition (nS) |")
 print("|-------|---|-------|-----------------|-----------------|")

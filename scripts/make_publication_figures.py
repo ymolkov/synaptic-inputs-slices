@@ -243,8 +243,8 @@ def figure_4_combined_summary():
         "xtick.labelsize": 16,
         "ytick.labelsize": 16
     })
-    groups = ["VGAT-I", "VgluT2-I", "VGAT-E"]
-    fig, axes = plt.subplots(1, 3, figsize=(16.5, 6.6), sharey=True)
+    groups = ["VGAT-I", "VgluT2-I", "VGAT-E", "VgluT2-E"]
+    fig, axes = plt.subplots(1, 4, figsize=(20, 6.6), sharey=True)
     phase_ticks = [0.5, 2.5]
     phase_labels = ['Expiration', 'Inspiration']
     # Use the same colors for Exp and Insp within each modality.
