@@ -120,10 +120,10 @@ for file_path in files:
         print(f"  -> Skipping Cell {cell_id} ({rec_type}): no .par data ({source})")
         continue
     
-    # Filter by Cycle Count N >= 30
+    # Filter by Cycle Count N > 0
     cycles_n = int(data.get('N', 0))
-    if cycles_n < 30:
-        print(f"  -> Skipping Cell {cell_id} ({rec_type}): N={cycles_n} (< 30)")
+    if cycles_n <= 0:
+        print(f"  -> Skipping Cell {cell_id} ({rec_type}): N={cycles_n}")
         continue
         
     print(f"  -> Accepted: N={cycles_n} ({source})")
