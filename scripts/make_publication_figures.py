@@ -640,7 +640,9 @@ def generate_captions():
         f.write("## Supplemental Figure 1: Sensitivity Analysis\n")
         f.write("Sensitivity of reconstructed conductances to variations in reversal potentials ($E_e$ and $E_i$). The grid shows results for variations of ±10 mV from default values.\n\n")
         f.write("## Supplemental Figure 2: Linearity Analysis\n")
-        f.write(r"I-V regressions for all cells and recording modes presented in Figure 2. Scatter points represent data from specific phase bins ($\phi \approx 0.0$ in red, $\phi \approx 0.5$ in blue), with dashed lines indicating the corresponding linear fits." + "\n")
+        f.write(r"I-V regressions for all cells and recording modes presented in Figure 2. Scatter points represent data from specific phase bins ($\phi \approx 0.0$ in red, $\phi \approx 0.5$ in blue), with dashed lines indicating the corresponding linear fits." + "\n\n")
+        f.write("## Supplemental Figure 3: Ectopic Bursting in Inhibitory Neurons\n")
+        f.write("Representative 25-second inhibitory episodes highlighting ectopic bursting behavior. Each panel displays the membrane potential (blue) and the synchronized rhythmic reference signal (green). Action potential peaks have been accurately restored using parabolic interpolation to mitigate 1000 Hz undersampling. Episodes were selected for having clear ectopic bursts (>=3 spikes), a rhythmic network context (>=2 main bursts), and a steady holding current.\n")
 
 if __name__ == "__main__":
     import argparse
