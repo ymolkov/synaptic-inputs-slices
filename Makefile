@@ -70,6 +70,11 @@ $(PUB_DIR)/figures/supp_figure3_ectopic.svg: $(SCRIPT_DIR)/make_ectopic_svg.py
 	mv selected_ectopic_bursts_interpolated.svg $(PUB_DIR)/figures/supp_figure3_ectopic.svg
 	python3 $(SCRIPT_DIR)/generate_captions.py
 
+$(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png: $(SCRIPT_DIR)/plot_refined_5x2.py
+	@mkdir -p $(PUB_DIR)/figures
+	python3 $(SCRIPT_DIR)/plot_refined_5x2.py
+	cp $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png $(PAPER_DIR)/figures/supp_figure4_pre_i_recruitment.png
+
 # 4. Generate the summary table (Tex and Docx)
 $(PUB_DIR)/conductance_table.tex: $(CSV_OUTPUTS) $(SCRIPT_DIR)/generate_summary_table.py
 	@mkdir -p $(PUB_DIR)
@@ -88,6 +93,7 @@ $(PAPER_DIR)/main.pdf: $(PAPER_DIR)/main.tex \
                     $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
                     $(PUB_DIR)/figures/supp_figure2_linearity.png \
                     $(PUB_DIR)/figures/supp_figure3_ectopic.svg \
+                    $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png \
                     $(PUB_DIR)/conductance_table.tex
 	cd $(PAPER_DIR) && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
 
@@ -99,7 +105,8 @@ figures:  $(PUB_DIR)/figures/figure1_method.png \
           $(PUB_DIR)/figures/figure4_summary.png \
           $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
           $(PUB_DIR)/figures/supp_figure2_linearity.png \
-          $(PUB_DIR)/figures/supp_figure3_ectopic.svg
+          $(PUB_DIR)/figures/supp_figure3_ectopic.svg \
+          $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png
 table:    $(PUB_DIR)/conductance_table.tex
 paper:    $(PAPER_DIR)/main.pdf
 
