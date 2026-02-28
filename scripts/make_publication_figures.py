@@ -488,9 +488,9 @@ def supplemental_figure_1_sensitivity():
     print("Generating Supplemental Figure 1: Sensitivity Analysis...")
     basename = "VgluT2-I-Cell2-C"
     
-    # Use baseline Ei = -70 as requested
+    # Use baseline Ei = -70 and Ee = -10 as requested
     Ei_def = -70.0
-    Ee_def = 0.0
+    Ee_def = -10.0
     
     # Get g_scale for normalization
     _, _, par_path_def = run_analysis(basename, Ei=Ei_def, Ee=Ee_def)
