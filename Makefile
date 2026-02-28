@@ -49,10 +49,20 @@ $(PUB_DIR)/figures/figure3_selected.png: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig3 --captions
 	cp $(PUB_DIR)/figures/figure3_selected.png $(PAPER_DIR)/figures/figure3_selected.png
 
-$(PUB_DIR)/figures/supp_figure4_summary.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_publication_figures.py
+$(PUB_DIR)/figures/figure4_summary.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_publication_figures.py
 	@mkdir -p $(PUB_DIR)/figures
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig4 --captions
 	cp $(PUB_DIR)/figures/figure4_summary.png $(PAPER_DIR)/figures/figure4_summary.png
+
+$(PUB_DIR)/figures/supp_figure1_sensitivity.png: $(SCRIPT_DIR)/make_publication_figures.py
+	@mkdir -p $(PUB_DIR)/figures
+	python3 $(SCRIPT_DIR)/make_publication_figures.py --supp1 --captions
+	cp $(PUB_DIR)/figures/supp_figure1_sensitivity.png $(PAPER_DIR)/figures/supp_figure1_sensitivity.png
+
+$(PUB_DIR)/figures/supp_figure2_linearity.png: $(SCRIPT_DIR)/make_publication_figures.py
+	@mkdir -p $(PUB_DIR)/figures
+	python3 $(SCRIPT_DIR)/make_publication_figures.py --supp2 --captions
+	cp $(PUB_DIR)/figures/supp_figure2_linearity.png $(PAPER_DIR)/figures/supp_figure2_linearity.png
 
 $(PUB_DIR)/figures/supp_figure3_ectopic.svg: $(SCRIPT_DIR)/make_ectopic_svg.py
 	@mkdir -p $(PUB_DIR)/figures
@@ -75,6 +85,8 @@ $(PAPER_DIR)/main.pdf: $(PAPER_DIR)/main.tex \
                     $(PUB_DIR)/figures/figure2_four_populations.png \
                     $(PUB_DIR)/figures/figure3_selected.png \
                     $(PUB_DIR)/figures/figure4_summary.png \
+                    $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
+                    $(PUB_DIR)/figures/supp_figure2_linearity.png \
                     $(PUB_DIR)/figures/supp_figure3_ectopic.svg \
                     $(PUB_DIR)/conductance_table.tex
 	cd $(PAPER_DIR) && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
@@ -85,6 +97,8 @@ figures:  $(PUB_DIR)/figures/figure1_method.png \
           $(PUB_DIR)/figures/figure2_four_populations.png \
           $(PUB_DIR)/figures/figure3_selected.png \
           $(PUB_DIR)/figures/figure4_summary.png \
+          $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
+          $(PUB_DIR)/figures/supp_figure2_linearity.png \
           $(PUB_DIR)/figures/supp_figure3_ectopic.svg
 table:    $(PUB_DIR)/conductance_table.tex
 paper:    $(PAPER_DIR)/main.pdf

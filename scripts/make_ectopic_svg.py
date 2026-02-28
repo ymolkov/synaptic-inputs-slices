@@ -91,7 +91,7 @@ def generate_svg(episodes, output_path):
         t0 = ts[0]
         duration = ts[-1] - t0
         
-        v_low = -95.0 if "Cell 10" in name else -80.0
+        v_low = -80.0
         v_high = 45.0
         
         def tx(t):
@@ -122,7 +122,8 @@ def generate_svg(episodes, output_path):
         svg.append(f'<text x="90" y="{y_offset + 35}" font-family="Arial" font-size="18" font-weight="bold" fill="black">{name}</text>')
         
         yticks = [-80, -60, -40, -20, 0, 20, 40]
-        if "Cell 10" in name: yticks = [-90, -70, -50, -30, -10, 10, 30]
+        # if "Cell 10" in name: yticks = [-90, -70, -50, -30, -10, 10, 30]
+
         
         # Filter ticks that fit in panel and draw Y-axis line between them
         valid_ticks = [v for v in yticks if y_offset <= ty_vm(v) <= y_offset + panel_height]
@@ -157,7 +158,7 @@ if __name__ == "__main__":
     episodes = [
         ("VGAT-I Cell 9 (~3394s)", "data/VGAT-I-Cell9-C", 3381.4, 3406.4, -45.0),
         ("VgluT2-I Cell 4 (~479s)", "data/VgluT2-I-Cell4-C", 466.7, 491.7, -35.0),
-        ("VgluT2-I Cell 10-C-2 (~5148s)", "data/VgluT2-I-Cell10-C-2", 5135.9, 5160.9, -40.0)
+        ("VgluT2-I Cell 10-C-1 (~2963s)", "data/VgluT2-I-Cell10-C-1", 2950.0, 2975.0, -40.0)
     ]
     
     generate_svg(episodes, "selected_ectopic_bursts_interpolated.svg")

@@ -488,13 +488,14 @@ def supplemental_figure_1_sensitivity():
     print("Generating Supplemental Figure 1: Sensitivity Analysis...")
     basename = "VgluT2-I-Cell2-C"
     
-    # Get default values first
-    _, _, par_path_def = run_analysis(basename)
+    # Use baseline Ei = -70 and Ee = -10 as requested
+    Ei_def = -70.0
+    Ee_def = -10.0
+    
+    # Get g_scale for normalization
+    _, _, par_path_def = run_analysis(basename, Ei=Ei_def, Ee=Ee_def)
     params_def = load_params(par_path_def)
-    Ei_def = params_def.get('Ei', -80.0)
-    Ee_def = params_def.get('Ee', 0.0)
-    g_scale = params_def.get('g', 1.0)
-    g_ns_factor = g_scale * 1000.0
+    g_ns_factor = params_def.get('g', 1.0) * 1000.0
     
     Ei_vals = [Ei_def - 10, Ei_def, Ei_def + 10]
     Ee_vals = [Ee_def - 10, Ee_def, Ee_def + 10]
