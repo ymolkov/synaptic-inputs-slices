@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import csv
 from figure_utils import run_analysis, load_params, TMP_DIR, RESULTS_DIR, PROJECT_ROOT
+from spike_repair import repair_undersampled_spikes
 
 PUBLICATION_DIR = os.path.join(PROJECT_ROOT, "publication")
 FIG_DIR = os.path.join(PUBLICATION_DIR, "figures")
@@ -324,6 +325,58 @@ def figure_4_combined_summary():
     plt.savefig(os.path.join(FIG_DIR, "figure4_summary.png"), dpi=300)
     plt.close()
 
+def _load_recording_window(basename, t_start, t_end):
+    path = os.path.join(PROJECT_ROOT, "data", basename)
+    data = []
+    with open(path, 'r') as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) >= 4:
+                try:
+                    t = float(parts[0])
+                    if t_start is not None and t < t_start:
+                        continue
+                    if t_end is not None and t > t_end:
+                        break
+                    inj = float(parts[1])
+                    vm = float(parts[2])
+                    ref = float(parts[3])
+                    data.append((t, inj, vm, ref))
+                except ValueError:
+                    pass
+
+    if not data:
+        return None
+
+    return np.array(data)
+
+def _current_stability_metrics(t, inj):
+    if len(t) < 2:
+        return np.inf, np.inf
+    span_95_5 = np.percentile(inj, 95) - np.percentile(inj, 5)
+    slope = np.polyfit(t - t[0], inj, 1)[0]
+    return span_95_5, slope
+
+def _median_filter_with_edge_padding(x, window_pts):
+    """Median filter with edge padding (avoids boundary dips and suppresses outliers)."""
+    x = np.asarray(x)
+    if len(x) == 0:
+        return x
+
+    w = max(1, int(window_pts))
+    w = min(w, len(x))
+    if w % 2 == 0:
+        w = w - 1 if w > 1 else 1
+    if w <= 1:
+        return x.copy()
+
+    pad = w // 2
+    x_pad = np.pad(x, (pad, pad), mode='edge')
+    out = np.empty_like(x, dtype=float)
+    for i in range(len(x)):
+        out[i] = np.median(x_pad[i:i + w])
+    return out
+
 def figure_2_four_populations():
     """Figure 2: Four Population Episodes."""
     print("Generating Figure 2: Four Population Episodes...")
@@ -333,100 +386,6 @@ def figure_2_four_populations():
         ('VgluT2-I', 'VgluT2-I-Cell10-C-1', 3003.6, 3028.6), 
         ('VgluT2-E', 'VgluT2-E-Cell1-C', 278.1, 303.1)
     ]
-
-    def find_peaks(vm, threshold=-20.0, min_distance=10):
-        peaks = []
-        last_peak = -min_distance
-        for i in range(1, len(vm) - 1):
-            if vm[i] > threshold and vm[i] > vm[i-1] and vm[i] >= vm[i+1]:
-                if i - last_peak >= min_distance:
-                    peaks.append(i)
-                    last_peak = i
-        return np.array(peaks)
-
-    def get_normalized_episode(basename, t_start, t_end):
-        path = os.path.join(PROJECT_ROOT, "data", basename)
-        data = []
-        with open(path, 'r') as f:
-            for line in f:
-                parts = line.split()
-                if len(parts) >= 4:
-                    try:
-                        t = float(parts[0])
-                        if t >= t_start and t <= t_end:
-                            vm = float(parts[2])
-                            ref = float(parts[3])
-                            data.append((t, vm, ref))
-                        elif t > t_end:
-                            break
-                    except ValueError:
-                        pass
-        
-        data = np.array(data)
-        if len(data) == 0: return None, None, None
-        
-        t = data[:, 0]
-        vm = data[:, 1]
-        ref = data[:, 2]
-        
-        dt = (t[-1] - t[0]) / len(t)
-        if dt == 0: dt = 0.0001
-        min_dist_pts = int(0.005 / dt)
-        
-        peaks_idx = find_peaks(vm, threshold=-20.0, min_distance=min_dist_pts)
-        if len(peaks_idx) == 0: return t, vm, ref
-        
-        inferred_peaks = []
-        for idx in peaks_idx:
-            t_pts = t[idx-1:idx+2]
-            v_pts = vm[idx-1:idx+2]
-            x_centered = np.array([-1.0, 0.0, 1.0])
-            coeffs = np.polyfit(x_centered, v_pts, 2)
-            
-            a, b, c = coeffs
-            if a < 0:
-                x_max = -b / (2*a)
-                if abs(x_max) > 1.0:
-                    inferred_peaks.append(v_pts[1])
-                else:
-                    v_max = a*(x_max**2) + b*x_max + c
-                    inferred_peaks.append(max(v_pts[1], v_max))
-            else:
-                inferred_peaks.append(v_pts[1])
-                
-        mean_raw_peak = np.mean(vm[peaks_idx])
-        mean_inferred_peak = np.mean(inferred_peaks)
-        
-        v_norm = np.copy(vm)
-        threshold_base = -30.0
-        
-        for i, idx in enumerate(peaks_idx):
-            left = idx
-            while left > 0 and vm[left] > threshold_base:
-                left -= 1
-            right = idx
-            while right < len(vm)-1 and vm[right] > threshold_base:
-                right += 1
-                
-            raw_peak = vm[idx]
-            target_peak = inferred_peaks[i]
-            
-            if raw_peak > threshold_base:
-                # Scale each individual spike to its OWN inferred true peak
-                # This precisely corrects undersampling while preserving the true natural physiological variance
-                scale_factor = (target_peak - threshold_base) / (raw_peak - threshold_base)
-                
-                # Soft bounds just in case of weird interpolation artifacts
-                if scale_factor < 1.0: 
-                    scale_factor = 1.0
-                elif scale_factor > 3.0: 
-                    scale_factor = 3.0
-                    
-                for j in range(left, right+1):
-                    if vm[j] > threshold_base:
-                        v_norm[j] = threshold_base + (vm[j] - threshold_base) * scale_factor
-                
-        return t, v_norm, ref
 
     plt.rcParams.update({
         "axes.labelsize": 16,
@@ -440,18 +399,33 @@ def figure_2_four_populations():
     fig, axes = plt.subplots(4, 1, figsize=(15, 12), sharex=True)
 
     for i, (name, basename, start, end) in enumerate(episodes):
-        t, v_norm, ref = get_normalized_episode(basename, start, end)
-        if t is None:
+        rec = _load_recording_window(basename, start, end)
+        if rec is None or len(rec) < 3:
             print(f'Failed to load {basename}')
             continue
-            
+        t = rec[:, 0]
+        inj = rec[:, 1]
+        vm = rec[:, 2]
+        ref = rec[:, 3]
+
+        dt_candidates = np.diff(t)
+        dt_candidates = dt_candidates[dt_candidates > 0]
+        dt = np.median(dt_candidates) if len(dt_candidates) > 0 else 0.0001
+        v_norm, repair_diag = repair_undersampled_spikes(
+            vm, dt, peak_threshold=-30.0, base_threshold=-45.0
+        )
+
+        i_span, i_slope = _current_stability_metrics(t, inj)
+        if i_span > 0.20 or abs(i_slope) > 0.0025:
+            print(
+                f"Warning: {basename} has non-steady injected current in plotted window "
+                f"(span95-5={i_span:.4f}, slope={i_slope:.6f}/s)."
+            )
+
         t_aligned = t - t[0]
-        
-        window = int(0.1 / ((t[-1]-t[0])/len(t))) # 100ms window
-        if window > 0:
-            ref_smooth = np.convolve(ref, np.ones(window)/window, mode='same')
-        else:
-            ref_smooth = ref
+
+        med_window = max(1, int(round(0.1 / dt)))  # 100 ms median denoise
+        ref_smooth = _median_filter_with_edge_padding(ref, med_window)
             
         # Scale green signal to be strictly below the blue signal
         vm_min = np.min(v_norm)
@@ -474,6 +448,13 @@ def figure_2_four_populations():
             
         ax.plot(t_aligned, ref_mapped, color='#2ca02c', lw=2, alpha=0.8, label=r'$\int$ HNA' if i==0 else "")
         ax.plot(t_aligned, v_norm, color='#1f77b4', lw=1, alpha=0.9, label='Membrane Potential' if i==0 else "")
+
+        if i == 0:
+            print(
+                f"Spike repair summary ({basename}): "
+                f"n_peaks={repair_diag.get('num_peaks', 0)}, "
+                f"mean_lift={repair_diag.get('mean_peak_lift', 0.0):.3f} mV"
+            )
         
         # Use simple titles, shift inside the plot area for cleaner look
         ax.text(0.01, 0.95, name, transform=ax.transAxes, fontsize=18, fontweight='bold', 
@@ -632,7 +613,7 @@ def generate_captions():
         f.write("## Figure 1: Method Illustration\n")
         f.write("A) Linear regressions of I-V curves at different phases. B) Wedge plot showing the trajectory of G_tot vs I_0. C) Reconstructed excitatory (red) and inhibitory (blue) conductances over two cycles. D) Polar representation of excitatory and inhibitory conductance profiles over one normalized cycle.\n\n")
         f.write("## Figure 2: Four Population Episodes\n")
-        f.write(r"Representative 25-second rhythmic episodes highlighting the firing patterns of typical neurons in the VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations. The blue trace illustrates the membrane potential ($V_m$) exhibiting distinct bursting dynamics time-aligned with the network rhythm. The green trace represents the integrated Hypoglossal Nerve Activity ($\int$ HNA), providing a global reference for the inspiratory phase. Action potential peaks have been individually corrected via parabolic interpolation to physiological maximums to accurately visualize the natural burst structures and mitigate continuous voltage undersampling artifacts inherent to the recording resolution." + "\n\n")
+        f.write(r"Representative 25-second rhythmic episodes highlighting the firing patterns of typical neurons in the VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations. The blue trace illustrates the membrane potential ($V_m$) exhibiting distinct bursting dynamics time-aligned with the network rhythm. The green trace represents the integrated Hypoglossal Nerve Activity ($\int$ HNA), providing a global reference for the inspiratory phase. Action potential peaks are repaired spike-by-spike using a data-derived typical spike-top template fit to existing sampled points, increasing peak height and reducing undersampling-driven peak variability; episodes are selected from steady-current segments." + "\n\n")
         f.write("## Figure 3: Selected Conductances\n")
         f.write("Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).\n\n")
         f.write("## Figure 4: Combined Summary\n")
