@@ -49,7 +49,7 @@ $(PUB_DIR)/figures/figure3_selected.png: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig3 --captions
 	cp $(PUB_DIR)/figures/figure3_selected.png $(PAPER_DIR)/figures/figure3_selected.png
 
-$(PUB_DIR)/figures/supp_figure4_summary.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_publication_figures.py
+$(PUB_DIR)/figures/figure4_summary.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_publication_figures.py
 	@mkdir -p $(PUB_DIR)/figures
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig4 --captions
 	cp $(PUB_DIR)/figures/figure4_summary.png $(PAPER_DIR)/figures/figure4_summary.png
