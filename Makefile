@@ -73,7 +73,9 @@ $(PUB_DIR)/figures/supp_figure3_ectopic.svg: $(SCRIPT_DIR)/make_ectopic_svg.py
 $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png: $(SCRIPT_DIR)/plot_refined_5x2.py
 	@mkdir -p $(PUB_DIR)/figures
 	python3 $(SCRIPT_DIR)/plot_refined_5x2.py
+	python3 $(SCRIPT_DIR)/generate_captions.py
 	cp $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png $(PAPER_DIR)/figures/supp_figure4_pre_i_recruitment.png
+	cp $(PUB_DIR)/captions.md $(PAPER_DIR)/captions.md
 
 # 4. Generate the summary table (Tex and Docx)
 $(PUB_DIR)/conductance_table.tex: $(CSV_OUTPUTS) $(SCRIPT_DIR)/generate_summary_table.py
