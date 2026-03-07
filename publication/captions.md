@@ -20,3 +20,6 @@ I-V regressions for all cells and recording modes presented in Figure 2. Scatter
 
 ## Supplemental Figure 3: Ectopic Bursting in Inhibitory Neurons
 Representative 25-second inhibitory episodes highlighting ectopic bursting behavior. Each panel displays the membrane potential (blue) and the synchronized rhythmic reference signal (green). Action potential peaks have been accurately restored using parabolic interpolation to mitigate 1000 Hz undersampling. Episodes were selected for having clear ectopic bursts (>=3 spikes), a rhythmic network context (>=2 main bursts), and a steady holding current.
+
+## Supplemental Figure 4: Pre-Inspiratory Initiator Activity
+High-resolution comparison of pre-inspiratory action potential firing and underlying synaptic drive. **(Left Column)** Current Clamp (CC) episodes showing action potentials (blue) leading the network-wide burst (green HNA trace). The pre-inspiratory lead period is highlighted in red. **(Right Column)** Corresponding Voltage Clamp (VC) recordings for the same cells, illustrating the early-onset inward synaptic current (blue) leading the global network rhythm (green). VC episodes were selected for perfectly steady membrane potential baselines to ensure accurate timing of synaptic current deviation. All panels are centered at the 20% peak HNA onset ($t=0$) with a consistent timescale of 2.5 seconds.
