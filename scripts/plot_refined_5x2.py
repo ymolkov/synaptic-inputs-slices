@@ -1,6 +1,26 @@
 import os
+import re
 import numpy as np
 import matplotlib.pyplot as plt
+from spike_repair import repair_undersampled_spikes
+
+DISPLAY_XLIM = (-0.25, 1.25)
+VC_DISPLAY_YLIM = (0.0, 1.0)
+ROW_HEIGHT = 4.0 / 1.5
+LABEL_FONT_SIZE = 12
+TITLE_FONT_SIZE = 14
+SCALEBAR_FONT_SIZE = 11
+FRAME_PAD_Y_FRAC = 0.012
+CC_REF_BASELINE_FRAC = 0.01
+CC_REF_AMPLITUDE_FRAC = 0.21
+VC_REF_BASELINE_FRAC = CC_REF_BASELINE_FRAC
+VC_REF_AMPLITUDE_FRAC = CC_REF_AMPLITUDE_FRAC
+VC_BASELINE_FRAC = 0.88
+VC_PEAK_FRAC = ( -60.0 - (-100.0) ) / (40.0 - (-100.0))
+CC_SPIKE_THRESHOLD_MV = -30.0
+
+def format_cc_label(name):
+    return re.sub(r'-C(?:-[^-]+)?$', '', name)
 
 def load_window(path, t_start, t_end, chan=2):
     data = []
@@ -24,145 +44,581 @@ def median_filter(data, window_size):
     padded = np.pad(data, (half, half), mode='edge')
     return np.array([np.median(padded[i:i+window_size]) for i in range(len(data))])
 
+def positive_dt(t):
+    diffs = np.diff(t)
+    diffs = diffs[diffs > 0]
+    return np.median(diffs) if len(diffs) else 0.001
+
+def find_sharp_onset_before_peak(t, ref_smooth, peak_idx, search_back_sec=0.6):
+    dt = positive_dt(t)
+    search_pts = max(3, int(round(search_back_sec / dt)))
+    lo = max(0, peak_idx - search_pts)
+    if peak_idx - lo < 3:
+        return peak_idx
+
+    peak_t = t[peak_idx]
+    baseline_mask = (t >= peak_t - 0.35) & (t <= peak_t - 0.12)
+    baseline_idx = np.where(baseline_mask & (np.arange(len(t)) < peak_idx))[0]
+    if len(baseline_idx) < 3:
+        fallback_hi = max(lo + 3, peak_idx - max(2, int(round(0.08 / dt))))
+        baseline_idx = np.arange(lo, fallback_hi)
+    if len(baseline_idx) < 3:
+        return peak_idx
+
+    baseline_vals = ref_smooth[baseline_idx]
+    baseline = np.median(baseline_vals)
+    noise_sigma = 1.4826 * np.median(np.abs(baseline_vals - baseline))
+    peak_value = ref_smooth[peak_idx]
+    amplitude = peak_value - baseline
+    if amplitude <= max(4 * noise_sigma, 1e-6):
+        return peak_idx
+
+    onset_level = baseline + max(4 * noise_sigma, 0.18 * amplitude)
+    search_start = max(lo, np.searchsorted(t, peak_t - 0.25, side='left'))
+    onset_candidate = None
+    sustain_sec = 0.02
+    for idx in range(search_start, peak_idx + 1):
+        if ref_smooth[idx] < onset_level:
+            continue
+        window_idx = np.where((t >= t[idx]) & (t <= t[idx] + sustain_sec))[0]
+        if len(window_idx) < 2:
+            continue
+        if np.mean(ref_smooth[window_idx] >= onset_level) >= 0.8:
+            onset_candidate = idx
+            break
+    if onset_candidate is None:
+        return peak_idx
+
+    high_level = baseline + 0.80 * amplitude
+    high_idx = peak_idx
+    for idx in range(onset_candidate, peak_idx + 1):
+        if ref_smooth[idx] >= high_level:
+            high_idx = idx
+            break
+    if high_idx - onset_candidate < 2:
+        return onset_candidate
+
+    rise_slice = ref_smooth[onset_candidate:high_idx + 1]
+    rise_dt = np.diff(t[onset_candidate:high_idx + 1])
+    rise_dv = np.diff(rise_slice)
+    valid = rise_dt > 0
+    if not np.any(valid):
+        return onset_candidate
+
+    slope = np.full_like(rise_dv, -np.inf, dtype=float)
+    slope[valid] = rise_dv[valid] / rise_dt[valid]
+    sharp_rel = int(np.argmax(slope))
+    return onset_candidate + sharp_rel + 1
+
+def find_reference_onset_near_time(t, ref, target_time, search_radius=1.5):
+    dt = positive_dt(t)
+    ref_smooth = median_filter(ref, max(1, int(round(0.1 / dt))))
+    idx_target = np.argmin(np.abs(t - target_time))
+    radius_pts = max(1, int(round(search_radius / dt)))
+    lo = max(0, idx_target - radius_pts)
+    hi = min(len(t), idx_target + radius_pts + 1)
+    local = ref_smooth[lo:hi]
+
+    local_peak_idx = lo + int(np.argmax(local))
+    local_min = np.min(local)
+    local_max = np.max(local)
+    onset_idx = find_sharp_onset_before_peak(t, ref_smooth, local_peak_idx)
+
+    return ref_smooth, onset_idx, local_min, local_max
+
+def find_reference_onset_candidates(t, ref_smooth):
+    low = np.percentile(ref_smooth, 15)
+    high = np.percentile(ref_smooth, 99.5)
+    threshold = low + 0.20 * (high - low)
+    above = ref_smooth >= threshold
+    rise_indices = np.where((~above[:-1]) & (above[1:]))[0] + 1
+
+    min_sep_sec = 1.0
+    peak_indices = []
+    for idx in rise_indices:
+        peak_lo = idx
+        peak_hi = peak_lo + 1
+        while peak_hi < len(ref_smooth) and (t[peak_hi] - t[peak_lo]) <= 0.8:
+            peak_hi += 1
+        local_peak = peak_lo + int(np.argmax(ref_smooth[peak_lo:peak_hi]))
+        if not peak_indices or (t[local_peak] - t[peak_indices[-1]]) > min_sep_sec:
+            peak_indices.append(local_peak)
+        elif ref_smooth[local_peak] > ref_smooth[peak_indices[-1]]:
+            peak_indices[-1] = local_peak
+
+    onset_indices = []
+    for peak_idx in peak_indices:
+        onset_idx = find_sharp_onset_before_peak(t, ref_smooth, peak_idx)
+        if not onset_indices or (t[onset_idx] - t[onset_indices[-1]]) > min_sep_sec:
+            onset_indices.append(onset_idx)
+        elif t[onset_idx] < t[onset_indices[-1]]:
+            onset_indices[-1] = onset_idx
+
+    return onset_indices
+
+def select_display_reference_onsets(t, ref, target_time, xlim, adjacent_side=None):
+    ref_smooth, main_idx, _, _ = find_reference_onset_near_time(t, ref, target_time)
+    onset_candidates = find_reference_onset_candidates(t, ref_smooth)
+    if onset_candidates:
+        main_idx = min(onset_candidates, key=lambda idx: abs(t[idx] - target_time))
+    main_time = t[main_idx]
+    if adjacent_side == "left":
+        side_target = xlim[0]
+    elif adjacent_side == "right":
+        side_target = xlim[1]
+    else:
+        side_target = xlim[0] if abs(xlim[0]) > abs(xlim[1]) else xlim[1]
+
+    onset_indices = [main_idx]
+    if onset_candidates:
+        if side_target < 0:
+            side_candidates = [idx for idx in onset_candidates if t[idx] < main_time - 1.0]
+            if side_candidates:
+                onset_indices.append(max(side_candidates, key=lambda idx: t[idx]))
+        else:
+            side_candidates = [idx for idx in onset_candidates if t[idx] > main_time + 1.0]
+            if side_candidates:
+                onset_indices.append(min(side_candidates, key=lambda idx: t[idx]))
+
+    if len(onset_indices) == 1:
+        adj_time_guess = main_time + side_target
+        _, adj_idx, _, _ = find_reference_onset_near_time(t, ref, adj_time_guess, search_radius=2.0)
+        if abs(t[adj_idx] - main_time) > 1.0:
+            onset_indices.append(adj_idx)
+
+    onset_indices = sorted(set(onset_indices), key=lambda idx: t[idx])
+    return ref_smooth, onset_indices
+
+def find_spike_bursts(t, vm, max_isi=0.17):
+    spike_indices = np.where((vm[:-1] <= CC_SPIKE_THRESHOLD_MV) & (vm[1:] > CC_SPIKE_THRESHOLD_MV))[0]
+    t_spikes = t[spike_indices]
+    bursts = []
+    if len(t_spikes) == 0:
+        return bursts
+
+    current = [t_spikes[0]]
+    for k in range(1, len(t_spikes)):
+        if t_spikes[k] - t_spikes[k - 1] <= max_isi:
+            current.append(t_spikes[k])
+        else:
+            if len(current) >= 2:
+                bursts.append(current)
+            current = [t_spikes[k]]
+    if len(current) >= 2:
+        bursts.append(current)
+
+    return bursts
+
+def find_spike_burst_for_onset(bursts, ref_onset):
+    for burst in bursts:
+        if burst[0] < ref_onset and burst[-1] > ref_onset:
+            return burst
+    if len(bursts) == 0:
+        return None
+    return bursts[np.argmin([abs(burst[0] - ref_onset) for burst in bursts])]
+
+def find_inward_current_onset(t, inj_smooth, ref_onset):
+    idx_ref = np.argmin(np.abs(t - ref_onset))
+    baseline_mask = (t >= ref_onset - 0.45) & (t <= ref_onset - 0.25)
+    baseline_idx = np.where(baseline_mask)[0]
+    baseline = inj_smooth[baseline_idx]
+    if len(baseline) < 3:
+        return None
+
+    search_mask = (t >= ref_onset - 0.25) & (t <= ref_onset + 0.02)
+    search_idx = np.where(search_mask)[0]
+    if len(search_idx) == 0:
+        return None
+
+    base_inj = np.median(baseline)
+    std_inj = np.std(baseline) + 1e-9
+    idx_peak = search_idx[np.argmin(inj_smooth[search_idx])]
+    dip_amp = base_inj - inj_smooth[idx_peak]
+    sig_thresh = max(3 * std_inj, 0.08)
+    if dip_amp < sig_thresh:
+        return None
+
+    onset_thresh = base_inj - max(1.5 * std_inj, 0.04)
+    idx_onset = None
+    for start_idx in search_idx:
+        window_end = t[start_idx] + 0.04
+        window_mask = (t >= t[start_idx]) & (t <= window_end)
+        window_idx = np.where(window_mask)[0]
+        if len(window_idx) < 4:
+            continue
+        if np.mean(inj_smooth[window_idx] < onset_thresh) >= 0.75:
+            idx_onset = start_idx
+            break
+    if idx_onset is None:
+        return None
+
+    lead_window = ref_onset - t[idx_onset]
+    short_lead = lead_window < 0.03
+    grad = np.diff(inj_smooth)
+    grad_mask = (t[:-1] >= ref_onset - 0.08) & (t[:-1] <= ref_onset)
+    grad_window = grad[grad_mask]
+    min_step = np.min(grad_window) if len(grad_window) > 0 else 0.0
+    if short_lead and (std_inj > 0.05 or dip_amp < 0.30 or min_step > -0.05):
+        return None
+
+    return idx_onset
+
+def normalize_two_burst_time(values, onset_times):
+    onset_start, onset_end = sorted(onset_times)
+    span = onset_end - onset_start
+    if abs(span) < 1e-9:
+        return np.zeros_like(values)
+    return (values - onset_start) / span
+
+def median_abs_deviation(values):
+    center = np.median(values)
+    return np.median(np.abs(values - center))
+
+def vc_display_noise_mad(t, inj, inj_smooth, onset_times):
+    _, inj_smooth_disp, _ = map_vc_current_trace(
+        inj, inj_smooth, onset_times, t, (0.0, 1.0)
+    )
+    baseline_segments = []
+    for onset in onset_times:
+        baseline_mask = (t >= onset - 0.45) & (t <= onset - 0.25)
+        if np.count_nonzero(baseline_mask) < 5:
+            continue
+        t_seg = t[baseline_mask]
+        y_seg = inj_smooth_disp[baseline_mask]
+        coeffs = np.polyfit(t_seg - t_seg[0], y_seg, 1)
+        detrended = y_seg - np.polyval(coeffs, t_seg - t_seg[0])
+        baseline_segments.append(detrended)
+    if not baseline_segments:
+        return 0.0
+    baseline = np.concatenate(baseline_segments)
+    return 1.4826 * median_abs_deviation(baseline)
+
+def choose_vc_smoothing_seconds(t, inj, onset_times):
+    return 0.10
+
+def choose_vc_smoothing_for_target_noise(t, inj, onset_times, target_noise_mad):
+    dt = positive_dt(t)
+    candidates = np.arange(0.01, 1.501, 0.01)
+    best_sec = 0.10
+    best_err = np.inf
+    for smooth_sec in candidates:
+        inj_smooth = median_filter(inj, max(1, int(round(smooth_sec / dt))))
+        noise_mad = vc_display_noise_mad(t, inj, inj_smooth, onset_times)
+        err = abs(noise_mad - target_noise_mad)
+        if err < best_err:
+            best_err = err
+            best_sec = float(smooth_sec)
+    return best_sec
+
+def map_reference_trace(ref_smooth, y_limits, baseline_frac, amplitude_frac):
+    y_min, y_max = y_limits
+    y_span = y_max - y_min
+    ref_min = np.min(ref_smooth)
+    ref_max = np.max(ref_smooth)
+    ref_norm = (ref_smooth - ref_min) / (ref_max - ref_min + 1e-9)
+    baseline = y_min + baseline_frac * y_span
+    amplitude = amplitude_frac * y_span
+    return baseline + amplitude * ref_norm
+
+def map_vc_current_trace(inj, inj_smooth, onset_times, t, y_limits):
+    y_min, y_max = y_limits
+    y_span = y_max - y_min
+
+    baseline_samples = []
+    peak_samples = []
+    for onset in onset_times:
+        baseline_mask = (t >= onset - 0.45) & (t <= onset - 0.25)
+        peak_mask = (t >= onset - 0.25) & (t <= onset + 0.10)
+        if np.any(baseline_mask):
+            baseline_samples.append(inj_smooth[baseline_mask])
+        if np.any(peak_mask):
+            peak_samples.append(inj_smooth[peak_mask])
+
+    if baseline_samples:
+        native_baseline = np.median(np.concatenate(baseline_samples))
+    else:
+        native_baseline = np.median(inj_smooth)
+    if peak_samples:
+        native_peak = np.min(np.concatenate(peak_samples))
+    else:
+        native_peak = np.min(inj_smooth)
+
+    native_span = max(native_baseline - native_peak, 1e-9)
+    display_baseline = y_min + VC_BASELINE_FRAC * y_span
+    display_peak = y_min + VC_PEAK_FRAC * y_span
+    display_amplitude = max(display_baseline - display_peak, 1e-9)
+    scale = display_amplitude / native_span
+
+    return (
+        display_baseline - (native_baseline - inj) * scale,
+        display_baseline - (native_baseline - inj_smooth) * scale,
+        scale,
+    )
+
+def add_time_scalebar(ax, onset_times, seconds=1.0, y_frac=0.07, label_offset_frac=0.04):
+    onset_start, onset_end = sorted(onset_times)
+    span = max(onset_end - onset_start, 1e-9)
+    bar_width = seconds / span
+    y_min, y_max = ax.get_ylim()
+    y_span = y_max - y_min
+    y_bar = y_min + y_frac * y_span
+    x_right = DISPLAY_XLIM[1]
+    x_left = x_right - bar_width
+    min_left = DISPLAY_XLIM[0]
+    if x_left < min_left:
+        x_left = min_left
+        x_right = x_left + bar_width
+
+    ax.plot(
+        [x_left, x_right],
+        [y_bar, y_bar],
+        color='black',
+        lw=2.6,
+        solid_capstyle='butt',
+        clip_on=False,
+    )
+    ax.text((x_left + x_right) / 2, y_bar - label_offset_frac * y_span, "1 s",
+            ha='center', va='top', fontsize=SCALEBAR_FONT_SIZE, clip_on=False)
+
+def y_to_axes_frac(ax, y_value):
+    y_min, y_max = ax.get_ylim()
+    if abs(y_max - y_min) < 1e-9:
+        return 0.0
+    return float(np.clip((y_value - y_min) / (y_max - y_min), 0.0, 1.0))
+
+def add_current_scalebar(ax, scale, current_nA=0.2):
+    y_min, y_max = ax.get_ylim()
+    y_span = y_max - y_min
+    bar_height = current_nA * scale
+    x_bar = DISPLAY_XLIM[1]
+    display_baseline = y_min + VC_BASELINE_FRAC * y_span
+    display_peak = y_min + VC_PEAK_FRAC * y_span
+    transient_center = 0.5 * (display_baseline + display_peak)
+    y_bottom = transient_center - 0.5 * bar_height
+    ax.plot(
+        [x_bar, x_bar],
+        [y_bottom, y_bottom + bar_height],
+        color='black',
+        lw=2.0,
+        solid_capstyle='butt',
+        clip_on=False,
+    )
+    ax.text(
+        x_bar - 0.02,
+        y_bottom + 0.5 * bar_height,
+        f"{current_nA:.1f} nA",
+        ha='right',
+        va='center',
+        fontsize=SCALEBAR_FONT_SIZE,
+        clip_on=False,
+    )
+
+def style_panel_axes(ax, y_spine_bounds=None, show_left=True):
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(show_left)
+    if show_left and y_spine_bounds is not None:
+        ax.spines["left"].set_bounds(*y_spine_bounds)
+    ax.tick_params(axis="x", bottom=False, labelbottom=False)
+    if not show_left:
+        ax.tick_params(axis="y", left=False, labelleft=False)
+
 def plot_final_grid_tight():
-    # cell: (cc_basename, cc_t, vc_basename, vc_t)
+    # Explicit per-panel windows keep the selected lead aligned to the intended
+    # burst while showing one adjacent reference burst that reads cleanly.
     cell_data = [
-        ("VgluT2-I-Cell10-C-1", 2932.4, "VgluT2-I-Cell10-V", 2560.8),
-        ("VGAT-I-Cell2-C", 244.1, "VGAT-I-Cell2-V", 63.4),
-        ("VGAT-I-Cell9-C", 3334.2, "VGAT-I-Cell9-V", 2540.4),
-        ("VgluT2-I-Cell2-C", 876.2, "VgluT2-I-Cell2-V", 180.5),
-        ("VGAT-I-Cell8-C", 1787.0, "VGAT-I-Cell8-V", 74.0)
+        {
+            "cc_name": "VgluT2-I-Cell10-C-1",
+            "cc_t": 2932.4,
+            "cc_xlim": (-1.0, 5.3),
+            "cc_side": "right",
+            "vc_name": "VgluT2-I-Cell10-V",
+            "vc_t": 2530.67,
+            "vc_xlim": (-8.4, 1.0),
+            "vc_side": "left",
+            "vc_smooth_sec": 0.50,
+        },
+        {
+            "cc_name": "VGAT-I-Cell2-C",
+            "cc_t": 244.1,
+            "cc_xlim": (-1.2, 4.9),
+            "cc_side": "right",
+            "vc_name": "VGAT-I-Cell2-V",
+            "vc_t": 35.59,
+            "vc_xlim": (-7.5, 1.0),
+            "vc_side": "left",
+            "vc_smooth_sec": 0.03,
+        },
+        {
+            "cc_name": "VGAT-I-Cell9-C",
+            "cc_t": 3334.2,
+            "cc_xlim": (-5.8, 0.18),
+            "vc_name": "VGAT-I-Cell9-V",
+            "vc_t": 2540.4,
+            "vc_xlim": (-4.0, 0.2),
+            "vc_smooth_sec": 0.50,
+        },
+        {
+            "cc_name": "VgluT2-I-Cell2-C",
+            "cc_t": 876.2,
+            "cc_xlim": (-1.0, 5.8),
+            "vc_name": "VgluT2-I-Cell2-V",
+            "vc_t": 328.66,
+            "vc_xlim": (-6.6, 1.0),
+            "vc_side": "left",
+            "vc_smooth_sec": 0.03,
+        },
+        {
+            "cc_name": "VGAT-I-Cell8-C",
+            "cc_t": 1787.0,
+            "cc_xlim": (-5.4, 0.25),
+            "vc_name": "VGAT-I-Cell8-V",
+            "vc_t": 74.0,
+            "vc_xlim": (-6.3, 1.0),
+            "vc_smooth_sec": 0.075,
+        },
     ]
+
+    target_vc_display_noise_mad = None
+    first_vc = cell_data[0]
+    rec = load_window(
+        f"data/{first_vc['vc_name']}",
+        first_vc["vc_t"] + first_vc["vc_xlim"][0] - 1.0,
+        first_vc["vc_t"] + first_vc["vc_xlim"][1] + 1.0,
+        chan=1,
+    )
+    if len(rec) > 0:
+        t, inj, ref = rec[:, 0], rec[:, 1], rec[:, 2]
+        dt = positive_dt(t)
+        _, onset_indices = select_display_reference_onsets(
+            t, ref, first_vc["vc_t"], first_vc["vc_xlim"], first_vc.get("vc_side")
+        )
+        onset_times = [t[idx] for idx in onset_indices]
+        ref_smooth_sec = first_vc.get("vc_smooth_sec", choose_vc_smoothing_seconds(t, inj, onset_times))
+        inj_smooth = median_filter(inj, max(1, int(round(ref_smooth_sec / dt))))
+        target_vc_display_noise_mad = vc_display_noise_mad(t, inj, inj_smooth, onset_times)
     
     num_cells = len(cell_data)
-    fig, axes = plt.subplots(num_cells, 2, figsize=(16, 4 * num_cells), sharex=True)
+    fig, axes = plt.subplots(num_cells, 2, figsize=(18, ROW_HEIGHT * num_cells), sharex=False)
     
-    window_pre = 1.0
-    window_post = 1.5
-    
-    for row, (cc_name, cc_t, vc_name, vc_t) in enumerate(cell_data):
+    for row, panel in enumerate(cell_data):
         # --- Column 1: Current Clamp ---
         ax = axes[row, 0]
-        # Load slightly more to ensure filtering doesn't hit edges
-        rec = load_window(f"data/{cc_name}", cc_t - 1.5, cc_t + 2.0, chan=2)
+        cc_name = panel["cc_name"]
+        cc_t = panel["cc_t"]
+        cc_xlim = panel["cc_xlim"]
+        cc_pad = 1.0
+        rec = load_window(
+            f"data/{cc_name}",
+            cc_t + cc_xlim[0] - cc_pad,
+            cc_t + cc_xlim[1] + cc_pad,
+            chan=2,
+        )
         if len(rec) > 0:
             t, vm, ref = rec[:, 0], rec[:, 1], rec[:, 2]
-            dt = np.median(np.diff(t)) if len(t) > 1 else 0.001
-            if dt <= 0: dt = 0.001
-            ref_smooth = median_filter(ref, int(0.1/dt))
-            
-            lp, lb = np.max(ref_smooth), np.min(ref_smooth)
-            lt = lb + 0.20 * (lp - lb)
-            lpi = np.argmax(ref_smooth)
-            loi = 0
-            for j in range(lpi, 0, -1):
-                if ref_smooth[j] < lt:
-                    loi = j + 1
-                    break
-            t_onset = t[loi]
-            
-            spike_indices = np.where((vm[:-1] <= -10) & (vm[1:] > -10))[0]
-            t_spikes = t[spike_indices]
-            bursts = []
-            if len(t_spikes) > 0:
-                cur = [t_spikes[0]]
-                for k in range(1, len(t_spikes)):
-                    if t_spikes[k] - t_spikes[k-1] <= 0.1: cur.append(t_spikes[k])
-                    else:
-                        if len(cur) >= 2: bursts.append(cur)
-                        cur = [t_spikes[k]]
-                if len(cur) >= 2: bursts.append(cur)
-            
-            coinciding = None
-            for b in bursts:
-                if b[0] < t_onset and b[-1] > t_onset:
-                    coinciding = b
-                    break
-            if coinciding is None and len(bursts) > 0:
-                coinciding = bursts[np.argmin([abs(b[0] - t_onset) for b in bursts])]
-            
-            tz = t - t_onset
-            ax.plot(tz, vm, color='blue', lw=0.8)
-            ref_norm = (ref_smooth - lb) / (lp - lb + 1e-9)
-            ax.plot(tz, ref_norm * 35.0 - 90.0, color='green', lw=2, alpha=0.7)
-            ax.axvline(0, color='green', linestyle='--', lw=2)
-            
-            if coinciding:
-                t_start = coinciding[0] - t_onset
-                # Only shade if within visible window [-1, 0]
-                shade_start = max(-1.0, t_start)
-                if shade_start < 0:
-                    ax.axvspan(shade_start, 0, color='red', alpha=0.15)
-                    ax.axvline(t_start, color='red', linestyle=':', lw=2)
-                    lead_ms = -t_start * 1000
-                    ax.annotate(f"Lead: {lead_ms:.0f} ms",
-                                xy=(t_start, 0), xytext=(-40, 30), textcoords='offset points',
-                                arrowprops=dict(arrowstyle="->", color='red'),
-                                color='red', fontweight='bold', fontsize=9)
+            dt = positive_dt(t)
+            vm_repaired, _ = repair_undersampled_spikes(
+                vm, dt, peak_threshold=-30.0, base_threshold=-45.0
+            )
+            ref_smooth, onset_indices = select_display_reference_onsets(
+                t, ref, cc_t, cc_xlim, panel.get("cc_side")
+            )
+            onset_times = [t[idx] for idx in onset_indices]
+            bursts = find_spike_bursts(t, vm_repaired)
+            tx = normalize_two_burst_time(t, onset_times)
+            ax.plot(tx, vm_repaired, color='blue', lw=0.8)
+            ax.set_ylim(-100, 40)
+            ax.set_yticks(np.arange(-60, 41, 20))
+            ref_mapped = map_reference_trace(
+                ref_smooth, ax.get_ylim(), CC_REF_BASELINE_FRAC, CC_REF_AMPLITUDE_FRAC
+            )
+            ax.plot(tx, ref_mapped, color='green', lw=2, alpha=0.7)
 
-            ax.set_ylabel(f"{cc_name}\nVm (mV)", fontsize=10)
-            if row == 0: ax.set_title("Current Clamp", fontsize=12)
-            ax.set_ylim(-105, 50)
+            for onset_idx in onset_indices:
+                ref_x = normalize_two_burst_time(np.array([t[onset_idx]]), onset_times)[0]
+                coinciding = find_spike_burst_for_onset(bursts, t[onset_idx])
+                if coinciding is not None:
+                    t_start_x = normalize_two_burst_time(np.array([coinciding[0]]), onset_times)[0]
+                    shade_start = max(DISPLAY_XLIM[0], t_start_x)
+                    if shade_start < ref_x:
+                        ax.axvspan(
+                            shade_start,
+                            ref_x,
+                            color='red',
+                            alpha=0.15,
+                        )
+
+            ax.set_ylabel(format_cc_label(cc_name), fontsize=LABEL_FONT_SIZE)
+            ax.yaxis.set_label_coords(-0.08, y_to_axes_frac(ax, 0.0))
+            if row == 0: ax.set_title("Current Clamp", fontsize=TITLE_FONT_SIZE)
+            ax.set_xlim(*DISPLAY_XLIM)
+            ax.set_xticks([])
+            add_time_scalebar(ax, onset_times, y_frac=-0.02, label_offset_frac=0.03)
+            style_panel_axes(ax, y_spine_bounds=(-60, 40))
+            ax.tick_params(axis="y", labelsize=LABEL_FONT_SIZE - 1)
             ax.grid(alpha=0.2)
 
         # --- Column 2: Voltage Clamp ---
         ax = axes[row, 1]
-        rec = load_window(f"data/{vc_name}", vc_t - 1.5, vc_t + 2.0, chan=1)
+        vc_name = panel["vc_name"]
+        vc_t = panel["vc_t"]
+        vc_xlim = panel["vc_xlim"]
+        vc_pad = 1.0
+        rec = load_window(
+            f"data/{vc_name}",
+            vc_t + vc_xlim[0] - vc_pad,
+            vc_t + vc_xlim[1] + vc_pad,
+            chan=1,
+        )
         if len(rec) > 0:
             t, inj, ref = rec[:, 0], rec[:, 1], rec[:, 2]
-            dt = np.median(np.diff(t)) if len(t) > 1 else 0.001
-            if dt <= 0: dt = 0.001
-            ref_smooth = median_filter(ref, int(0.1/dt))
-            inj_smooth = median_filter(inj, int(0.05/dt))
+            dt = positive_dt(t)
+            ax.set_ylim(*VC_DISPLAY_YLIM)
+            ref_smooth, onset_indices = select_display_reference_onsets(
+                t, ref, vc_t, vc_xlim, panel.get("vc_side")
+            )
+            onset_times = [t[idx] for idx in onset_indices]
+            if "vc_smooth_sec" in panel:
+                vc_smooth_sec = panel["vc_smooth_sec"]
+            elif target_vc_display_noise_mad is not None:
+                vc_smooth_sec = choose_vc_smoothing_for_target_noise(
+                    t, inj, onset_times, target_vc_display_noise_mad
+                )
+            else:
+                vc_smooth_sec = choose_vc_smoothing_seconds(t, inj, onset_times)
+            inj_smooth = median_filter(inj, max(1, int(round(vc_smooth_sec / dt))))
             
-            lp, lb = np.max(ref_smooth), np.min(ref_smooth)
-            lt = lb + 0.20 * (lp - lb)
-            lpi = np.argmax(ref_smooth)
-            loi = 0
-            for j in range(lpi, 0, -1):
-                if ref_smooth[j] < lt:
-                    loi = j + 1
-                    break
-            t_onset = t[loi]
-            
-            base_inj = np.median(inj_smooth[:int(0.5/dt)])
-            std_inj = np.std(inj_smooth[:int(0.5/dt)]) + 1e-9
-            thresh_inj = base_inj - max(3 * std_inj, 0.02)
-            idx_peak_vc = np.argmin(inj_smooth)
-            idx_onset_vc = 0
-            for j in range(idx_peak_vc, 0, -1):
-                if inj_smooth[j] > thresh_inj:
-                    idx_onset_vc = j + 1
-                    break
-            t_vc_onset = t[idx_onset_vc]
-            
-            tz = t - t_onset
-            ax.plot(tz, inj, color='blue', lw=0.5, alpha=0.3)
-            ax.plot(tz, inj_smooth, color='blue', lw=1.2)
-            
-            y_min, y_max = np.min(inj_smooth), np.max(inj_smooth)
-            ref_norm = (ref_smooth - lb) / (lp - lb + 1e-9)
-            ref_mapped = ref_norm * (y_max - y_min) * 0.5 + y_min
-            ax.plot(tz, ref_mapped, color='green', lw=2, alpha=0.8)
-            ax.axvline(0, color='green', linestyle='--', lw=2)
-            
-            t_lead_vc = t_vc_onset - t_onset
-            shade_start_vc = max(-1.0, t_lead_vc)
-            if shade_start_vc < 0:
-                ax.axvspan(shade_start_vc, 0, color='red', alpha=0.1)
-                ax.axvline(t_lead_vc, color='red', linestyle=':', lw=2)
-                ax.annotate(f"I-Lead: {-t_lead_vc*1000:.0f} ms",
-                            xy=(t_lead_vc, y_max), xytext=(-40, 10), textcoords='offset points',
-                            arrowprops=dict(arrowstyle="->", color='red'),
-                            color='red', fontweight='bold', fontsize=9)
+            tx = normalize_two_burst_time(t, onset_times)
+            inj_disp, inj_smooth_disp, vc_scale = map_vc_current_trace(
+                inj, inj_smooth, onset_times, t, VC_DISPLAY_YLIM
+            )
+            ax.plot(tx, inj_disp, color='blue', lw=0.45, alpha=0.22)
+            ax.plot(tx, inj_smooth_disp, color='blue', lw=1.25)
 
-            ax.set_ylabel("I (nA)", fontsize=10)
-            if row == 0: ax.set_title("Voltage Clamp", fontsize=12)
+            ref_mapped = map_reference_trace(
+                ref_smooth, VC_DISPLAY_YLIM, VC_REF_BASELINE_FRAC, VC_REF_AMPLITUDE_FRAC
+            )
+            ax.plot(tx, ref_mapped, color='green', lw=2, alpha=0.8)
+
+            for onset_idx in onset_indices:
+                ref_x = normalize_two_burst_time(np.array([t[onset_idx]]), onset_times)[0]
+                idx_onset_vc = find_inward_current_onset(t, inj_smooth, t[onset_idx])
+                if idx_onset_vc is None:
+                    continue
+                t_lead_vc_x = normalize_two_burst_time(np.array([t[idx_onset_vc]]), onset_times)[0]
+                shade_start_vc = max(DISPLAY_XLIM[0], t_lead_vc_x)
+                if shade_start_vc < ref_x:
+                    ax.axvspan(shade_start_vc, ref_x, color='red', alpha=0.1)
+
+            if row == 0: ax.set_title("Voltage Clamp", fontsize=TITLE_FONT_SIZE)
+            ax.set_xlim(*DISPLAY_XLIM)
+            ax.set_yticks([])
+            ax.set_xticks([])
+            add_time_scalebar(ax, onset_times, y_frac=-0.02, label_offset_frac=0.03)
+            add_current_scalebar(ax, vc_scale, current_nA=0.2)
+            style_panel_axes(ax, show_left=False)
             ax.grid(alpha=0.2)
-
-    for col in range(2):
-        axes[-1, col].set_xlabel("Time from HNA Onset (s)")
-        axes[-1, col].set_xlim(-1.0, 1.5)
 
     plt.tight_layout()
     out_path = os.path.join("publication", "figures", "supp_figure4_pre_i_recruitment.png")
