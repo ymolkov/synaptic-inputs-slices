@@ -54,6 +54,10 @@ $(PUB_DIR)/figures/figure4_summary.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_public
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig4 --captions
 	cp $(PUB_DIR)/figures/figure4_summary.png $(PAPER_DIR)/figures/figure4_summary.png
 
+$(PUB_DIR)/figures/figure5_circuit_weighted.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/plot_weighted_circuit.py $(SCRIPT_DIR)/conductance_summary.py
+	@mkdir -p $(PUB_DIR)/figures
+	python3 $(SCRIPT_DIR)/plot_weighted_circuit.py
+
 $(PUB_DIR)/figures/supp_figure1_sensitivity.png: $(SCRIPT_DIR)/make_publication_figures.py
 	@mkdir -p $(PUB_DIR)/figures
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --supp1 --captions
@@ -85,7 +89,7 @@ $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png: $(SCRIPT_DIR)/plot_supp_fi
 	cp $(PUB_DIR)/captions.md $(PAPER_DIR)/captions.md
 
 # 4. Generate the summary table (Tex and Docx)
-$(PUB_DIR)/conductance_table.tex: $(CSV_OUTPUTS) $(SCRIPT_DIR)/generate_summary_table.py
+$(PUB_DIR)/conductance_table.tex: $(CSV_OUTPUTS) $(SCRIPT_DIR)/generate_summary_table.py $(SCRIPT_DIR)/conductance_summary.py
 	@mkdir -p $(PUB_DIR)
 	python3 $(SCRIPT_DIR)/generate_summary_table.py
 	@if command -v $(PANDOC) >/dev/null 2>&1; then \
@@ -113,6 +117,7 @@ figures:  $(PUB_DIR)/figures/figure1_method.png \
           $(PUB_DIR)/figures/figure2_four_populations.png \
           $(PUB_DIR)/figures/figure3_selected.png \
           $(PUB_DIR)/figures/figure4_summary.png \
+          $(PUB_DIR)/figures/figure5_circuit_weighted.png \
           $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
           $(PUB_DIR)/figures/supp_figure2_linearity.png \
           $(PUB_DIR)/figures/supp_figure3_ectopic.svg \

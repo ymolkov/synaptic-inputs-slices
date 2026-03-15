@@ -1,70 +1,64 @@
-import csv
-import numpy as np
-import os
+#!/usr/bin/env python3
+from __future__ import annotations
 
-results_dir = "/Users/ymolkov/clamp/results"
-groups = ["VGAT-I", "VgluT2-I", "VGAT-E", "VgluT2-E"]
-files = ["VGAT_I_conductances.csv", "VgluT2_I_conductances.csv", "VGAT_E_conductances.csv", "VgluT2_E_conductances.csv"]
+from pathlib import Path
 
-print("| Group | N | Phase | Excitation (nS) | Inhibition (nS) |")
-print("|-------|---|-------|-----------------|-----------------|")
+from conductance_summary import GROUPS, load_all_group_summaries, repo_root
 
-latex_table = r"""\begin{table}[htbp]
-\centering
-\caption{Summary of reconstructed synaptic conductances across neuronal populations.}
-\label{tab:conductance_summary}
-\begin{tabular}{lcccc}
-\hline
-Group (N) & Phase & $G_{exc}$ (nS) & $G_{inh}$ (nS) \\
-\hline
-"""
 
-for group, filename in zip(groups, files):
-    path = os.path.join(results_dir, filename)
-    if not os.path.exists(path):
-        continue
-        
-    data = []
-    with open(path, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            data.append([
-                float(row['Mean_gExc_Stat']), float(row['Mean_gInh_Stat']),
-                float(row['gExc_Phase0']), float(row['gInh_Phase0'])
-            ])
-            
-    data = np.array(data)
-    
-    # Extract stats using IQR filtering as in the plotting script
-    stats = []
-    n_inliers_list = []
-    for j in range(4):
-        m = data[:, j]
-        q1, q3 = np.percentile(m, [25, 75])
-        iqr = q3 - q1
-        mask = (m >= q1 - 1.5*iqr) & (m <= q3 + 1.5*iqr)
-        clean = m[mask]
-        mean = np.mean(clean) if len(clean) > 0 else 0
-        sem = np.std(clean, ddof=1) / np.sqrt(len(clean)) if len(clean) > 1 else 0
-        stats.append((mean, sem))
-        n_inliers_list.append(len(clean))
-        
-    n_filtered = max(n_inliers_list)
+def main() -> None:
+    root = repo_root()
+    summaries = load_all_group_summaries(root / "results")
 
-    # Markdown rows
-    print(f"| {group} | {n_filtered} | Expiration | {stats[0][0]:.4f} ± {stats[0][1]:.4f} | {stats[1][0]:.4f} ± {stats[1][1]:.4f} |")
-    print(f"| | | Inspiration | {stats[2][0]:.4f} ± {stats[2][1]:.4f} | {stats[3][0]:.4f} ± {stats[3][1]:.4f} |")
-    
-    # LaTeX rows
-    latex_table += f"{group} ({n_filtered}) & Expiration & {stats[0][0]:.3f} $\pm$ {stats[0][1]:.3f} & {stats[1][0]:.3f} $\pm$ {stats[1][1]:.3f} \\\\\n"
-    latex_table += f"& Inspiration & {stats[2][0]:.3f} $\pm$ {stats[2][1]:.3f} & {stats[3][0]:.3f} $\pm$ {stats[3][1]:.3f} \\\\\n"
-    latex_table += "\\hline\n"
+    print("| Group | N | Phase | Excitation (G_exc / g_leak) | Inhibition (G_inh / g_leak) |")
+    print("|-------|---|-------|-----------------------------|------------------------------|")
 
-latex_table += r"""\end{tabular}
-\end{table}"""
+    latex_lines = [
+        r"\begin{table}[htbp]",
+        r"\centering",
+        r"\caption{Summary of reconstructed synaptic conductances normalized by leak conductance across neuronal populations.}",
+        r"\label{tab:conductance_summary}",
+        r"\begin{tabular}{lcccc}",
+        r"\hline",
+        r"Group (N) & Phase & $G_{exc}/g_{leak}$ & $G_{inh}/g_{leak}$ \\",
+        r"\hline",
+    ]
 
-output_path = "/Users/ymolkov/clamp/publication/conductance_table.tex"
-with open(output_path, "w") as f:
-    f.writelines(latex_table)
+    for group in GROUPS:
+        summary = summaries[group]
+        n_inliers = summary["n_inliers"]
+        expiration = summary["expiration"]
+        inspiration = summary["inspiration"]
 
-print(f"\nLaTeX Table saved to {output_path}")
+        print(
+            f"| {group} | {n_inliers} | Expiration | "
+            f"{expiration['exc']:.4f} ± {expiration['exc_sem']:.4f} | "
+            f"{expiration['inh']:.4f} ± {expiration['inh_sem']:.4f} |"
+        )
+        print(
+            f"| | | Inspiration | "
+            f"{inspiration['exc']:.4f} ± {inspiration['exc_sem']:.4f} | "
+            f"{inspiration['inh']:.4f} ± {inspiration['inh_sem']:.4f} |"
+        )
+
+        latex_lines.append(
+            f"{group} ({n_inliers}) & Expiration & "
+            f"{expiration['exc']:.3f} $\\pm$ {expiration['exc_sem']:.3f} & "
+            f"{expiration['inh']:.3f} $\\pm$ {expiration['inh_sem']:.3f} \\\\"
+        )
+        latex_lines.append(
+            f"& Inspiration & "
+            f"{inspiration['exc']:.3f} $\\pm$ {inspiration['exc_sem']:.3f} & "
+            f"{inspiration['inh']:.3f} $\\pm$ {inspiration['inh_sem']:.3f} \\\\"
+        )
+        latex_lines.append(r"\hline")
+
+    latex_lines.extend([r"\end{tabular}", r"\end{table}"])
+
+    output_path = root / "publication" / "conductance_table.tex"
+    output_path.write_text("\n".join(latex_lines) + "\n")
+    print(f"\nLaTeX Table saved to {output_path}")
+
+
+if __name__ == "__main__":
+    main()

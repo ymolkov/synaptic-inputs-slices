@@ -10,7 +10,10 @@ Representative 25-second rhythmic episodes highlighting the firing patterns of t
 Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).
 
 ## Figure 4: Combined Summary
-Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the three main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method).
+Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the four main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method), with conductances normalized by leak conductance.
+
+## Figure 5: Weighted Circuit Diagram
+Inferred preBotC population circuit with edge widths scaled to the same CSV-derived mean normalized conductances summarized in Table 1. Red arrows indicate excitatory drive from the inspiratory VgluT2 population, blue lines with terminal circles indicate inhibitory drive from the inspiratory and expiratory VGAT populations, and only connections exceeding the display threshold are shown. Connections below 0.05 are clipped from the diagram.
 
 ## Supplemental Figure 1: Sensitivity Analysis
 Sensitivity of reconstructed conductances to variations in reversal potentials ($E_e$ and $E_i$). The grid shows results for variations of ±10 mV from default values.
