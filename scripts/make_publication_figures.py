@@ -98,14 +98,36 @@ def figure_1_method_illustration():
     Ei, Ee = params.get('Ei', -80.0), params.get('Ee', 0.0)
     g_start, E_leak = params.get('g', 0.0), params.get('E', -60.0)
     
-    g_line = np.array([G_vals.min()*0.9, G_vals.max()*1.1])
-    offset_i = g_start * (Ei - E_leak)
-    ax2.plot(g_line, (-Ei/1000.0)*g_line + offset_i, color='blue', linestyle='--', label='Pure Inhibition')
+    x_data_min, x_data_max = G_vals.min(), G_vals.max()
+    y_data_min, y_data_max = I0_vals.min(), I0_vals.max()
+    x_pad = 0.08 * (x_data_max - x_data_min if x_data_max > x_data_min else 1.0)
+    y_pad = 0.08 * (y_data_max - y_data_min if y_data_max > y_data_min else 1.0)
+
+    # Keep the upper limits driven by the measured wedge points, but extend the
+    # lower-left corner enough to include the leak-point intersection.
+    if Ei != Ee:
+        g_intersection = 1000.0 * g_start
+        offset_i = g_start * (Ei - E_leak)
+        i0_intersection = (-Ei / 1000.0) * g_intersection + offset_i
+        x_min = min(x_data_min, g_intersection) - x_pad
+        y_min = min(y_data_min, i0_intersection) - y_pad
+    else:
+        offset_i = g_start * (Ei - E_leak)
+        x_min = x_data_min - x_pad
+        y_min = y_data_min - y_pad
+    x_max = x_data_max + x_pad
+    y_max = y_data_max + y_pad
+
+    g_line = np.array([x_min, x_max])
+    y_inh_line = (-Ei/1000.0)*g_line + offset_i
+    ax2.plot(g_line, y_inh_line, color='blue', linestyle='--', label='Pure Inhibition')
     
     offset_e = g_start * (Ee - E_leak)
-    ax2.plot(g_line, (-Ee/1000.0)*g_line + offset_e, color='red', linestyle='--', label='Pure Excitation')
+    y_exc_line = (-Ee/1000.0)*g_line + offset_e
+    ax2.plot(g_line, y_exc_line, color='red', linestyle='--', label='Pure Excitation')
 
-    ax2.set_ylim(min(I0_vals.min(), ((-Ei/1000.0)*g_line + offset_i).min())*1.1, I0_vals.max()*1.1)
+    ax2.set_xlim(x_min, x_max)
+    ax2.set_ylim(y_min, y_max)
     ax2.set_xlabel("$G_{tot}$ (nS)")
     ax2.set_ylabel("$I_0$ (nA)")
     ax2.legend()

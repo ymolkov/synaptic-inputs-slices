@@ -10,7 +10,7 @@ The core of the pipeline is a C++ analyzer that performs cycle detection and lin
 
 *   **/web**: Local directory containing the interactive analysis dashboard (`index.html`), high-res per-cell snapshots (`_full.png`, `_thumb.png`), and numerical analysis results (`.par`). (Ignored by Git)
 *   **/results**: Population-level CSV summaries (`*_conductances.csv`) produced from per-cell analyses.
-*   **/paper**: LaTeX manuscript source and final publication figures.
+*   **/paper**: LaTeX manuscript source, standalone methods draft (`methods_standalone.tex`), and final publication figures.
 *   **/publication**: Staged publication assets including the formal summary table (LaTeX/Word).
 *   **/src**: Core C++ implementation (`trace_analyzer.cpp`) featuring the geometric pivoting algorithm.
 *   **/bin**: Destination for the compiled `trace_analyzer` binary.
@@ -27,6 +27,8 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 *   `make publication/figures/figure5_circuit_weighted.png`: Regenerates the weighted circuit diagram directly from the same CSV-derived summary values used in Table 1.
 *   `make figures`: Regenerates all publication figure assets, including `publication/figures/figure5_circuit_weighted.png`.
 *   `make all` (or `make paper`): Builds the LaTeX manuscript (`paper/main.pdf`) and its declared dependencies.
+*   `make methods`: Builds the standalone methods PDF (`paper/methods_standalone.pdf`) from `paper/methods_standalone.tex`.
+*   `make methods-docx`: Exports the standalone methods draft to Word (`paper/methods_standalone.docx`) via Pandoc. The build preserves citations plus figure, table, and equation cross-references for Google Docs import.
 *   `make dashboard`: Processes all 59 data files in parallel and generates the interactive dashboard in the `/web` directory.
 *   `make deploy`: (Prerequisite: `lftp`) Synchronizes the local `/web` dashboard to the remote server at `math.gsu.edu` via SFTP. Prompts for password interactively.
 *   `make clean`: Removes binaries, temporary files, and local web assets for a fresh start.
@@ -47,7 +49,7 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 *   **Gnuplot**: Required for trace visualization.
 *   **LaTeX**: `pdflatex` required for manuscript compilation.
 *   **lftp**: Required for the `make deploy` target.
-*   **Pandoc**: (Optional) Used to convert the summary table to Word `.docx`.
+*   **Pandoc**: (Optional) Used to convert the summary table and standalone methods draft to Word `.docx`.
 
 ## Configuration
 

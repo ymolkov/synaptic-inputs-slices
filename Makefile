@@ -18,7 +18,7 @@ CXXFLAGS = -O3
 PANDOC = pandoc
 
 # --- Main Targets ---
-.PHONY: all analysis figures table paper clean push help
+.PHONY: all analysis figures table paper methods methods-docx clean push help
 
 all: paper
 
@@ -88,6 +88,17 @@ $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png: $(SCRIPT_DIR)/plot_supp_fi
 	cp $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png $(PAPER_DIR)/figures/supp_figure5_pre_i_inhibition.png
 	cp $(PUB_DIR)/captions.md $(PAPER_DIR)/captions.md
 
+$(PUB_DIR)/figures/method_protocol_steps.png: $(SCRIPT_DIR)/make_methods_protocol_figure.py
+	@mkdir -p $(PUB_DIR)/figures
+	python3 $(SCRIPT_DIR)/make_methods_protocol_figure.py --output $(PUB_DIR)/figures/method_protocol_steps.png
+	cp $(PUB_DIR)/figures/method_protocol_steps.png $(PAPER_DIR)/figures/method_protocol_steps.png
+
+$(PAPER_DIR)/figures/figure1_method.png: $(PUB_DIR)/figures/figure1_method.png
+	cp $(PUB_DIR)/figures/figure1_method.png $(PAPER_DIR)/figures/figure1_method.png
+
+$(PAPER_DIR)/figures/method_protocol_steps.png: $(PUB_DIR)/figures/method_protocol_steps.png
+	cp $(PUB_DIR)/figures/method_protocol_steps.png $(PAPER_DIR)/figures/method_protocol_steps.png
+
 # 4. Generate the summary table (Tex and Docx)
 $(PUB_DIR)/conductance_table.tex: $(CSV_OUTPUTS) $(SCRIPT_DIR)/generate_summary_table.py $(SCRIPT_DIR)/conductance_summary.py
 	@mkdir -p $(PUB_DIR)
@@ -111,6 +122,41 @@ $(PAPER_DIR)/main.pdf: $(PAPER_DIR)/main.tex \
                     $(PUB_DIR)/conductance_table.tex
 	cd $(PAPER_DIR) && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
 
+$(PAPER_DIR)/methods_standalone.pdf: $(PAPER_DIR)/methods_standalone.tex \
+                                     $(PAPER_DIR)/references.bib \
+                                     $(PAPER_DIR)/figures/figure1_method.png \
+                                     $(PAPER_DIR)/figures/method_protocol_steps.png
+	cd $(PAPER_DIR) && \
+		pdflatex -interaction=nonstopmode methods_standalone.tex && \
+		bibtex methods_standalone && \
+		pdflatex -interaction=nonstopmode methods_standalone.tex && \
+		pdflatex -interaction=nonstopmode methods_standalone.tex
+
+$(PAPER_DIR)/methods_standalone.docx: $(PAPER_DIR)/methods_standalone.pdf \
+                                      $(SCRIPT_DIR)/resolve_pandoc_refs.py
+	@mkdir -p tmp
+	cd $(PAPER_DIR) && \
+		$(PANDOC) methods_standalone.tex \
+			--from=latex \
+			--to=json \
+			--standalone \
+			--citeproc \
+			--bibliography=references.bib \
+			--metadata=reference-section-title:References \
+			--resource-path=. \
+			-o ../tmp/methods_standalone.pandoc.json
+	python3 $(SCRIPT_DIR)/resolve_pandoc_refs.py \
+		--aux $(PAPER_DIR)/methods_standalone.aux \
+		--input tmp/methods_standalone.pandoc.json \
+		--output tmp/methods_standalone.pandoc.resolved.json
+	cd $(PAPER_DIR) && \
+		$(PANDOC) ../tmp/methods_standalone.pandoc.resolved.json \
+			--from=json \
+			--to=docx \
+			--standalone \
+			--resource-path=. \
+			-o methods_standalone.docx
+
 # --- Shorthand commands ---
 analysis: $(CSV_OUTPUTS)
 figures:  $(PUB_DIR)/figures/figure1_method.png \
@@ -125,6 +171,8 @@ figures:  $(PUB_DIR)/figures/figure1_method.png \
           $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png
 table:    $(PUB_DIR)/conductance_table.tex
 paper:    $(PAPER_DIR)/main.pdf
+methods:  $(PAPER_DIR)/methods_standalone.pdf
+methods-docx: $(PAPER_DIR)/methods_standalone.docx
 
 dashboard: $(BIN_DIR)/trace_analyzer
 	@mkdir -p $(WEB_DIR)
@@ -151,6 +199,8 @@ help:
 	@echo "  figures   : Generate publication figures"
 	@echo "  table     : Generate summary tables"
 	@echo "  paper     : Compile LaTeX manuscript"
+	@echo "  methods   : Compile standalone methods draft"
+	@echo "  methods-docx : Export standalone methods draft to docx via Pandoc"
 	@echo "  dashboard : Generate standalone web-deployable dashboard"
 	@echo "  push      : Commit and push all changes"
 	@echo "  clean     : Remove binaries, temporary files and dashboard"
