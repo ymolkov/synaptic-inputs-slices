@@ -347,6 +347,173 @@ def figure_4_combined_summary():
     plt.savefig(os.path.join(FIG_DIR, "figure4_summary.png"), dpi=300)
     plt.close()
 
+def figure_4_polar_summary():
+    """Figure 4 Polar Summary: Selected Conductances from various cell types as polar plots."""
+    print("Generating Figure 4 Polar Summary...")
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "axes.titlesize": 16,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12
+    })
+    
+    cells = [
+        ("VGAT-I", "VGAT-I-Cell8-V"),
+        ("VgluT2-I", "VgluT2-I-Cell2-C"),
+        ("VGAT-E", "VGAT-E-Cell8-C"),
+        ("VgluT2-E", "VgluT2-E-Cell1-C")
+    ]
+    
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(2, 2, wspace=0.3, hspace=0.3)
+    
+    for i, (group_name, basename) in enumerate(cells):
+        row = i // 2
+        col = i % 2
+        
+        ax = fig.add_subplot(gs[row, col], projection='polar')
+        
+        extra = ""
+        if basename == "VgluT2-E-Cell1-V": extra = "-l 100000"
+        
+        try:
+            _, ph_path, par_path = run_analysis(basename, extra)
+            ph = np.loadtxt(ph_path)
+            params = load_params(par_path)
+            
+            ph_valid = ph[ph[:, 3] > 0]
+            if len(ph_valid) == 0:
+                print(f"No valid phase bins for {basename}")
+                continue
+                
+            g_ns_factor = params.get('g', 1.0) * 1000.0
+            phs_vals = ph_valid[:, 6] / 1000.0
+            gi = ph_valid[:, 4] * g_ns_factor
+            ge = ph_valid[:, 5] * g_ns_factor
+            sem = (ph_valid[:, 2] / np.sqrt(ph_valid[:, 3])) * 1000.0
+            
+            theta = 2.0 * np.pi * phs_vals
+            theta_closed = np.concatenate([theta, [theta[0]]])
+            ge_closed = np.concatenate([ge, [ge[0]]])
+            gi_closed = np.concatenate([gi, [gi[0]]])
+            sem_closed = np.concatenate([sem, [sem[0]]])
+            
+            max_cond = max(np.max(ge), np.max(gi)) if len(ge) > 0 else 1.0
+            
+            h_ge = ax.fill(theta_closed, ge_closed, color='red', alpha=0.5, linewidth=0, label='Excitation')[0]
+            h_gi = ax.fill(theta_closed, gi_closed, color='blue', alpha=0.5, linewidth=0, label='Inhibition')[0]
+            h_err, = ax.plot(theta_closed, sem_closed, color='black', linewidth=1.0, label='Error')
+            
+            ax.set_ylim(0, max_cond * 1.1)
+            ax.set_theta_zero_location('E')
+            ax.set_theta_direction(1)
+            ax.set_xticks(np.deg2rad([0, 90, 180, 270]))
+            ax.set_xticklabels(['0', '0.25', '0.5', '0.75'])
+            
+            ax.set_yticklabels([])
+            ax.grid(True, alpha=0.3)
+            
+            ax.set_title(f"{group_name}\n({basename})", fontsize=16, pad=15)
+            
+            if i == 0:
+                ax.legend(loc='upper right', bbox_to_anchor=(1.4, 1.2))
+                
+        except Exception as e:
+            print(f"Error processing {basename}: {e}")
+            ax.text(0.5, 0.5, "Data unavailable", ha='center', va='center', transform=ax.transAxes)
+            
+            fig.subplots_adjust(wspace=0.4, hspace=0.4, bottom=0.08, left=0.10, right=0.90, top=0.90)
+    plt.savefig(os.path.join(FIG_DIR, "figure4_polar_summary.png"), dpi=300, bbox_inches='tight')
+    plt.close()
+
+def figure_4_phase_summary():
+    """Figure 4 Phase Summary: Selected Conductances from various cell types as conductance vs phase."""
+    print("Generating Figure 4 Phase Summary...")
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "axes.titlesize": 16,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12
+    })
+    
+    cells = [
+        ("VGAT-I", "VGAT-I-Cell8-V"),
+        ("VgluT2-I", "VgluT2-I-Cell2-C"),
+        ("VGAT-E", "VGAT-E-Cell8-C"),
+        ("VgluT2-E", "VgluT2-E-Cell1-C")
+    ]
+    
+    fig = plt.figure(figsize=(10, 8))
+    gs = gridspec.GridSpec(2, 2, wspace=0.3, hspace=0.3)
+    
+    for i, (group_name, basename) in enumerate(cells):
+        row = i // 2
+        col = i % 2
+        
+        ax = fig.add_subplot(gs[row, col])
+        
+        try:
+            _, ph_path, par_path = run_analysis(basename)
+            ph = np.loadtxt(ph_path)
+            params = load_params(par_path)
+            
+            ph_valid = ph[ph[:, 3] > 0]
+            if len(ph_valid) == 0:
+                print(f"No valid phase bins for {basename}")
+                continue
+                
+            g_ns_factor = params.get('g', 1.0) * 1000.0
+            phs = ph_valid[:, 6] / 1000.0
+            gi = ph_valid[:, 4]
+            ge = ph_valid[:, 5]
+            sem = (ph_valid[:, 2] / np.sqrt(ph_valid[:, 3])) * 1000.0 / g_ns_factor
+            
+            # Replicate to [-1, 2] to ensure edge coverage when clipping to [-0.5, 0.5]
+            phs3 = np.concatenate([phs - 1.0, phs, phs + 1.0])
+            gi3 = np.tile(gi, 3)
+            ge3 = np.tile(ge, 3)
+            sem3 = np.tile(sem, 3)
+            
+            # Sort for fill_between
+            sort_idx = np.argsort(phs3)
+            phs_sorted = phs3[sort_idx]
+            gi_sorted = gi3[sort_idx]
+            ge_sorted = ge3[sort_idx]
+            sem_sorted = sem3[sort_idx]
+            
+            max_cond = max(np.max(ge_sorted), np.max(gi_sorted)) if len(ge_sorted) > 0 else 1.0
+            
+            ax.fill_between(phs_sorted, ge_sorted, 0, color='red', alpha=0.5, label='Excitation', linewidth=0)
+            ax.fill_between(phs_sorted, gi_sorted, 0, color='blue', alpha=0.5, label='Inhibition', linewidth=0)
+            ax.plot(phs_sorted, sem_sorted, color='black', linewidth=1.0, label='Error')
+            
+            ax.set_xlim(-0.25, 0.25)
+            ax.set_ylim(0, max_cond * 1.1)
+            ax.set_xticks([-0.25, 0, 0.25])
+            
+            ax.grid(True, alpha=0.3)
+            
+            ax.set_title(f"{basename}", fontsize=16)
+            if col == 0:
+                ax.set_ylabel("Synaptic / Leak Conductance")
+            if row == 1:
+                ax.set_xlabel("Phase")
+                
+            if i == 0:
+                ax.legend(loc='upper right')
+                
+        except Exception as e:
+            print(f"Error processing {basename}: {e}")
+            ax.text(0.5, 0.5, "Data unavailable", ha='center', va='center', transform=ax.transAxes)
+            
+    fig.subplots_adjust(wspace=0.25, hspace=0.35, bottom=0.10, left=0.10, right=0.95, top=0.90)
+    plt.savefig(os.path.join(FIG_DIR, "figure4_phase_summary.png"), dpi=300, bbox_inches='tight')
+    plt.close()
+
 def _load_recording_window(basename, t_start, t_end):
     path = os.path.join(PROJECT_ROOT, "data", basename)
     data = []
@@ -641,6 +808,10 @@ def generate_captions():
         f.write("Example traces of reconstructed conductances for selected cells from different populations (VgluT2-I, VgluT2-E, VGAT-I, VGAT-E).\n\n")
         f.write("## Figure 4: Combined Summary\n")
         f.write("Population-level summary of excitatory and inhibitory conductances during expiration and inspiration for the four main groups. Bars represent mean ± SEM of inliers (outliers removed via IQR method), with conductances normalized by leak conductance.\n\n")
+        f.write("## Figure 4 (Polar Summary)\n")
+        f.write("Polar representations of reconstructed conductances for representative cells corresponding to the group analysis in Figure 4. Displayed are matching single-cell profiles for VGAT-I, VgluT2-I, VGAT-E, and VgluT2-E population groups over one normalized cycle.\n\n")
+        f.write("## Figure 4 (Phase Summary)\n")
+        f.write("Phase-aligned Cartesian representations of reconstructed conductances for representative individual cells from each population group (VGAT-I, VgluT2-I, VGAT-E, VgluT2-E). Traces show excitatory (red) and inhibitory (blue) synaptic conductances normalized by the resting leak conductance, plotted over the normalized phase interval [-0.25, 0.25] surrounding the onset of the inspiratory burst. Solid outlines indicate the standard error of the mean (SEM).\n\n")
         f.write("## Figure 5: Weighted Circuit Diagram\n")
         f.write("Inferred preBotC population circuit with edge widths scaled to the same CSV-derived mean normalized conductances summarized in Table 1. Red arrows indicate excitatory drive from the inspiratory VgluT2 population, blue lines with terminal circles indicate inhibitory drive from the inspiratory and expiratory VGAT populations, and only connections exceeding the display threshold are shown. Connections below 0.05 are clipped from the diagram.\n\n")
         f.write("## Supplemental Figure 1: Sensitivity Analysis\n")
@@ -661,19 +832,23 @@ if __name__ == "__main__":
     parser.add_argument('--fig2', action='store_true', help="Generate Figure 2 (Four Populations)")
     parser.add_argument('--fig3', action='store_true', help="Generate Figure 3 (Selected Conductances)")
     parser.add_argument('--fig4', action='store_true', help="Generate Figure 4 (Summary)")
+    parser.add_argument('--fig4polar', action='store_true', help="Generate Figure 4 Polar Summary")
+    parser.add_argument('--fig4phase', action='store_true', help="Generate Figure 4 Phase (-0.5 to 0.5) Summary")
     parser.add_argument('--supp1', action='store_true', help="Generate Supplemental Figure 1 (Sensitivity)")
     parser.add_argument('--supp2', action='store_true', help="Generate Supplemental Figure 2 (Linearity)")
     parser.add_argument('--captions', action='store_true', help="Generate captions.md")
     args = parser.parse_args()
 
     # If no flags are provided, run all
-    if not any([args.fig1, args.fig2, args.fig3, args.fig4, args.supp1, args.supp2, args.captions]):
-        args.fig1 = args.fig2 = args.fig3 = args.fig4 = args.supp1 = args.supp2 = args.captions = True
+    if not any([args.fig1, args.fig2, args.fig3, args.fig4, args.fig4polar, args.fig4phase, args.supp1, args.supp2, args.captions]):
+        args.fig1 = args.fig2 = args.fig3 = args.fig4 = args.fig4polar = args.fig4phase = args.supp1 = args.supp2 = args.captions = True
 
     if args.fig1: figure_1_method_illustration()
     if args.fig2: figure_2_four_populations()
     if args.fig3: figure_3_selected_conductances()
     if args.fig4: figure_4_combined_summary()
+    if args.fig4polar: figure_4_polar_summary()
+    if args.fig4phase: figure_4_phase_summary()
     if args.supp1: supplemental_figure_1_sensitivity()
     if args.supp2: supplemental_figure_2_linearity()
     if args.captions: generate_captions()

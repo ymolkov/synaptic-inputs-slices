@@ -38,7 +38,7 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 
 *   The analyzer outputs normalized conductances, not absolute nS values.
 *   Table 1 reports `$G_{exc}/g_{leak}$` and `$G_{inh}/g_{leak}$` as mean ± SEM after IQR-based outlier filtering.
-*   Figure 4 summarizes those normalized conductances by group and phase.
+*   Figure 4 summarizes those normalized conductances by group at target phases (Inspiration/Expiration). Additionally, the accompanying Figure 4 Phase Summary visualizes the full -0.25 to 0.25 phase interval for representative single cells, plotted natively as Synaptic / Leak Conductance.
 *   Figure 5 uses the same CSV-derived population means to assign edge thicknesses in the inferred circuit diagram.
 *   Connections below the display threshold of `0.05` are clipped from Figure 5.
 
