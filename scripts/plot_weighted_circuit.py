@@ -19,9 +19,9 @@ POS = {
 }
 
 LABELS = {
-    "VgluT2_I": "VgluT2\nI",
+    "VgluT2_I": "VgluT2\n(pre-)I",
     "VgluT2_E": "VgluT2\nE",
-    "VGAT_I": "VGAT\nI",
+    "VGAT_I": "VGAT\n(pre-)I",
     "VGAT_E": "VGAT\nE",
 }
 
