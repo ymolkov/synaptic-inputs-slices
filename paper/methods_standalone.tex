@@ -84,16 +84,16 @@ Thus, $\phi=0$ corresponds to XII burst onset, and $\phi \in [0,1)$ indexes the 
 \subsection{Phase-binned current--voltage regression}
 Conductance inference followed the phase-domain method introduced in the companion \textit{in situ} study of \citet{molkov2024inference}. We write the membrane-current balance as
 \begin{equation}
-I(t) = g_L\!\left(V(t)-E_L\right) + g_e(t)\!\left(V(t)-E_e\right) + g_i(t)\!\left(V(t)-E_i\right) + C\frac{dV}{dt},
+I(t) = g_L\!\left(V(t)-E_L\right) + G_{\mathrm{exc}}(t)\!\left(V(t)-E_e\right) + G_{\mathrm{inh}}(t)\!\left(V(t)-E_i\right) + C\frac{dV}{dt},
 \label{eq:balance}
 \end{equation}
-where $I(t)$ is the current channel, $V(t)$ is the voltage channel, $g_L$ and $E_L$ are the effective leak conductance and reversal potential, $g_e$ and $g_i$ are the phase-dependent excitatory and inhibitory conductances, and $E_e$ and $E_i$ are their reversal potentials. In this formulation, $g_L$ and $E_L$ absorb both intrinsic leak and any approximately tonic background synaptic drive, allowing the dynamic respiratory modulation to be isolated in $g_e(\phi)$ and $g_i(\phi)$.
+where $I(t)$ is the current channel, $V(t)$ is the voltage channel, $g_L$ and $E_L$ are the effective leak conductance and reversal potential, $G_{\mathrm{exc}}$ and $G_{\mathrm{inh}}$ are the phase-dependent excitatory and inhibitory conductances, and $E_e$ and $E_i$ are their reversal potentials. In this formulation, $g_L$ and $E_L$ absorb both intrinsic leak and any approximately tonic background synaptic drive, allowing the dynamic respiratory modulation to be isolated in $G_{\mathrm{exc}}(\phi)$ and $G_{\mathrm{inh}}(\phi)$.
 
 Assuming that synaptic conductances vary primarily with respiratory phase and that the capacitive term is small relative to the synaptic terms on this time scale, Equation~\ref{eq:balance} reduces within each phase bin to a linear current--voltage relation,
 \begin{equation}
 I(t) \approx G_{\mathrm{tot}}(\phi)\,V(t) + I_0(\phi),
 \end{equation}
-where $G_{\mathrm{tot}}(\phi)=g_L+g_e(\phi)+g_i(\phi)$ and $I_0(\phi)$ is the phase-specific intercept.
+where $G_{\mathrm{tot}}(\phi)=g_L+G_{\mathrm{exc}}(\phi)+G_{\mathrm{inh}}(\phi)$ and $I_0(\phi)$ is the phase-specific intercept.
 
 The normalized cycle was discretized into 1000 phase bins. For each bin, all samples whose phases fell inside that bin were pooled across the analyzed segment. If more than two points were available, an initial linear regression was fitted and residuals were computed. Points with residual magnitude greater than 2.5 standard deviations were excluded, and the regression was recomputed on the retained points. Bins with fewer than three retained points were discarded.
 
@@ -119,8 +119,8 @@ g_L = \frac{I_{Le}-I_{Li}}{E_e-E_i}, \qquad E_L = E_i - \frac{I_{Li}}{g_L}.
 \end{equation}
 Excitatory and inhibitory conductances are then recovered as
 \begin{align}
-g_e(\phi) &= \frac{Q_i(\phi)-I_{Li}}{E_i-E_e}, \\
-g_i(\phi) &= \frac{Q_e(\phi)-I_{Le}}{E_e-E_i}.
+G_{\mathrm{exc}}(\phi) &= \frac{Q_i(\phi)-I_{Li}}{E_i-E_e}, \\
+G_{\mathrm{inh}}(\phi) &= \frac{Q_e(\phi)-I_{Le}}{E_e-E_i}.
 \end{align}
 For reporting and plotting, conductances were normalized by the effective leak conductance $g_L$, so all population summaries are expressed as $G_{\mathrm{exc}}/g_{\mathrm{leak}}$ and $G_{\mathrm{inh}}/g_{\mathrm{leak}}$.
 

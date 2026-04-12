@@ -566,8 +566,9 @@ def make_figure(results_dir: Path) -> tuple[plt.Figure, plt.Axes]:
     fig, ax = plt.subplots(figsize=(4.9, 4.8), facecolor="white")
     ax.set_facecolor("white")
     ax.set_aspect("equal")
-    ax.set_xlim(-0.9, 2.9)
-    ax.set_ylim(-1.0, 3.0)
+    # Keep just a small pad around the outer loops so the exported PNG is tight.
+    ax.set_xlim(-0.75, 2.75)
+    ax.set_ylim(-0.75, 2.75)
     ax.axis("off")
 
     for src, tgt, weight in INHIBITORY:

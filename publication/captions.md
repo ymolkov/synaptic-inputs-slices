@@ -15,6 +15,9 @@ Population-level summary of excitatory and inhibitory conductances during expira
 ## Figure 4 (Polar Summary)
 Polar representations of reconstructed conductances for representative cells corresponding to the group analysis in Figure 4. Displayed are matching single-cell profiles for VGAT-I, VgluT2-I, VGAT-E, and VgluT2-E population groups over one normalized cycle.
 
+## Figure 4 (Phase Summary)
+Phase-aligned Cartesian representations of reconstructed conductances for representative individual cells from each population group (VGAT-I, VgluT2-I, VGAT-E, VgluT2-E). Traces show excitatory (red) and inhibitory (blue) synaptic conductances normalized by the resting leak conductance, plotted over the normalized phase interval [-0.25, 0.25] surrounding the onset of the inspiratory burst. Solid outlines indicate the standard error of the mean (SEM).
+
 ## Figure 5: Weighted Circuit Diagram
 Inferred preBotC population circuit with edge widths scaled to the same CSV-derived mean normalized conductances summarized in Table 1. Red arrows indicate excitatory drive from the inspiratory VgluT2 population, blue lines with terminal circles indicate inhibitory drive from the inspiratory and expiratory VGAT populations, and only connections exceeding the display threshold are shown. Connections below 0.05 are clipped from the diagram.
 

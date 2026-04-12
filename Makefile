@@ -11,6 +11,7 @@ WEB_DIR = web
 GROUPS = VGAT-I VgluT2-I VGAT-E VgluT2-E
 # Map groups to their output CSV files (replacing - with _)
 CSV_OUTPUTS = $(foreach g,$(GROUPS),$(RESULTS_DIR)/$(subst -,_,$g)_conductances.csv)
+PREBOTC_MEDIA = $(wildcard $(PAPER_DIR)/Synaptic_Architecture_PreBotC_media/media/*.png)
 
 # Tool paths
 CXX = g++
@@ -59,9 +60,12 @@ $(PUB_DIR)/figures/figure4_phase_summary.png: $(BIN_DIR)/trace_analyzer $(SCRIPT
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig4phase --captions
 	cp $(PUB_DIR)/figures/figure4_phase_summary.png $(PAPER_DIR)/figures/figure4_phase_summary.png
 
-$(PUB_DIR)/figures/figure5_circuit_weighted.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/plot_weighted_circuit.py $(SCRIPT_DIR)/conductance_summary.py
+$(PUB_DIR)/figures/circuit_weighted.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/plot_weighted_circuit.py $(SCRIPT_DIR)/conductance_summary.py
 	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/plot_weighted_circuit.py
+	python3 $(SCRIPT_DIR)/plot_weighted_circuit.py --out $(PUB_DIR)/figures/circuit_weighted.png
+
+$(PUB_DIR)/figures/figure5_circuit_weighted.png: $(PUB_DIR)/figures/circuit_weighted.png
+	cp $(PUB_DIR)/figures/circuit_weighted.png $(PUB_DIR)/figures/figure5_circuit_weighted.png
 
 $(PUB_DIR)/figures/supp_figure1_sensitivity.png: $(SCRIPT_DIR)/make_publication_figures.py
 	@mkdir -p $(PUB_DIR)/figures
@@ -73,10 +77,10 @@ $(PUB_DIR)/figures/supp_figure2_linearity.png: $(SCRIPT_DIR)/make_publication_fi
 	python3 $(SCRIPT_DIR)/make_publication_figures.py --supp2 --captions
 	cp $(PUB_DIR)/figures/supp_figure2_linearity.png $(PAPER_DIR)/figures/supp_figure2_linearity.png
 
-$(PUB_DIR)/figures/supp_figure3_ectopic.svg: $(SCRIPT_DIR)/make_ectopic_svg.py
+$(PUB_DIR)/figures/supp_figure3_ectopic.png: $(SCRIPT_DIR)/make_ectopic_png.py
 	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_ectopic_svg.py
-	mv selected_ectopic_bursts_interpolated.svg $(PUB_DIR)/figures/supp_figure3_ectopic.svg
+	python3 $(SCRIPT_DIR)/make_ectopic_png.py --out $(PUB_DIR)/figures/supp_figure3_ectopic.png
+	cp $(PUB_DIR)/figures/supp_figure3_ectopic.png $(PAPER_DIR)/figures/supp_figure3_ectopic.png
 	python3 $(SCRIPT_DIR)/generate_captions.py
 
 $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png: $(SCRIPT_DIR)/plot_refined_5x2.py
@@ -101,6 +105,12 @@ $(PUB_DIR)/figures/method_protocol_steps.png: $(SCRIPT_DIR)/make_methods_protoco
 $(PAPER_DIR)/figures/figure1_method.png: $(PUB_DIR)/figures/figure1_method.png
 	cp $(PUB_DIR)/figures/figure1_method.png $(PAPER_DIR)/figures/figure1_method.png
 
+$(PAPER_DIR)/figures/figure4_phase_summary.png: $(PUB_DIR)/figures/figure4_phase_summary.png
+	cp $(PUB_DIR)/figures/figure4_phase_summary.png $(PAPER_DIR)/figures/figure4_phase_summary.png
+
+$(PAPER_DIR)/figures/circuit_weighted.png: $(PUB_DIR)/figures/circuit_weighted.png
+	cp $(PUB_DIR)/figures/circuit_weighted.png $(PAPER_DIR)/figures/circuit_weighted.png
+
 $(PAPER_DIR)/figures/method_protocol_steps.png: $(PUB_DIR)/figures/method_protocol_steps.png
 	cp $(PUB_DIR)/figures/method_protocol_steps.png $(PAPER_DIR)/figures/method_protocol_steps.png
 
@@ -122,7 +132,7 @@ $(PAPER_DIR)/main.pdf: $(PAPER_DIR)/main.tex \
                     $(PUB_DIR)/figures/figure4_phase_summary.png \
                     $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
                     $(PUB_DIR)/figures/supp_figure2_linearity.png \
-                    $(PUB_DIR)/figures/supp_figure3_ectopic.svg \
+                    $(PUB_DIR)/figures/supp_figure3_ectopic.png \
                     $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png \
                     $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png \
                     $(PUB_DIR)/conductance_table.tex
@@ -137,6 +147,28 @@ $(PAPER_DIR)/methods_standalone.pdf: $(PAPER_DIR)/methods_standalone.tex \
 		bibtex methods_standalone && \
 		pdflatex -interaction=nonstopmode methods_standalone.tex && \
 		pdflatex -interaction=nonstopmode methods_standalone.tex
+
+$(PAPER_DIR)/Synaptic_Architecture_PreBotC.pdf: $(PAPER_DIR)/Synaptic_Architecture_PreBotC.tex \
+                                                $(PAPER_DIR)/Synaptic_Architecture_PreBotC-supp.tex \
+                                                $(PAPER_DIR)/references.bib \
+                                                $(PAPER_DIR)/figures/figure1_method.png \
+                                                $(PAPER_DIR)/figures/figure2_four_populations.png \
+                                                $(PAPER_DIR)/figures/figure3_selected.png \
+                                                $(PAPER_DIR)/figures/figure4_phase_summary.png \
+                                                $(PAPER_DIR)/figures/figure4_summary.png \
+                                                $(PAPER_DIR)/figures/circuit_weighted.png \
+                                                $(PAPER_DIR)/figures/method_protocol_steps.png \
+                                                $(PAPER_DIR)/figures/supp_figure1_sensitivity.png \
+                                                $(PAPER_DIR)/figures/supp_figure2_linearity.png \
+                                                $(PUB_DIR)/figures/supp_figure3_ectopic.png \
+                                                $(PAPER_DIR)/figures/supp_figure4_pre_i_recruitment.png \
+                                                $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png \
+                                                $(PREBOTC_MEDIA)
+	cd $(PAPER_DIR) && \
+		pdflatex -interaction=nonstopmode Synaptic_Architecture_PreBotC.tex && \
+		bibtex Synaptic_Architecture_PreBotC && \
+		pdflatex -interaction=nonstopmode Synaptic_Architecture_PreBotC.tex && \
+		pdflatex -interaction=nonstopmode Synaptic_Architecture_PreBotC.tex
 
 $(PAPER_DIR)/methods_standalone.docx: $(PAPER_DIR)/methods_standalone.pdf \
                                       $(SCRIPT_DIR)/resolve_pandoc_refs.py
@@ -170,10 +202,11 @@ figures:  $(PUB_DIR)/figures/figure1_method.png \
           $(PUB_DIR)/figures/figure3_selected.png \
           $(PUB_DIR)/figures/figure4_summary.png \
           $(PUB_DIR)/figures/figure4_phase_summary.png \
+          $(PUB_DIR)/figures/circuit_weighted.png \
           $(PUB_DIR)/figures/figure5_circuit_weighted.png \
           $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
           $(PUB_DIR)/figures/supp_figure2_linearity.png \
-          $(PUB_DIR)/figures/supp_figure3_ectopic.svg \
+          $(PUB_DIR)/figures/supp_figure3_ectopic.png \
           $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png \
           $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png
 table:    $(PUB_DIR)/conductance_table.tex

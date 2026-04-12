@@ -218,7 +218,7 @@ def figure_3_selected_conductances():
             try:
                 # Add specific overrides as in original script
                 extra = ""
-                if basename == "VgluT2-E-Cell1-V": extra = "-l 100000"
+                if basename == "VgluT2-E-Cell1-V": extra = "-x 0 -l 100000"
                 if basename == "VgluT2-I-Cell2-V": extra = "-x 100000"
                 if basename == "VGAT-I-Cell9-C": extra = "-l 500000"
                 
@@ -744,7 +744,7 @@ def supplemental_figure_2_linearity():
             basename = cell + suffix
             try:
                 extra = ""
-                if basename == "VgluT2-E-Cell1-V": extra = "-l 100000"
+                if basename == "VgluT2-E-Cell1-V": extra = "-x 0 -l 100000"
                 if basename == "VgluT2-I-Cell2-V": extra = "-x 100000"
                 if basename == "VGAT-I-Cell9-C": extra = "-l 500000"
                 

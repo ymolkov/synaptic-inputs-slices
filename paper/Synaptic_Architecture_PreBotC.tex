@@ -1,0 +1,465 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\definecolor{docxorange}{HTML}{E69138}
+\definecolor{docxamber}{HTML}{FF9900}
+\newcommand{\figref}[1]{Figure~\ref{#1}}
+\newcommand{\figpanelref}[2]{Figure~\ref{#1}#2}
+\newcommand{\figrefs}[2]{Figures~\ref{#1} and~\ref{#2}}
+\newcounter{suppfigure}
+\newcommand{\suppfigref}[1]{Supplemental Figure~\ref{#1}}
+\newcommand{\suppfigrange}[2]{Supplemental Figures~\ref{#1}--\ref{#2}}
+\newcommand{\docxhlorange}[1]{\begingroup\setlength{\fboxsep}{1pt}\colorbox{docxorange}{\strut #1}\endgroup}
+\newcommand{\docxhlamber}[1]{\begingroup\setlength{\fboxsep}{1pt}\colorbox{docxamber}{\strut #1}\endgroup}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX
+  \pdfmapfile{+lm.map}
+\fi
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{multirow}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\usepackage[labelfont=bf]{caption}
+\usepackage[round]{natbib}
+\bibliographystyle{plainnat}
+\renewcommand{\bibsection}{\section{\refname}}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Functional Synaptic Interactions and Inhibitory Circuitry of the PreBötzinger Complex in the Rhythmic Slice}
+\author{Yaroslav I. Molkov$^{1,2}$, Hidehiko Koizumi$^{3}$, and Jeffrey C. Smith$^{3}$ \\
+\small $^{1}$Department of Mathematics and Statistics, Georgia State University, Atlanta, GA, USA \\
+\small $^{2}$Neuroscience Institute, Georgia State University, Atlanta, GA, USA \\
+\small $^{3}$Cellular and Systems Neurobiology Section, National Institute of Neurological Disorders and Stroke, \\
+\small National Institutes of Health, Bethesda, MD, USA}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+The preBötzinger Complex (preBötC) within the medulla oblongata generates the mammalian respiratory rhythm, but its core functional circuit architecture remains debated. Establishing this circuit topology requires disentangling synaptic interactions of functionally identified excitatory and inhibitory preBötC neurons. We applied a novel synaptic conductance inference method to whole-cell recordings from genetically specified VgluT2-expressing (excitatory) and VGAT-expressing (inhibitory) preBötC neurons active in the rhythmic medullary slice in vitro. We found that the core circuitry consists of a self-exciting inspiratory VgluT2 population coupled to a reciprocal inhibitory half-center formed by inspiratory and expiratory VGAT populations. Compared with functional synaptic interactions inferred from recordings in the preBötC in situ, neuronal synaptic conductance profiles in the rhythmic slice reveal a functionally reduced inhibitory connectome, characterized by prominent tonic expiratory inhibition and phasic inspiratory inhibition, without the characteristic multiphasic structure in situ. These results indicate that the excitatory and inhibitory circuit architecture within the preBötC is intrinsically designed to generate coordinated inspiratory and expiratory population activity and that tonic expiratory phase inhibition serves as a critical state-dependent regulator that stabilizes the isolated rhythmogenic kernel.
+
+\end{abstract}
+
+\section{Introduction}
+
+The preBötzinger Complex (preBötC) in the medulla oblongata is the primary site required for respiratory rhythm generation in mammals \citep{smith1991prebotzinger}. This medullary region contains microcircuits with a heterogeneous collection of excitatory and inhibitory neuronal populations that exhibit inspiratory and expiratory patterns of neuronal activity. These circuits exhibit autorhythmic properties and generate rhythmic activity when isolated in rodent living medullary slices in vitro, providing a powerful experimental system to investigate the intrinsic rhythmogenic cellular and circuit mechanisms involved. While structural-functional properties of the resident excitatory and inhibitory populations have been analyzed to some extent \citep{koizumi2013structural}, including circuit architectural features and intrinsic electrophysiological properties, defining the circuit functional organization---specifically, how excitatory and inhibitory populations synaptically interact to generate robust rhythmicity---remains a fundamental problem. A major hurdle has been the difficulty of disentangling excitatory and inhibitory synaptic drives during the respiratory cycle in phenotypically defined excitatory and inhibitory neuron types. \citep{koizumi2013structural}. Furthermore, how these synaptic drives in isolated circuits in vitro relate to circuit operation in more intact states of the brainstem respiratory network has not been directly addressed in experimental studies.
+
+Most experimental slice studies have focused on burst patterns rather than quantifying the underlying synaptic conductances. Consequently, prior computational models have often invoked specific inhibitory or excitatory mechanisms---such as tonic inhibition or phase-specific synaptic interactions---without direct conductance-level experimental verification. The present study addresses this gap by providing conductance-resolved functional mapping of synaptic interactions and explicitly quantifying how synaptic interactions differ between the slice and intact network states.
+
+In a recent study, we developed a novel computational inference technique \citep{molkov2024inference} to decompose total synaptic conductance into its excitatory and inhibitory components in single neurons using neuronal current-clamp recordings. By applying this method to neurons in the in situ arterially perfused mature rodent brainstem-spinal cord preparation with active respiratory circuits, we successfully mapped the dynamic "synaptic fingerprints" of respiratory neurons, revealing the functional connectivity between excitatory (VgluT2+) and inhibitory (VGAT+) populations that underpins the dynamic operation of the intact respiratory network.
+
+However, the in situ preparation preserves a high degree of network complexity and external inputs. The acute medullary slice preparation remains the gold standard for investigating the minimal, intrinsic circuitry necessary for rhythm and inspiratory pattern generation. It is widely hypothesized that the slice contains a "reduced" circuit---a core kernel of the network capable of sustaining rhythmicity in the absence of wider brainstem and feedback loops \citep{smith2007spatial}. Yet, identifying the precise functional topology of this reduced circuit and how it differs from the intact network requires rigorous quantitative analysis of synaptic interactions.
+
+In this study, we apply our conductance inference methodology to the rhythmic slice preparation to define the core circuit architecture of the preBötC. We obtained whole-cell recordings from genetically identified preBötC VgluT2-expressing glutamatergic and VGAT-expressing inhibitory neurons in slices from transgenic mice, combined with computational analysis to reconstruct the dynamic synaptic inputs of these neurons.
+
+Our analysis reveals a distinct, reduced circuit configuration active in the preBötC within the slice. We identify four functionally active populations based on neurotransmitter identity and neuronal firing phase. Crucially, we demonstrate that while inspiratory rhythm is driven by recurrent excitation within the VgluT2+ population, the phasic transitions are enforced by specific reciprocal inhibitory interactions between VGAT+ populations. Furthermore, unlike in the intact in situ rat brainstem-spinal cord preparation, the VgluT2-expressing expiratory population in the slice is largely passive, receiving inhibition but providing no significant excitatory synaptic drive. These findings allow us to propose a "minimal" circuit model consisting of a self-exciting inspiratory source coupled with a rhythmic half-center inhibitory connectome, tightly regulated by tonic inhibition, that constitutes the essential machinery for respiratory rhythm generation and control in vitro.
+
+\section{Methods}
+
+\subsection{Animals, slice preparation, and cell targeting}\label{animals-slice-preparation-and-cell-targeting}
+
+All animal procedures were approved by the Animal Care and Use Committee of the National Institute of Neurological Disorders and Stroke (Animal Study Proposal 1154--21).
+
+Experiments were performed in rhythmically active medullary slice preparations from neonatal (postnatal day 3--8) transgenic mice of either sex, as described previously for studies targeting genetically identified preBötC excitatory or inhibitory neurons validated in reduced respiratory preparations \citep{koizumi2013structural,ausborn2018organization}. Excitatory neurons were targeted for whole-cell recording in Slc17a6-Cre;Rosa-tdTomato mice (referred to here as VgluT2-tdTomato mice), and inhibitory neurons were targeted in VGAT-Cre;Rosa-tdTomato mice (VGAT-tdTomato mice). TdTomato-positive preBötC neurons in the slice were identified by optical live fluorescence imaging.
+
+Rhythmically active slices (300--400~\(\mu\)m) were superfused at 4~ml/min with artificial cerebrospinal fluid containing (in mM): 124 NaCl, 25 NaHCO\(_{3}\), 3 KCl, 1.5 CaCl\(_{2}\), 1.0 MgSO\(_{4}\), 0.5 NaH\(_{2}\)PO\(_{4}\), and 30 D-glucose, equilibrated with 95\% O\(_{2}\)/5\% CO\(_{2}\) (pH 7.35--7.40, 27\(^{\circ}\)C). Rhythmic respiratory activity was maintained by elevating extracellular K\(^{+}\) to 8--9~mM. Inspiratory motor output was monitored from hypoglossal (XII) rootlets with suction electrodes, amplified 50,000--100,000\(\times\), band-pass filtered at 0.3--2~kHz, and digitized at 10~kHz.
+
+Due to variability in the amplitude and stability of the XII motor output across slices, we treated the XII recording primarily as a cycle-timing reference and applied additional preprocessing safeguards (below) to ensure reliable phase detection.
+
+Optical imaging was performed with a Leica TCS SP5 II MP upright microscope equipped with a 20\(\times\) water-immersion objective (NA 1.0) and a Ti:Sapphire laser (800--880~nm) for two-photon fluorescence imaging. Whole-cell current- and voltage-clamp recordings were obtained from the imaged excitatory or inhibitory neurons with a HEKA EPC-9 amplifier using borosilicate electrodes (4--6~M\(\Omega\)) filled with (in mM): 130 K-gluconate, 5 Na-gluconate, 3 NaCl, 10 HEPES, 4 Mg-ATP, 0.3 Na-GTP, and 4 sodium phosphocreatine, adjusted to pH~7.3 with KOH. Measured voltages were corrected for a --10mV liquid-junction potential. Series resistance was compensated online by approximately 80\% and adjusted during the recording. Voltage-clamp recordings with obvious space-clamp failure were excluded before quantitative analysis.
+
+\subsection{Recording inventory, acquisition modes, and acceptance screening}\label{recording-inventory-acquisition-modes-and-acceptance-screening}
+
+The data repository contains 59 analyzed current- and voltage-clamp recordings spanning four phenotype groups: VgluT2 inspiratory (VgluT2-I), VgluT2 expiratory (VgluT2-E), VGAT inspiratory (VGAT-I), and VGAT expiratory (VGAT-E). In most cases, the recording data files for each neuron contain both current-clamp (C) and voltage-clamp (V) recordings, whereas some files contain only current- or voltage-clamp recordings when, for technical reasons, both recording modes were not obtained for that neuron. Raw neuronal and XII electrophysiological signals were originally digitized at 10~kHz and then downsampled to 1~kHz for the exported analysis files used in this repository. This downsampling preserved the slower respiratory-cycle modulation, the stepwise command epochs, and the phase-binned current--voltage relationships used for conductance inference; reconstruction of the detailed spike waveform was not required for the analysis. Each exported trace contained four aligned columns: time, current channel, voltage channel, and integrated XII activity. In current clamp, the current and voltage channels corresponded to the injected current and membrane potential, respectively; in voltage clamp, they corresponded to the measured holding current and the command voltage.
+
+Because of the variability of the number of current/voltage steps, total duration, and stability of the recordings across slices, to select recording epochs for analysis, we did not impose rigid file-level requirements, such as at least three usable command steps or a prescribed current/voltage span, as in the companion \emph{in situ} study of \citet{molkov2024inference}. Instead, we used an inclusive recording-level screen and then applied robust outlier filtering only after conductance reconstruction. The only strict acceptance criterion imposed for inclusion in the population summaries was that the analyzed segment contain more than 25 detected XII cycles across the retained interval. This yielded 50 accepted recordings (27 current clamp, 23 voltage clamp): 20 VgluT2-I, 12 VGAT-I, 17 VGAT-E, and 1 VgluT2-E recording (Table~\ref{tab:inventory}) from 31 neurons total. The \emph{N} values in summary plots and tables refer to the total number of recordings (C and V) for each phenotype group, not to individual cells. We treated C- and V-clamp files as separate analysis units because recording-mode-to-mode variability was comparable to cell-to-cell variability, and the two modes yielded qualitatively consistent conductance estimates.
+
+\begin{table}[htbp]
+\centering
+\caption{\textbf{Recording inventory in the repository and after automated cycle-count screening}. Counts refer to recordings, not unique neurons.}
+\label{tab:inventory}
+\begin{tabular}{lcccc}
+\toprule
+Population & Candidate files & Accepted files & Accepted C-clamp & Accepted V-clamp \\
+\midrule
+VgluT2-I & 23 & 20 & 12 & 8 \\
+VgluT2-E & 2 & 1 & 1 & 0 \\
+VGAT-I & 17 & 12 & 6 & 6 \\
+VGAT-E & 17 & 17 & 8 & 9 \\
+\midrule
+Total & 59 & 50 & 27 & 23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+The command protocols used for conductance inference consisted of piecewise-constant current steps in current-clamp and piecewise-constant holding-voltage steps in voltage-clamp (\figref{fig:stepped-acquisition}). A representative current-clamp/voltage-clamp pair from the same VgluT2-I neuron is shown to make the stepped acquisition strategy explicit. Across the selected recording interval (\figref{fig:stepped-acquisition}, blue regions), the multiple command levels were not analyzed one step at a time; instead, samples from all usable steps were pooled within each respiratory-phase bin, so that the full recording collectively provided the current--voltage spread needed for phase-specific linear regression.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/method_protocol_steps.png}
+\caption{\textbf{Representative stepped acquisition protocols used for conductance inference}. \textbf{A}, full current-clamp command trace for VgluT2-I-Cell2-C, shown after coarse median smoothing, to highlight the piecewise-constant current injections; the blue shaded interval marks the recording segment expanded in panel~\textbf{C}. \textbf{B}, full voltage-clamp command trace for the matched recording VgluT2-I-Cell2-V; the blue shaded interval marks the segment expanded in panel~\textbf{D}. \textbf{C--D}, expanded recording excerpts selected automatically for analyses; the response channel is plotted in the upper lane (membrane potential in current clamp, holding current in voltage clamp) and the integrated XII reference is plotted separately in the lower lane. Gray dashed lines mark command transitions that fall inside the excerpt. The full step-command traces in \textbf{A} and \textbf{B} were used to sample a range of current--voltage operating points across many respiratory cycles.}
+\label{fig:stepped-acquisition}
+\end{figure}
+
+
+\subsection{Manual curation and preprocessing of analyzed recording segments}\label{manual-curation-and-preprocessing-of-analyzed-recording-segments}
+
+Several recordings required limited manual curation before automated inference of conductances. The purpose of this step was to isolate the longest interval that was reasonably stationary in both the electrophysiological channels and the XII respiratory cycle reference, rather than to select epochs with any particular conductance pattern. Files were therefore trimmed at the beginning, when the recording was still stabilizing; at the end, when rhythmicity or seal quality deteriorated; and when instability was present at both ends, to the middle portion that remained acceptably stationary. Thus, ``middle selection'' was implemented by defining start and end boundaries around a single contiguous interval rather than by stitching together disjoint fragments. In the current repository version, 6 accepted recordings used a non-zero starting offset, and 6 used an explicit end truncation. These edits were intentionally conservative and were applied before any conductance estimates were calculated.
+
+All signal processing was then automated. The current and voltage channels were median-filtered with a per-file half-width defined in the analysis configuration (default 25 samples, corresponding to a 51-sample window). Because the mouse XII rootlet signal was not always sufficiently robust on its own, the reference channel was optionally combined with the simultaneously recorded electrophysiological channel when the XII trace was too weak, noisy, or unstable to give reliable cycle onsets. In those cases, the reference channel was converted to a local z-score and linearly combined with a local z-score of the membrane-potential channel (current clamp) or the current channel (voltage clamp): \(p_{\mathrm{mix}}(t) = z\!\left[p(t)\right] + s\,z\!\left[y(t)\right],\) where \(p(t)\) is the integrated XII signal, \(y(t)\) is the auxiliary electrophysiological channel, and \(s = \pm 1\) was chosen empirically to align the sign of the auxiliary signal with the inspiratory onset. Local means and standard deviations were computed in a sliding window (typically 2000 samples). This mixed signal was used only for cycle detection and phase assignment; conductance inference itself still used the original current and voltage channels. Among the 50 accepted recordings, 6 used this mixed trigger signal, and 12 used a broader median post-filter on the final reference trace than the default setting.
+
+\subsection{Cycle detection and phase normalization}\label{cycle-detection-and-phase-normalization}
+
+Accurate determination and normalization of the respiratory cycle phase are critical for our cycle-phase-based conductance analyses. The cycle phase was derived from the processed XII reference trace. Let \(p(t)\) denote the final reference signal after optional mixing and median filtering. The detection threshold was chosen automatically from the median and robust peak amplitude of the full trace:
+
+\begin{equation}
+\theta = M + 0.5\left(P_{99} - M\right),
+\end{equation}
+where \(M = \mathrm{median}(p)\) and \(P_{99}\) is the 99th percentile of \(p\). A cycle onset \(T_n\) was defined as a rising threshold crossing, \(p[i-1] < \theta \le p[i]\), that remained above threshold for at least 10 consecutive samples. Crossing time was linearly interpolated between the two bracketing samples. Successive onsets were required to be at least 2~s apart to avoid double-counting within the same inspiratory burst.
+
+Phase was then normalized linearly between successive accepted onsets:
+
+\begin{equation}
+\phi(t) = \frac{t - T_n}{T_{n+1} - T_n}, \qquad T_n \le t < T_{n+1}.
+\end{equation}
+
+Thus, \(\phi = 0\) corresponds to the XII burst onset and \(\phi \in [0,1)\) indexes the respiratory cycle independently of its absolute duration.
+
+\subsection{Phase-binned current--voltage regression}\label{phase-binned-currentvoltage-regression}
+
+Conductance inference followed the phase-domain method introduced in the companion \emph{in situ} study of \citet{molkov2024inference}. We write the membrane-current balance as
+
+\begin{equation}
+I(t) = g_L\!\left(V(t)-E_L\right) + G_{\mathrm{exc}}(t)\!\left(V(t)-E_e\right) + G_{\mathrm{inh}}(t)\!\left(V(t)-E_i\right) + C\frac{dV}{dt},
+\label{eq:balance}
+\end{equation}
+
+where \(I(t)\) is the current channel, \(V(t)\) is the voltage channel, \(g_L\) and \(E_L\) are the effective leak conductance and reversal potential, \(G_{\mathrm{exc}}\) and \(G_{\mathrm{inh}}\) are the phase-dependent excitatory and inhibitory conductances, and \(E_e\) and \(E_i\) are their reversal potentials. In this formulation, \(g_L\) and \(E_L\) absorb both intrinsic leak and any approximately tonic background synaptic drive, allowing the dynamic respiratory modulation to be isolated in \(G_{\mathrm{exc}}(\phi)\) and \(G_{\mathrm{inh}}(\phi)\).
+
+Assuming that synaptic conductances vary primarily with respiratory phase and that the capacitive term is small relative to the synaptic terms on this time scale, Equation~\ref{eq:balance} reduces within each phase bin to a linear current--voltage relation,
+
+\begin{equation}
+I(t) \approx G_{\mathrm{tot}}(\phi)\,V(t) + I_0(\phi),
+\end{equation}
+
+where \(G_{\mathrm{tot}}(\phi)=g_L+G_{\mathrm{exc}}(\phi)+G_{\mathrm{inh}}(\phi)\) and \(I_0(\phi)\) is the phase-specific intercept.
+
+The normalized cycle was discretized into 1000 phase bins. For each bin, all samples whose phases fell inside that bin were pooled across the analyzed segment. If more than two points were available, an initial linear regression was fitted and residuals were computed. Points with residual magnitude greater than 2.5 standard deviations were excluded, and the regression was recomputed on the retained points. Bins with fewer than three retained points were discarded.
+
+The implementation differed slightly between acquisition modes to improve numerical stability while preserving the same \(I\)--\(V\) output. In voltage clamp, the final regression was fitted directly as \(I=aV+b\), so the slope and intercept were simply \(G_{\mathrm{tot}}=a\) and \(I_0=b\). In current clamp, the second-pass fit was performed as \(V=\alpha I+\beta\), then algebraically transformed back to
+
+\begin{equation}
+G_{\mathrm{tot}} = \frac{1}{\alpha}, \qquad I_0 = -\frac{\beta}{\alpha}.
+\end{equation}
+
+This avoids fitting a nearly vertical \(I\)--\(V\) relation in recordings where the injected current is the more naturally discretized variable.
+
+\subsection{Leak estimation and decomposition into excitation and inhibition}\label{leak-estimation-and-decomposition-into-excitation-and-inhibition}
+
+For each valid phase bin, the fitted current--voltage relation defines the total conductance and intercept trajectory shown in \figref{fig:conductance-workflow}. The current expected at the inhibitory and excitatory reversal potentials is
+
+\begin{equation}
+Q_i(\phi) = G_{\mathrm{tot}}(\phi)E_i + I_0(\phi), \qquad Q_e(\phi) = G_{\mathrm{tot}}(\phi)E_e + I_0(\phi).
+\end{equation}
+
+Assuming that each recording contains at least one phase at which excitation is minimal and one phase at which inhibition is minimal, the leak-only currents at the inhibitory and excitatory reversal potentials are estimated as
+
+\begin{equation}
+I_{Li} = \max_{\phi} Q_i(\phi), \qquad I_{Le} = \min_{\phi} Q_e(\phi).
+\end{equation}
+
+These values give the effective leak parameters
+
+\begin{equation}
+g_L = \frac{I_{Le}-I_{Li}}{E_e-E_i}, \qquad E_L = E_i - \frac{I_{Li}}{g_L}.
+\end{equation}
+
+Excitatory and inhibitory conductances are then recovered as
+
+\begin{equation}
+G_{\mathrm{exc}}(\phi) = \frac{Q_i(\phi)-I_{Li}}{E_i-E_e}, \qquad G_{\mathrm{inh}}(\phi) = \frac{Q_e(\phi)-I_{Le}}{E_e-E_i}.
+\end{equation}
+
+For reporting and plotting, conductances were normalized by the effective leak conductance \(g_L\), so all population summaries are expressed as \(G_{\mathrm{exc}}/g_{\mathrm{leak}}\) and \(G_{\mathrm{inh}}/g_{\mathrm{leak}}\).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/figure1_method.png}
+\caption{\textbf{Geometric conductance inference workflow}. \textbf{A}, representative phase-binned \(I\)--\(V\) regressions for two phases of the respiratory cycle \docxhlorange{(example for a VGluT2-I neuron)}. \textbf{B}, wedge plot formed by the trajectory of \((G_{\mathrm{tot}},I_0)\) across the cycle, bounded by the theoretical pure-excitation and pure-inhibition lines. \textbf{C}, reconstructed excitatory (red) and inhibitory (blue) conductances across two normalized cycles. \textbf{D}, the same conductances shown in polar coordinates over one normalized cycle.}
+\label{fig:conductance-workflow}
+\end{figure}
+
+
+\subsection{Data-driven estimation of inhibitory reversal potential}\label{data-driven-estimation-of-inhibitory-reversal-potential}
+
+The conductance decomposition depends critically on the inhibitory reversal potential, so treating \(E_{i}\) as a single fixed constant would force every recording to obey the same inhibitory geometry. Instead, we estimated \(E_{i}\) separately for each recording from the wedge plot formed by the phase-binned regression outputs \((G_{\mathrm{tot}}(\phi),I_0(\phi))\).
+
+Figure~\ref{fig:conductance-workflow}B illustrates the logic of this estimate. Each point on the black trajectory corresponds to one respiratory phase bin in the \((G_{\mathrm{tot}},I_0)\) plane. The blue dashed line is the pure-inhibition boundary, and the red dashed line is the pure-excitation boundary. If a phase contains inhibition with negligible excitation, its point lies on the blue boundary. Adding excitation moves the point into the interior of the wedge, away from that boundary, but cannot move it above the blue line because excitatory conductance is constrained to remain nonnegative. The upper envelope of the trajectory in \figpanelref{fig:conductance-workflow}{B} therefore reflects inhibition alone. Because the slope of that upper boundary is set by \(-E_i\), the wedge geometry provides a direct recording-specific estimate of inhibitory reversal potential before excitatory and inhibitory conductances are separated.
+
+In practice, after the robust phase-binned \(I\)--\(V\) regressions were computed, the analyzer searched for the tightest line that remained a global upper bound of all valid wedge points and took its slope as the recording-specific value of \(- E_{i}\). The resulting \(E_{i}\) was then used in the subsequent conductance decomposition for that recording. The analyzer was initialized with \(E_{e} = - 10\)~mV and an initial inhibitory guess of \(E_{i} = - 80\)~mV; if too few valid regression points were available to define a reliable boundary, the supplied inhibitory value was retained rather than forcing a geometric estimate. In the accepted data set, however, the automatic estimate was applied to all 50 included recordings. This recording-specific procedure prevented the decomposition from depending on a single assumed inhibitory reversal potential and ensured that each inferred wedge remained internally consistent with the geometry of its own regression cloud.
+
+\subsection{Definition of inspiratory and expiratory summary metrics}\label{definition-of-inspiratory-and-expiratory-summary-metrics}
+
+The per-bin conductance traces were next reduced to scalar metrics for population analysis. First, the medians of \(G_{\mathrm{inh}}(\phi)\) and \(G_{\mathrm{exc}}(\phi)\) across all valid bins were computed, together with median absolute deviations scaled to a \(3\sigma\)-equivalent threshold. Any phase bin whose inhibitory or excitatory conductance lay outside this robust threshold was marked as belonging to a transient interval. The longest consecutive transient chain on the circular phase axis was then identified as the phasic respiratory event, and the complementary bins were treated as the stationary interval.
+
+For each recording, the analyzer exported (i) the mean inhibitory and excitatory conductances over the stationary interval and (ii) the conductances in phase bin 0. Because the phase axis was reset at the XII burst onset, the phase-0 conductances were used as the inspiratory summary metric, whereas the stationary-interval means were used as the expiratory/interburst metric for the bar plots and summary tables generated in this repository.
+
+        \subsection{Population statistics and outlier handling}\label{population-statistics-and-outlier-handling}
+
+Population summaries were produced separately for VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E recordings. After the cycle-count screen, one row per accepted recording was written to a group-specific CSV file containing the stationary means and phase-0 conductances. Outlier handling was deliberately postponed to this stage rather than applied as a strict recording-level exclusion rule.
+
+Outliers were handled by a standard robust two-stage procedure: calculate a provisional distribution from all accepted recordings, identify extreme points using quantile-based criteria, remove those points from the summary statistics, and then recalculate the reported mean and SEM from the retained inliers. In practice, for each group and each scalar metric, quartiles were computed across recordings, the interquartile range was defined as \(\mathrm{IQR}=Q_3-Q_1\), and recordings outside the standard Tukey interval
+$\left[Q_1 - 1.5\,\mathrm{IQR},\; Q_3 + 1.5\,\mathrm{IQR}\right]$
+were labeled as outliers. Mean and SEM were then recomputed from the retained inliers only. Outliers were still displayed in the summary figure as separate markers but were not included in the reported group means or SEM values. This is a standard accepted way to summarize small, heterogeneous experimental data sets while limiting the influence of rare extreme values. We adopted this two-stage strategy because the slice data set contains some recordings with limited step-command span or weaker reference signals that would be lost under rigid step-count criteria even though their reconstructed conductances fall well within the physiological distribution of the corresponding population.
+
+\subsection{Software implementation}\label{software-implementation}
+
+All analyses in this repository are reproducible from the project Makefile. Conductance inference is implemented in src/trace\_analyzer.cpp; phase aggregation, outlier filtering, table generation, and figure production are handled by the Python scripts in scripts/. The standalone methods draft presented here is therefore synchronized with the actual analysis code rather than being a prose-only summary of a previous manuscript version.
+
+\section{Results}
+
+\subsection{Firing Phenotypes and Inferred Synaptic Conductances}\label{firing-phenotypes-and-inferred-synaptic-conductances}
+
+We analyzed synaptic inputs received by the rhythmically active respiratory neurons to understand how these inputs shape their firing phenotypes (\figref{fig:firing-patterns}). As illustrated, we found two main phenotypes: inspiratory (I) neurons spiking during XII motor output and expiratory (E) neurons spiking during the interval between inspiratory bursts and suppression of spiking activity during the inspiratory phase. Each spiking phenotype had subpopulations of excitatory (VgluT2-I, VgluT2-E) and inhibitory (VGAT-I, VGAT-E) neurons. While most of the I neurons began spiking synchronously with the onset of the integrated XII nerve discharge (e.g., VgluT2 in \figref{fig:firing-patterns}), some of the excitatory and inhibitory I neurons exhibited depolarization and spiking starting hundreds of milliseconds before (pre-I) the integrated XII nerve discharge (e.g., see VGAT-I neuron in \figref{fig:firing-patterns} and \suppfigref{fig:supp4} for more examples). Matched voltage-clamp recordings confirm that this pre-I spiking is driven by a progressively developing net inward synaptic current. Furthermore, some of the E neurons exhibited pre-I membrane hyperpolarization (e.g., VGAT-E in \figref{fig:firing-patterns} and \suppfigref{fig:supp5}) and associated outward synaptic current.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/figure2_four_populations.png}
+\caption{\textbf{Neuronal firing patterns}. Representative 25-second current-clamp recording episodes highlighting the firing patterns of typical neurons in the VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations. The blue trace illustrates the membrane potential, exhibiting distinct bursting dynamics that are time-aligned with the network rhythm. The green trace represents the integrated Hypoglossal Nerve Activity (HNA), providing a global reference for the inspiratory phase.}
+\label{fig:firing-patterns}
+\end{figure}
+
+
+\figref{fig:synaptic-profiles} illustrates the inferred excitatory and inhibitory conductances for representative inspiratory and expiratory neurons, covering both excitatory (VgluT2+) and inhibitory (VGAT+) populations. It shows that synaptic conductance waveforms reconstructed from current-clamp and voltage-clamp recordings for each neuron type are largely consistent, indicating that the inference method yields comparable results across recording modes. In both configurations, the same phase-dependent structure of excitation and inhibition is preserved for each cell type: inspiratory neurons exhibit a transient peak of excitatory conductance during inspiration together with dominant tonic inhibitory conductance during expiration, whereas expiratory neurons receive strong phasic inhibition during inspiration\docxhlamber{ and minimal excitatory synaptic drive during their active phase}. Absolute conductance magnitudes and temporal profiles are similar between recording modes, and the timing of conductance transitions aligns closely, supporting the validity of current-clamp--based conductance reconstruction. Minor quantitative differences in amplitude or variability likely reflect methodological factors, including imperfect space clamp and series resistance errors in voltage clamp, as well as deviations from the steady-state and linearity assumptions underlying the current-clamp inference (e.g., membrane capacitance effects, conductance nonstationarity, or phase jitter across cycles). Overall, the agreement between the results from the two recording methods indicates that the observed dominance of tonic expiratory inhibition and phase-specific excitation is a robust property of the network rather than an artifact of the recording configuration.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/figure3_selected.png}
+\caption{\textbf{Synaptic conductance profiles of representative excitatory and inhibitory neurons}. Absolute excitatory (red) and inhibitory (blue) synaptic conductances (in nS) estimated from current clamp (left column) and voltage clamp (right column) recordings. The traces show the phase-dependent mean conductance over two normalized respiratory cycles for four representative neurons: \textbf{A}. VgluT2+ inspiratory neuron (VgluT2-I-Cell2), \textbf{B}. VgluT2+ expiratory neuron (VgluT2-E-Cell1), \textbf{C}. VGAT+ inspiratory neuron (VGAT-I-Cell9), and \textbf{D}. VGAT+ expiratory neuron (VGAT-E-Cell8). Shaded areas indicate the mean conductance, and black lines indicate the standard error. Note the distinct temporal organization of synaptic inputs across inspiratory and expiratory cell types.}
+\label{fig:synaptic-profiles}
+\end{figure}
+
+
+Inspiratory neurons consistently exhibited a specific pattern of synaptic input: they received phasic inspiratory excitation during the burst phase, prominent tonic expiratory inhibition during the inter-burst interval, with disinhibition at the end of the expiratory phase. This combination of phasic excitatory drive and disinhibition supports their active phase during inspiration. Interestingly, we observed some concurrent phasic inhibition with the excitation during the I phase (see \figref{fig:high-resolution-conductances} for higher temporal resolution conductance profiles from current-clamp recordings, and \figref{fig:phase-specific-conductances} below incorporating conductances extracted from both current- and voltage-clamp data). Crucially, we did not observe discernible patterns of multi-phasic excitatory drive during the expiratory phase, and only steady levels of tonic inhibition predominated in this inter-burst interval. \docxhlorange{In the majority of recorded cells, the tonic inhibitory conductance during the expiratory phase}\hspace{0pt}\docxhlorange{ }\hspace{0pt}\docxhlorange{exceeded the tonic excitatory conductance, functionally shunting the membrane potential.}
+
+This dominance of tonic expiratory phase inhibition of inspiratory neurons provides a mechanistic explanation for the observed voltage trajectories (\figref{fig:firing-patterns}): we consistently observed a smooth profile of developing excitation, with no evidence of burstlets or low-amplitude oscillations. This indicates that in the preBötC circuits isolated in the slice preparation, voltage trajectories and the suppression of ectopic burst spiking appear to be largely controlled by this potent synaptic inhibition.
+
+Conversely, expiratory neurons exhibited a distinct pattern of synaptic inputs. They received strong phasic inhibition during the inspiratory phase, which effectively shunted their activity. We encountered only a single VgluT2-expressing neuron with this expiratory firing phenotype in our sample. This rare VgluT2-E neuron, unlike the \docxhlamber{more numerous VGAT-E neurons}, received no significant excitatory or inhibitory inputs during the expiratory phase, suggesting that the steady, low-frequency tonic firing of these neurons is potentially intrinsic or driven by tonic baseline cellular properties rather than by specific phasic synaptic drive.
+
+Critically, these synaptic input patterns appear to define the firing phenotype (inspiratory vs. expiratory) independent of the neuron's own neurotransmitter identity. Both VgluT2+ (excitatory) and VGAT+ (inhibitory) neurons within the same firing class shared identical synaptic input profiles.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/figure4_phase_summary.png}
+\caption{\textbf{Higher resolution phase-aligned representations of reconstructed conductances for representative individual cells from each population group (VGAT-I, VgluT2-I, VGAT-E, VgluT2-E)}. Traces show excitatory (red) and inhibitory (blue) synaptic conductances normalized by the resting leak conductance, plotted over the normalized phase interval {[}-0.25, 0.25{]} surrounding the onset of the dominant burst (Phase 0). Solid black outlines indicate the standard error of the mean (SEM).}
+\label{fig:high-resolution-conductances}
+\end{figure}
+
+
+\subsection{Neuron-Type and Phase-Specific Normalized Synaptic Conductances}\label{neuron-type-and-phase-specific-normalized-synaptic-conductances}
+
+To decipher the effective synaptic connectivity between the key active respiratory populations, we analyzed the magnitude of excitatory and inhibitory conductances during the inspiratory (Phase 0) and expiratory (Stationary) phases (\figref{fig:conductance-workflow}). Because individual neurons vary in physical size, and since both membrane capacitance and resting leak conductance scale proportionally with cell surface area \citep{koizumi2008functional}, we normalized all synaptic conductances to each neuron's respective leak conductance. This size-independent normalization controls for morphological variability, providing a standardized metric of the effective synaptic drive relative to the cell's intrinsic passive properties. Based on the phase-specificity of activity, we attribute inhibition during inspiration to VGAT-I neurons and inhibition during expiration to VGAT-E neurons. Excitation is attributed to VgluT2-I neurons and occurs during the inspiratory (Phase 0) phase, while excitatory inputs during expiration were found to be negligible.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/figure4_summary.png}
+\caption{\textbf{Synaptic conductances during expiratory and inspiratory phases across respiratory neuron populations}. Bar graphs display the population mean (± SEM) normalized excitatory (\(G_{\mathrm{exc}}/g_{\mathrm{leak}}\), red) and inhibitory (\(G_{\mathrm{inh}}/g_{\mathrm{leak}}\), blue) conductances for VGAT-I (top left), VgluT2-I (top right), VGAT-E (bottom left), and VgluT2-E (bottom right) neurons. Conductances were measured during the stationary inter-burst interval (mean value during expiration) and at the onset of the inspiratory burst (Phase 0). Individual data points that are outliers (defined as \(1.5\times\mathrm{IQR}\)) are overlaid as magenta crosses, and inliers are shown as dark grey dots. Note that some high-value points in the top panels exceed the y-axis limits and are visually clipped. The sample size (N) indicated for each group represents the number of analyzed recordings (each containing \textgreater25 respiratory cycles) rather than the number of unique cells, as some neurons contributed multiple recordings (both current- and voltage-clamp).}
+\label{fig:phase-specific-conductances}
+\end{figure}
+
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of reconstructed synaptic conductances across neuronal populations.}
+\label{tab:conductance_summary}
+\begin{tabular}{llcc}
+\toprule
+Group (N) & Phase & $G_{\mathrm{exc}}/g_{\mathrm{leak}}$ & $G_{\mathrm{inh}}/g_{\mathrm{leak}}$ \\
+\midrule
+\multirow{2}{*}{VGAT-I (12)} & Expiration & 0.007 $\pm$ 0.001 & 0.087 $\pm$ 0.012 \\
+ & Inspiration & 0.186 $\pm$ 0.036 & 0.167 $\pm$ 0.044 \\
+\midrule
+\multirow{2}{*}{VgluT2-I (18)} & Expiration & 0.007 $\pm$ 0.001 & 0.236 $\pm$ 0.045 \\
+ & Inspiration & 0.168 $\pm$ 0.020 & 0.117 $\pm$ 0.026 \\
+\midrule
+\multirow{2}{*}{VGAT-E (17)} & Expiration & 0.006 $\pm$ 0.001 & 0.073 $\pm$ 0.009 \\
+ & Inspiration & 0.035 $\pm$ 0.007 & 0.408 $\pm$ 0.058 \\
+\midrule
+\multirow{2}{*}{VgluT2-E (1)} & Expiration & 0.007 $\pm$ 0.000 & 0.073 $\pm$ 0.000 \\
+ & Inspiration & 0.094 $\pm$ 0.000 & 0.270 $\pm$ 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+The relative magnitudes of the synaptic conductances for each population are detailed in \textbf{Table~\ref{tab:conductance_summary}} and visualized as population means in \figref{fig:phase-specific-conductances}.
+
+\textbf{VGAT-I Population.} In the top-left panel, these inhibitory inspiratory neurons received multiple phase-locked synaptic inputs. Their largest measured conductance was excitatory input during the inspiratory phase, accompanied by substantial concurrent inhibition during inspiration. Inhibitory conductance during expiration was also present but of a smaller magnitude.
+
+\textbf{VgluT2-I Population.} In the top-right panel, the largest conductance measured in the VgluT2-I population was inhibition during the expiratory phase. During inspiration, these neurons exhibited considerable excitatory conductance, along with a smaller degree of concurrent inhibition.
+
+\textbf{VGAT-E Population.} In the bottom-left panel, the synaptic profile of inhibitory expiratory neurons was dominated by inhibition during the inspiratory phase, which was the largest conductance observed for this group. During their active expiratory phase, they exhibited a much smaller degree of inhibition. Excitatory conductance during the inspiratory phase was present but minimal.
+
+\textbf{VgluT2-E Population.} Although only a single VgluT2-E neuron was recorded, its pattern of synaptic conductances was largely similar to that of the VGAT-E population. In the bottom-right panel, its largest measured conductance was inhibition during the inspiratory phase, accompanied by a smaller excitatory conductance during inspiration. During its active expiratory phase, inhibitory conductance was minimal and excitatory conductance was negligible.
+
+In summary, the synaptic conductance profiles in \figref{fig:phase-specific-conductances} and Table~\ref{tab:conductance_summary} reveal prominent, phase-locked inhibitory inputs across both phases, with the major excitatory inputs restricted primarily to the inspiratory phase.
+
+\subsection{Inferred Circuit Functional Connectivity}\label{inferred-circuit-functional-connectivity}
+
+Based on the measured synaptic conductance profiles, we can infer the specific functional connectivity between the recorded populations (\figref{fig:circuit-connectivity}).
+
+\begin{figure}[htbp]
+\begin{minipage}[t]{0.54\textwidth}
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{figures/circuit_weighted.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.40\textwidth}
+\vspace{0pt}
+\small
+\caption{\textbf{Conductance-weighted circuit connectivity diagram}. Inferred preBötC population circuit with connection line widths scaled to the same mean normalized conductances summarized in Table~\ref{tab:conductance_summary}. Red arrows indicate excitatory drive from the inspiratory VgluT2 population, blue lines with terminal circles indicate inhibitory drive from the inspiratory and expiratory VGAT populations, and only connections exceeding the display threshold are shown. Connections below 0.05 are clipped from the diagram.}
+\label{fig:circuit-connectivity}
+\end{minipage}
+\end{figure}
+
+
+First, all populations receive inhibition during the expiratory phase, which is most consistent with input from the concurrently active inhibitory population: the VGAT-E neurons. Thus, we infer that VGAT-E neurons connect throughout, providing robust functional inhibition to the VgluT2-I population, along with weaker inhibitory inputs to the VGAT-I and VgluT2-E populations, as well as recurrent inhibition onto\docxhlorange{ themselves} (\figref{fig:circuit-connectivity}).
+
+Second, all populations also receive prominent inhibition during the inspiratory phase. This inhibition must arise from the inhibitory population active during inspiration: the VGAT-I neurons. This indicates a functional inhibitory network originating from VGAT-I, connected with high conductance magnitude to both expiratory populations (VgluT2-E and VGAT-E), while also providing substantial input to the VgluT2-I population and forming a robust recurrent inhibitory loop within the VGAT-I population itself (\figref{fig:circuit-connectivity}).
+
+Third, the phasic excitation received during the inspiratory phase must be driven by the excitatory population active at that time: the VgluT2-I neurons. This pattern is consistent with prominent recurrent excitation within the VgluT2-I population, as well as robust feed-forward excitation to both the VGAT-I \docxhlorange{and VgluT2-E populations} (\figref{fig:circuit-connectivity}). Excitatory input to the VGAT-E population was below the threshold for visualization in the circuit schematic.
+
+Finally, the lack of significant excitatory synaptic drive received by any population during the expiratory phase specifically excludes prominent recurrent excitation within the VgluT2-E population, as well as feed-forward excitation from VgluT2-E to any other recorded population in this slice preparation. Therefore, we do not infer functional excitatory outputs originating from the VgluT2-E population during baseline \emph{in vitro} rhythmic activity.
+
+These assignments represent functional attributions based on phase relationships and do not exclude contributions from additional extrinsic sources or polysynaptic pathways.
+
+\section{Discussion}
+
+\subsection{Circuit Organization Intrinsic to the preBötC in relation to the rhythmogenic kernel}\label{circuit-organization-intrinsic-to-the-prebuxf6tc-in-relation-to-the-rhythmogenic-kernel}
+
+While the preBötC has long been recognized as the primary site of inspiratory rhythm generation, the organization of its core excitatory--inhibitory circuitry has not been established. Many experimental and theoretical analyses have focused on the rhythmogenic mechanisms operating under in vitro conditions in rhythmically active slices to provide insight into the biophysical and circuit processes involved, which as discussed in a number of reviews, has potential relevance for rhythm and pattern generation in vivo \citep{feldman2006looking,richter2014respiratory,phillips2019biophysical}. Previous studies have established patterns of inspiratory and expiratory neuron activity in the preBötC in vitro, and it is well known that there are populations of rhythmically active excitatory and inhibitory neurons. Any analysis of functional circuit organization intrinsic to the preBötC must therefore account for synaptic interactions between these functionally different interneuron types and define how these interactions produce neuronal firing patterns and are involved in rhythm generation. Structural-functional properties of preBötC excitatory and inhibitory populations have been analyzed previously \citep{koizumi2013structural}, but how these populations functionally interact to generate neuronal firing patterns and a robust rhythm based on functional circuit analyses has not been resolved. The present results provide a novel quantitative view of circuit functional organization in the preBötC active in slices and place these findings within the framework of the rhythmogenic ``kernel'' proposed in earlier experimental and modeling studies.
+
+\subsubsection{Functional Features of the Circuit Organization}
+
+The functional set of excitatory and inhibitory synaptic interactions are described above and summarized by the synaptic conductance-weighted circuit schematic in \figref{fig:circuit-connectivity}. This schematic highlights the primacy of synaptic interactions for shaping and coordinating neuronal population activity. The self-excitatory VgluT2-I population represents the inspiratory rhythm-generating kernel in which the strong recurrent synaptic excitation within this population provides the essential synchronization mechanism for initiating and driving rhythmic inspiratory population-burst generation \docxhlorange{( )}. This excitatory VgluT2-I kernel is constrained by its interconnection to a robust, reciprocal inhibitory scaffold (VGAT-I \(\leftrightarrow\) VGAT-E) forming a main component of the circuit inhibitory connectome that enforces inspiratory-expiratory phase-locking/phase-switching and defines the inspiratory inter-burst interval. \figref{fig:circuit-connectivity} provides the first detailed depiction of the functional inhibitory connectome operating in the preBötC in vitro.
+
+The VgluT2-I and VGAT-I populations contain neurons with pre-I spiking, an established feature of preBötC neuronal population activity \docxhlorange{( )}, although this activity pattern has not previously been identified for inhibitory neurons. The presence of pre-I activity in both VgluT2+ and VGAT+ populations indicates that the initiation of the inspiratory phase involves the early, concurrent recruitment of both excitatory and inhibitory functional neuron classes. In this network configuration, pre-I excitatory neurons likely provide the early synaptic drive necessary to gradually recruit both the excitatory rhythmogenic kernel and the corresponding inhibitory interneurons. We suggest that this pre-I activity would support a specific mechanistic sequence for the expiratory-to-inspiratory phase transition in the slice circuits: the early-activating pre-I excitatory neurons drive the gradual recruitment of the network, including pre-I inhibitory neurons. These inhibitory pre-I neurons, in turn, provide the early synaptic inhibition necessary to suppress the expiratory population (VGAT-E) that is inhibiting the inspiratory populations, thereby facilitating the phase transition. The functional consequence of this early inhibitory recruitment is directly indicated by the voltage and synaptic current profiles of expiratory (E) cells during the late expiratory phase (\suppfigref{fig:supp5}). Both VGAT-E and VgluT2-E neurons systematically cease firing prior to the onset of the global inspiratory burst. Matched voltage-clamp recordings reveal that this pre-inspiratory silent window coincides with the early onset of outward (inhibitory) synaptic currents. This developing pre-I inhibition effectively shunts and terminates expiratory spiking activity before the main inspiratory burst fully materializes. The complementary coordination of pre-I inhibitory and excitatory neuronal activity seems to be a fundamental feature of dynamic circuit operation with neuronal synaptic interactions contributing to phase switching along with the other inhibitory interactions depicted in \figref{fig:circuit-connectivity}.
+
+Another feature of the inhibitory connectome is the recurrent inhibitory feed-back interaction of VGAT-I to the VgluT2-I excitatory kernel. Thus during the generation of the inspiratory population burst there is concurrent synaptic excitation and a smaller phasic inhibition in the VgluT2-I population (\figrefs{fig:high-resolution-conductances}{fig:phase-specific-conductances}). This phasic inhibition likely functions to dynamically shape the temporal evolution of the inspiratory burst and possibly regulates burst amplitude. Pharmacological block of synaptic inhibition in the preBötC has previously been shown to augment inspiratory population burst amplitude (e.g., \citep{johnson2001island}).
+
+Overall our circuit analyses based on synaptic conductance profiling indicate that beyond rhythm generation, the circuits intrinsic to the preBötC are designed to generate coordinated patterns of inspiratory and expiratory activity via the interactions of an excitatory rhythmogenic kernel and a functional inhibitory connectome.
+
+\subsubsection{The VgluT2-I Rhythmogenic Kernel}
+
+Classic experimental and modeling studies have repeatedly proposed, and there is general agreement that the preBötC excitatory circuits have intrinsic autorhythmic properties particularly because when isolated in slices in vitro, these circuits continue under appropriate conditions of excitability to generate rhythmic activity that drives behaviorally relevant inspiratory hypoglossal motoneuronal output. Experiments also showed that rhythmic inspiratory population activity can be maintained within a physically isolated preBötC region (preBötC ``island'') and a hemi-slice, including after blocking fast synaptic (GABAergic and glycinergic) inhibition, indicating that a minimal local excitatory circuit that depends primarily on synaptic-coupling and recurrent excitation recruiting and synchronizing neuron activity is sufficient to generate inspiratory population bursts and rhythm \citep{delnegro2001experimental,johnson2001island}. Thus the essential rhythmogenic kernel consists of a self-excitatory population of synaptically-coupled glutamatergic neurons as depicted in \figref{fig:circuit-connectivity}, which is supported by many experimental and modeling studies \citep{delnegro2001experimental,johnson2001island,smith2007spatial,rubin2009multiple,molkov2017computational,phillips2019biophysical,phillips2022predictions}, although there is currently no consensus about the underlying rhythmogenic mechanism(s) \citep{butera1999bursting,butera1999coupled,phillips2019biophysical,phillips2022predictions}. One key property of the rhythmogenic mechanism is the voltage-dependence of bursting, and its frequency control over a wide dynamic range \citep{butera1999bursting,butera1999coupled,delnegro2001experimental,koizumi2013structural,phillips2022predictions}. The failure of blocking inhibitory synaptic interactions to disrupt rhythm generation in vitro means that the inhibitory connectome depicted in \figref{fig:circuit-connectivity} is not required for inspiratory rhythm generation in vitro. However, the dynamical operation of the excitatory kernel is apparently modulated by the level and structure of inhibition, since instabilities of the rhythm (i.e., cycle-to cycle variability of period and amplitude) and excitability including voltage-dependence of frequency control of the rhythm-generating kernel occur after blocking synaptic inhibition. This is consistent with ongoing endogenous synaptic inhibition from VGAT-E neurons and the recurrent inhibitory connections from VGAT-I regulating excitability of the VgluT2 kernel as previously proposed \citep{smith2007spatial,rubin2009multiple,molkov2017computational}.
+
+These earlier studies noted above established the concept of a rhythmogenic kernel consisting of a population of excitatory neurons with intrinsic rhythmogenic properties and synaptically coupled by local excitatory amino acid (non-NMDA)-mediated excitatory synaptic interactions. Morphological studies in the rhythmic slice demonstrated that a majority of preBötC excitatory inspiratory neurons have contralaterally projecting axons, enabling left-right inspiratory population burst synchronization in the bilateral preBötC, and that a subset of these commissural excitatory neurons has intrinsic oscillatory bursting properties which was proposed to be an important property of the the excitatory kernel neurons \citep{koizumi2013structural}. These studies also indicated that preBötC inhibitory interneurons generally do not have intrinsic rhythmic bursting properties and contralateral axonal projections, and therefore mainly interact locally within the preBötC. Our analyses do not indicate the sources of synaptic inputs, but these morphological reconstruction results imply that the excitatory conductances that we infer can arise from both local and bilateral excitatory connections, whereas the inhibitory conductance arise from local synaptic interactions. Our conductance-resolved mapping of synaptic interactions in the preBötC in vitro builds directly on the foundational structural-functional characterization of excitatory and inhibitory respiratory interneurons by Koizumi et al. (2013) by delineating the functional inhibitory synaptic connections and interactions with the excitatory kernel.
+
+Recent experimental and modeling studies \citep{phillips2019biophysical,phillips2022predictions} also supports the concept that a subpopulation of preBötC excitatory neurons forms the kernel for rhythm generation, whereas a larger VgluT2-I population in the preBötC functions to amplify synaptic drive from the kernel population to generate the amplitude of the inspiratory population burst. This implies that the excitatory neurons active in the slice have a more complicated functional organization than depicted in earlier studies and \figref{fig:circuit-connectivity}. We suggest that both of these functionally distinct subpoulations of excitatory neurons are subject to the set of inhibitory interactions depicted in \figref{fig:circuit-connectivity}, but this remains to be established since we did not experimentally differentiate these functional types of excitatory neurons and specifically determine their synaptic conductance profiles.
+
+Together with the foundational \citep{johnson1994pacemaker,johnson2001island} and more recent studies, the present circuit analysis supports the interpretation that the preBötC in the sice preserves a functional excitatory rhythmogenic kernel best understood as a bilaterally distributed excitatory microcircuit whose dynamics are stabilized by tonic expiratory phase inhibition that regulates interval between inspiratory bursts, and phasic inhibitory interactions involved in coordinating phase switching.
+
+\subsection{Preserved Core Circuitry and Reduced Functional Inhibitory Circuit Interactions in the Isolated preBötC}\label{preserved-core-circuitry-and-reduced-functional-inhibitory-circuit-interactions-in-the-isolated-prebuxf6tc}
+
+An important finding of our circuit interactions in vitro, and our previous study \citep{molkov2024inference} of preBötC neuron specific synaptic conductance profiles, is that there is a reduction of the functionally active classes of expiratory and inspiratory neuron populations and inhibitory interactions in the slice compared to the preBötC operating in a more intact brainstem. Direct comparison with our previous conductance-based circuit reconstructions for the in situ respiratory network \citep{molkov2024inference} reveals a striking simplification: whereas the preBötC in situ exhibits multiphasic excitatory and inhibitory modulation patterns involving distinct post-inspiratory and augmenting expiratory neuron activity profiles, our slice data show that these interactions collapse into a simplified structure. This reduced architecture is dominated by tonic inhibition from a single functional pool of expiratory neurons (VGAT-E) and phasic inspiratory inhibition involving VGAT-(pre)I neurons.Thus the "reduced" nature of the slice is not merely anatomical but functionally in terms of preBötC synaptic interactions and pattern generation mechanisms. How do we account for this functional reduction?
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/Fig8.pdf}
+\caption{\textbf{Preserved core circuitry and reduced inhibitory architecture in the isolated preBötC}. (A) Compact in vitro circuit derived from conductance measurements in the rhythmic slice. (B) Interpretive resolution of modest intra-population conductances, previously attributed to self-inhibition, into weak cross-inhibition between temporally offset subsets, with tentative mapping onto classic in situ classes. (C) Full in situ connectome \citep{molkov2024inference} showing the expanded inhibitory ring. (D) Simplified core circuit interactions that may be preserved in the slice, consisting of a half-center architecture with pre-I/I coordination. Red arrows indicate excitatory connections; blue arrows indicate inhibitory connections. See also \suppfigrange{fig:supp4}{fig:supp5} for pre-I dynamics relevant to this interpretation.}
+\label{fig:preserved-core-circuitry}
+\end{figure}
+
+
+Classical models (e.g., \citep{smith2007spatial,rubin2009multiple}) of how the preBötC operates and interacts with other circuits when the preBötC is embedded in the ventral respiratory column describe a hierarchical organization in which the preBötC is sufficient to generate a basic inspiratory rhythm via an excitatory interneuron kernel, including pre-I spiking neurons, with the preBötC inhibitory inspiratory neurons functioning to suppress expiratory activity and coordinate inspiratory-expiratory phase transitions. In this scheme, the full three-phase respiratory pattern characteristic of the intact brainstem respiratory network with (pre)inspiratory, post-inspiratory (post-I), and late (aug-E) expiratory activity phases, depends on additional inhibitory populations, including post-I and aug-E neurons, recruited from the rostral Bötzinger Complex (BötC). The previous large-scale computational models have posited that the respiratory rhythm relies on a "mutually inhibitory ring" structure involving interactions between the preBötC and BötC inhibitory circuits \citep{smith2007spatial,rubin2009multiple,molkov2017computational}. Specifically, these models suggest that the phase transitions are orchestrated by reciprocal inhibitory circuit interactions between preBötC inspiratory (Early-I) and BötC expiratory (Post-I and Aug-E) inhibitory neuron populations.
+
+More recent experimental and modeling studies, however, have pointed to a more elaborate inhibitory connectome within the preBötC, incorporating post-I inhibitory neurons in addition to inspiratory inhibitory neurons and their synaptic interactions, not explicitly depicted in those earlier models. Indeed, our recent in situ recordings \citep{molkov2024inference} identified substantial numbers of both post-I neurons and aug-E neurons, including glycinergic inhibitory subtypes within the preBötC itself, consistent with earlier recording studies of preBötC neuron activity (e.g., \citep{schwarzacher1995prebotzinger}) in vivo. Furthermore, there are more diverse patterns of inspiratory activity and associated synaptic conductance profiles. The neurons that we identified in situ have multiphasic patterns of synaptic interactions consistent with three-phase pattern generation. Thus, there are neurons within the preBötC, including inhibitory neurons, that can generate different patterns of inspiratory-expiratory activity and the full three-phase activity pattern with the diversity of neuronal firing phenotypes, but these neurons are not fully engaged under the conditions of neuronal excitability in the isolated rhythmically active medullary slice where neuronal activity patterns are clearly transformed.
+
+Our conductance-based analysis and circuit reconstruction for the preBötC in the slice (\figrefs{fig:circuit-connectivity}{fig:preserved-core-circuitry}), viewed together with our in situ functional circuit reconstruction \citep{molkov2024inference} (\figref{fig:preserved-core-circuitry}), suggests one plausible interpretation for the connectivity of the active circuits in vitro: the isolated preBötC already contains core circuits with connectivity including the inhibitory connectome for generating inspiratory and expiratory activity patterns, with some connectivity features (motifs) paralleling those of the intact active network. These retained motifs include excitatory and inhibitory populations for each firing phenotye (pre)I and E and reciprocal inhibitory interactions
+
+One plausible interpretation of the modest inhibitory conductances attributed (\figref{fig:high-resolution-conductances}) to self-inhibition (VGAT-I \(\approx\) 0.167 during inspiration; VGAT-E \(\approx\) 0.073 during expiration) is that they reflect weak cross-inhibition within temporally offset subsets rather than actual self-inhibition (\figpanelref{fig:preserved-core-circuitry}{B}). Under this view, the VGAT-I population can be resolved into pre-I/I and early-I inhibitory subsets with moderate reciprocal interactions, whereas the VGAT-E population can be resolved into post-I and aug-E inhibitory subsets which become active and coordinated when the preBötC is imbedded in the ventral respiratory column in situ/in vivo. Although inferential, this mapping highlights clear population-level parallels between the slice-derived circuit and the classic functional neuronal classes and their connectivity inferred for the circuit active in situ.
+
+This interpretation is also consistent with the broader relationship between the isolated preBötC and the intact ventral respiratory column. Earlier models (e.g., \citep{smith2007spatial}) placed post-I and aug-E populations primarily in the more rostral BötC circuits for expiratory pattern generation. However, our analysis of synaptic conductance profiles shows that preBötC post-I and aug-E neurons are the same as profiles of their BötC counterparts. We currently do not know if the preBötC circuits can intrinsically generate these expiratory patterns, or that external inputs including from the BötC are required. Thus, while the BötC circuits are clearly connected to preBötC circuits \citep{ausborn2018organization}, including inhibitory circuit interactions, and are required for three-phase pattern generation \citep{marchenko2016perturbations}, the BötC circuits may not be the exclusive source of these patterns although clearly necessary to elaborate them as observed in situ (\figpanelref{fig:preserved-core-circuitry}{C}). In this view, the slice preserves a compact core motif (\figpanelref{fig:preserved-core-circuitry}{D}) while lacking the extended circuitry normally required for three-phase pattern generation.
+
+This framework is further supported by the pre-inspiratory dynamics observed in both preparations (\suppfigrange{fig:supp4}{fig:supp5}). In particular, the inhibitory pre-I/I population, present in both in situ and in vitro (\suppfigref{fig:supp3}), may represent an underappreciated but functionally important component of preBötC circuits. Earlier computational models \citep{smith2007spatial,ausborn2018organization,butera1999bursting} typically emphasized inspiratory phase switching mechanisms involving pre-I excitatory drive (on-switching) and post-I inhibition (off-switching). The inhibitory pre-I/I population may also be involved by contributing to expiratory phase termination and to temporal structuring within the inspiratory inhibitory population.
+
+Viewed in this way, the slice isolates a compact and functionally reduced version of the in situ network. We hypothesize this functional reduction---specifically, the collapse from a three-phase rhythm to a simplified binary two-phase alternating rhythm---is due to the loss of tonic excitatory drive (e.g., from pontine or retrotrapezoid nuclei) in the isolated preparation and interactions with BötC circuits. In the intact network, higher baseline excitability combined with intrinsic spike-frequency adaptation allows these embedded sub-populations to sequentially activate, driving multi-phasic transitions. Without this external drive, the reduced excitability in the slice limits these nuanced transitions, leaving the rhythm to be driven by the preBötC's intrinsic excitatory rhythmogenic properties, but structured into a binary alternating pattern by the preserved inhibitory half-center. Therefore, the principal contribution of the rostral BötC may be not to introduce qualitatively new circuit motifs, but to expand an already present preBötC circuit into a richer multiphasic inhibitory sequence and expiratory activity pattern. The isolated preBötC would therefore retain the core half-center organization together with pre-I/I excitatory--inhibitory coordination, while lacking the broader inhibitory elaboration present in the intact network.
+
+\subsection{Limitations and Developmental Considerations}\label{limitations-and-developmental-considerations}
+
+We acknowledge distinct limitations in directly comparing these slice recordings to in situ data, primarily regarding developmental state and excitability. Our slice data were obtained from neonatal (P3-P8) mice, whereas in situ data typically come from juvenile preparations. Furthermore, the elevated K+ (8-9 mM) required to sustain rhythm in slices creates a distinct excitability state compared to the perfused preparation.
+
+It is possible that we recorded from a subset of neurons. However, the consistency of the "synaptic fingerprints" across recorded cells suggests that the relative structure of synaptic interactions---specifically the balance of phasic drive and tonic inhibition---is a robust feature of the network state in vitro, rather than an artifact of sampling bias.
+
+\section{Conclusion}
+
+The inferred circuit reveals a reduced functional state of the respiratory network, in which complex multiphasic inhibition is replaced by a simplified architecture dominated by tonic expiratory inhibition, thereby revealing the minimal rhythmogenic structure. This structure consists of a self-exciting inspiratory pacemaker (VgluT2-I) constrained by a robust, reciprocal inhibitory scaffold (VGAT-I \(\leftrightarrow\) VGAT-E). Ultimately, this work redefines our interpretation of slice experiments: slice rhythms are not merely miniature versions of intact rhythms, but functionally reduced states where complex multiphasic inhibition appears to be replaced by tonic inhibitory control. Our conductance inference approach provides a crucial framework for mapping these state-dependent changes in circuit logic, bridging the gap between reduced models and the intact behaving system.
+
+\bibliography{references}
+\clearpage
+\appendix
+\input{Synaptic_Architecture_PreBotC-supp.tex}
+\end{document}
