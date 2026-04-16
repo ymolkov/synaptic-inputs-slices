@@ -2,14 +2,29 @@ import os
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+from figure_style import (
+    AXIS_LABEL_SIZE,
+    GRID_ALPHA,
+    HIGHLIGHT_COLOR,
+    REF_COLOR,
+    SCALEBAR_SIZE,
+    TICK_LABEL_SIZE,
+    TITLE_SIZE,
+    TRACE_COLOR,
+    apply_style,
+    save_pdf,
+    scaled_figsize,
+)
 from spike_repair import repair_undersampled_spikes
+
+apply_style()
 
 DISPLAY_XLIM = (-0.25, 1.25)
 VC_DISPLAY_YLIM = (0.0, 1.0)
 ROW_HEIGHT = 4.0 / 1.5
-LABEL_FONT_SIZE = 12
-TITLE_FONT_SIZE = 14
-SCALEBAR_FONT_SIZE = 11
+LABEL_FONT_SIZE = AXIS_LABEL_SIZE
+TITLE_FONT_SIZE = TITLE_SIZE
+SCALEBAR_FONT_SIZE = SCALEBAR_SIZE
 FRAME_PAD_Y_FRAC = 0.012
 CC_REF_BASELINE_FRAC = 0.01
 CC_REF_AMPLITUDE_FRAC = 0.21
@@ -516,7 +531,12 @@ def plot_final_grid_tight():
         target_vc_display_noise_mad = vc_display_noise_mad(t, inj, inj_smooth, onset_times)
     
     num_cells = len(cell_data)
-    fig, axes = plt.subplots(num_cells, 2, figsize=(18, ROW_HEIGHT * num_cells), sharex=False)
+    fig, axes = plt.subplots(
+        num_cells,
+        2,
+        figsize=scaled_figsize(18, ROW_HEIGHT * num_cells),
+        sharex=False,
+    )
     
     for row, panel in enumerate(cell_data):
         # --- Column 1: Current Clamp ---
@@ -544,13 +564,13 @@ def plot_final_grid_tight():
             bursts = find_spike_bursts(t, vm_repaired)
             spike_times = find_spike_times(t, vm_repaired)
             tx = normalize_two_burst_time(t, onset_times)
-            ax.plot(tx, vm_repaired, color='blue', lw=0.8)
+            ax.plot(tx, vm_repaired, color=TRACE_COLOR, lw=0.8)
             ax.set_ylim(-100, 40)
             ax.set_yticks(np.arange(-60, 41, 20))
             ref_mapped = map_reference_trace(
                 ref_smooth, ax.get_ylim(), CC_REF_BASELINE_FRAC, CC_REF_AMPLITUDE_FRAC
             )
-            ax.plot(tx, ref_mapped, color='green', lw=2, alpha=0.7)
+            ax.plot(tx, ref_mapped, color=REF_COLOR, lw=2, alpha=0.7)
 
             for onset_idx in onset_indices:
                 ref_x = normalize_two_burst_time(np.array([t[onset_idx]]), onset_times)[0]
@@ -568,7 +588,7 @@ def plot_final_grid_tight():
                         ax.axvspan(
                             shade_start,
                             ref_x,
-                            color='red',
+                            color=HIGHLIGHT_COLOR,
                             alpha=0.15,
                         )
 
@@ -579,8 +599,8 @@ def plot_final_grid_tight():
             ax.set_xticks([])
             add_time_scalebar(ax, onset_times, y_frac=-0.02, label_offset_frac=0.03)
             style_panel_axes(ax, y_spine_bounds=(-60, 40))
-            ax.tick_params(axis="y", labelsize=LABEL_FONT_SIZE - 1)
-            ax.grid(alpha=0.2)
+            ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE)
+            ax.grid(alpha=GRID_ALPHA)
 
         # --- Column 2: Voltage Clamp ---
         ax = axes[row, 1]
@@ -616,13 +636,13 @@ def plot_final_grid_tight():
             inj_disp, inj_smooth_disp, vc_scale = map_vc_current_trace(
                 inj, inj_smooth, onset_times, t, VC_DISPLAY_YLIM
             )
-            ax.plot(tx, inj_disp, color='blue', lw=0.45, alpha=0.22)
-            ax.plot(tx, inj_smooth_disp, color='blue', lw=1.25)
+            ax.plot(tx, inj_disp, color=TRACE_COLOR, lw=0.45, alpha=0.22)
+            ax.plot(tx, inj_smooth_disp, color=TRACE_COLOR, lw=1.25)
 
             ref_mapped = map_reference_trace(
                 ref_smooth, VC_DISPLAY_YLIM, VC_REF_BASELINE_FRAC, VC_REF_AMPLITUDE_FRAC
             )
-            ax.plot(tx, ref_mapped, color='green', lw=2, alpha=0.8)
+            ax.plot(tx, ref_mapped, color=REF_COLOR, lw=2, alpha=0.8)
 
             for onset_idx in onset_indices:
                 ref_x = normalize_two_burst_time(np.array([t[onset_idx]]), onset_times)[0]
@@ -632,7 +652,7 @@ def plot_final_grid_tight():
                 t_lead_vc_x = normalize_two_burst_time(np.array([t[idx_onset_vc]]), onset_times)[0]
                 shade_start_vc = max(DISPLAY_XLIM[0], t_lead_vc_x)
                 if shade_start_vc < ref_x:
-                    ax.axvspan(shade_start_vc, ref_x, color='red', alpha=0.1)
+                    ax.axvspan(shade_start_vc, ref_x, color=HIGHLIGHT_COLOR, alpha=0.1)
 
             if row == 0: ax.set_title("Voltage Clamp", fontsize=TITLE_FONT_SIZE)
             ax.set_xlim(*DISPLAY_XLIM)
@@ -641,11 +661,11 @@ def plot_final_grid_tight():
             add_time_scalebar(ax, onset_times, y_frac=-0.02, label_offset_frac=0.03)
             add_current_scalebar(ax, vc_scale, current_nA=0.2)
             style_panel_axes(ax, show_left=False)
-            ax.grid(alpha=0.2)
+            ax.grid(alpha=GRID_ALPHA)
 
     plt.tight_layout()
-    out_path = os.path.join("publication", "figures", "supp_figure5_pre_i_inhibition.png")
-    plt.savefig(out_path, dpi=300)
+    out_path = os.path.join("paper", "figures", "supp_figure5_pre_i_inhibition.pdf")
+    save_pdf(plt.gcf(), out_path)
     print(f"Saved plot to {out_path}")
 
 if __name__ == "__main__":

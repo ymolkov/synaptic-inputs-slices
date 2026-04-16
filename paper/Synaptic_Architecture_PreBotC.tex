@@ -159,7 +159,7 @@ The command protocols used for conductance inference consisted of piecewise-cons
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/method_protocol_steps.png}
+\includegraphics[width=\textwidth]{figures/method_protocol_steps.pdf}
 \caption{\textbf{Representative stepped acquisition protocols used for conductance inference}. \textbf{A}, full current-clamp command trace for VgluT2-I-Cell2-C, shown after coarse median smoothing, to highlight the piecewise-constant current injections; the blue shaded interval marks the recording segment expanded in panel~\textbf{C}. \textbf{B}, full voltage-clamp command trace for the matched recording VgluT2-I-Cell2-V; the blue shaded interval marks the segment expanded in panel~\textbf{D}. \textbf{C--D}, expanded recording excerpts selected automatically for analyses; the response channel is plotted in the upper lane (membrane potential in current clamp, holding current in voltage clamp) and the integrated XII reference is plotted separately in the lower lane. Gray dashed lines mark command transitions that fall inside the excerpt. The full step-command traces in \textbf{A} and \textbf{B} were used to sample a range of current--voltage operating points across many respiratory cycles.}
 \label{fig:stepped-acquisition}
 \end{figure}
@@ -247,8 +247,8 @@ For reporting and plotting, conductances were normalized by the effective leak c
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/figure1_method.png}
-\caption{\textbf{Geometric conductance inference workflow}. \textbf{A}, representative phase-binned \(I\)--\(V\) regressions for two phases of the respiratory cycle \docxhlorange{(example for a VGluT2-I neuron)}. \textbf{B}, wedge plot formed by the trajectory of \((G_{\mathrm{tot}},I_0)\) across the cycle, bounded by the theoretical pure-excitation and pure-inhibition lines. \textbf{C}, reconstructed excitatory (red) and inhibitory (blue) conductances across two normalized cycles. \textbf{D}, the same conductances shown in polar coordinates over one normalized cycle.}
+\includegraphics[width=\textwidth]{figures/figure1_method.pdf}
+\caption{\textbf{Geometric conductance inference workflow}. \textbf{A}, representative phase-binned \(I\)--\(V\) regressions for two phases of the respiratory cycle \docxhlorange{(VgluT2-I-Cell2-C recording)}. The point clouds are organized into horizontal strips because each strip corresponds to repeated samples collected at the same injected-current step; the horizontal extent of a strip shows cycle-to-cycle variability in membrane voltage at that current level and respiratory phase. This within-step voltage variability contributes to scatter around the fitted \(I\)--\(V\) relation and therefore to the regression uncertainty propagated as the black error trace in \textbf{C} and \textbf{D}. \textbf{B}, wedge plot formed by the trajectory of \((G_{\mathrm{tot}},I_0)\) across the cycle, bounded by the theoretical pure-excitation and pure-inhibition lines. \textbf{C}, reconstructed excitatory (red) and inhibitory (blue) conductances across two normalized cycles. \textbf{D}, the same conductances shown in polar coordinates over one normalized cycle.}
 \label{fig:conductance-workflow}
 \end{figure}
 
@@ -273,7 +273,7 @@ Population summaries were produced separately for VgluT2-I, VgluT2-E, VGAT-I, an
 
 Outliers were handled by a standard robust two-stage procedure: calculate a provisional distribution from all accepted recordings, identify extreme points using quantile-based criteria, remove those points from the summary statistics, and then recalculate the reported mean and SEM from the retained inliers. In practice, for each group and each scalar metric, quartiles were computed across recordings, the interquartile range was defined as \(\mathrm{IQR}=Q_3-Q_1\), and recordings outside the standard Tukey interval
 $\left[Q_1 - 1.5\,\mathrm{IQR},\; Q_3 + 1.5\,\mathrm{IQR}\right]$
-were labeled as outliers. Mean and SEM were then recomputed from the retained inliers only. Outliers were still displayed in the summary figure as separate markers but were not included in the reported group means or SEM values. This is a standard accepted way to summarize small, heterogeneous experimental data sets while limiting the influence of rare extreme values. We adopted this two-stage strategy because the slice data set contains some recordings with limited step-command span or weaker reference signals that would be lost under rigid step-count criteria even though their reconstructed conductances fall well within the physiological distribution of the corresponding population.
+were labeled as outliers. Mean and SEM were then recomputed from the retained inliers only. Those outliers are excluded from the summary bars. This is a standard accepted way to summarize small, heterogeneous experimental data sets while limiting the influence of rare extreme values. We adopted this two-stage strategy because the slice data set contains some recordings with limited step-command span or weaker reference signals that would be lost under rigid step-count criteria even though their reconstructed conductances fall well within the physiological distribution of the corresponding population.
 
 \subsection{Software implementation}\label{software-implementation}
 
@@ -287,8 +287,8 @@ We analyzed synaptic inputs received by the rhythmically active respiratory neur
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/figure2_four_populations.png}
-\caption{\textbf{Neuronal firing patterns}. Representative 25-second current-clamp recording episodes highlighting the firing patterns of typical neurons in the VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations. The blue trace illustrates the membrane potential, exhibiting distinct bursting dynamics that are time-aligned with the network rhythm. The green trace represents the integrated Hypoglossal Nerve Activity (HNA), providing a global reference for the inspiratory phase.}
+\includegraphics[width=\textwidth]{figures/figure2_four_populations.pdf}
+\caption{\textbf{Neuronal firing patterns}. Representative 25-second current-clamp recording episodes highlighting the firing patterns of typical neurons in the VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations. The blue trace illustrates the membrane potential, exhibiting distinct bursting dynamics that are time-aligned with the network rhythm. The green trace represents the integrated XII nerve activity (\(\int\) XII), providing a global reference for the inspiratory phase.}
 \label{fig:firing-patterns}
 \end{figure}
 
@@ -297,7 +297,7 @@ We analyzed synaptic inputs received by the rhythmically active respiratory neur
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/figure3_selected.png}
+\includegraphics[width=\textwidth]{figures/figure3_selected.pdf}
 \caption{\textbf{Synaptic conductance profiles of representative excitatory and inhibitory neurons}. Absolute excitatory (red) and inhibitory (blue) synaptic conductances (in nS) estimated from current clamp (left column) and voltage clamp (right column) recordings. The traces show the phase-dependent mean conductance over two normalized respiratory cycles for four representative neurons: \textbf{A}. VgluT2+ inspiratory neuron (VgluT2-I-Cell2), \textbf{B}. VgluT2+ expiratory neuron (VgluT2-E-Cell1), \textbf{C}. VGAT+ inspiratory neuron (VGAT-I-Cell9), and \textbf{D}. VGAT+ expiratory neuron (VGAT-E-Cell8). Shaded areas indicate the mean conductance, and black lines indicate the standard error. Note the distinct temporal organization of synaptic inputs across inspiratory and expiratory cell types.}
 \label{fig:synaptic-profiles}
 \end{figure}
@@ -313,7 +313,7 @@ Critically, these synaptic input patterns appear to define the firing phenotype 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/figure4_phase_summary.png}
+\includegraphics[width=\textwidth]{figures/figure4_phase_summary.pdf}
 \caption{\textbf{Higher resolution phase-aligned representations of reconstructed conductances for representative individual cells from each population group (VGAT-I, VgluT2-I, VGAT-E, VgluT2-E)}. Traces show excitatory (red) and inhibitory (blue) synaptic conductances normalized by the resting leak conductance, plotted over the normalized phase interval {[}-0.25, 0.25{]} surrounding the onset of the dominant burst (Phase 0). Solid black outlines indicate the standard error of the mean (SEM).}
 \label{fig:high-resolution-conductances}
 \end{figure}
@@ -325,8 +325,8 @@ To decipher the effective synaptic connectivity between the key active respirato
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/figure4_summary.png}
-\caption{\textbf{Synaptic conductances during expiratory and inspiratory phases across respiratory neuron populations}. Bar graphs display the population mean (± SEM) normalized excitatory (\(G_{\mathrm{exc}}/g_{\mathrm{leak}}\), red) and inhibitory (\(G_{\mathrm{inh}}/g_{\mathrm{leak}}\), blue) conductances for VGAT-I (top left), VgluT2-I (top right), VGAT-E (bottom left), and VgluT2-E (bottom right) neurons. Conductances were measured during the stationary inter-burst interval (mean value during expiration) and at the onset of the inspiratory burst (Phase 0). Individual data points that are outliers (defined as \(1.5\times\mathrm{IQR}\)) are overlaid as magenta crosses, and inliers are shown as dark grey dots. Note that some high-value points in the top panels exceed the y-axis limits and are visually clipped. The sample size (N) indicated for each group represents the number of analyzed recordings (each containing \textgreater25 respiratory cycles) rather than the number of unique cells, as some neurons contributed multiple recordings (both current- and voltage-clamp).}
+\includegraphics[width=\textwidth]{figures/figure4_summary.pdf}
+\caption{\textbf{Synaptic conductances during expiratory and inspiratory phases across respiratory neuron populations}. Bar graphs display the population mean (± SEM) normalized excitatory (\(G_{\mathrm{exc}}/g_{\mathrm{leak}}\), red) and inhibitory (\(G_{\mathrm{inh}}/g_{\mathrm{leak}}\), blue) conductances for VGAT-I (top left), VgluT2-I (top right), VGAT-E (bottom left), and VgluT2-E (bottom right) neurons. Conductances were measured during the stationary inter-burst interval (mean value during expiration) and at the onset of the inspiratory burst (Phase 0). The bars summarize the robust inlier subset after Tukey filtering of extreme values. The sample size (N) indicated for each group represents the number of analyzed recordings (each containing \textgreater25 respiratory cycles) rather than the number of unique cells, as some neurons contributed multiple recordings (both current- and voltage-clamp).}
 \label{fig:phase-specific-conductances}
 \end{figure}
 
@@ -372,12 +372,12 @@ In summary, the synaptic conductance profiles in \figref{fig:phase-specific-cond
 Based on the measured synaptic conductance profiles, we can infer the specific functional connectivity between the recorded populations (\figref{fig:circuit-connectivity}).
 
 \begin{figure}[htbp]
-\begin{minipage}[t]{0.54\textwidth}
+\begin{minipage}[t]{0.35\textwidth}
 \vspace{0pt}
 \centering
-\includegraphics[width=\linewidth]{figures/circuit_weighted.png}
+\includegraphics{figures/circuit_weighted.pdf}
 \end{minipage}\hfill
-\begin{minipage}[t]{0.40\textwidth}
+\begin{minipage}[t]{0.60\textwidth}
 \vspace{0pt}
 \small
 \caption{\textbf{Conductance-weighted circuit connectivity diagram}. Inferred preBötC population circuit with connection line widths scaled to the same mean normalized conductances summarized in Table~\ref{tab:conductance_summary}. Red arrows indicate excitatory drive from the inspiratory VgluT2 population, blue lines with terminal circles indicate inhibitory drive from the inspiratory and expiratory VGAT populations, and only connections exceeding the display threshold are shown. Connections below 0.05 are clipped from the diagram.}

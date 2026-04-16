@@ -2,16 +2,28 @@
 
 import argparse
 import os
+import re
 
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from figure_style import (
+    GRID_ALPHA,
+    AXIS_LABEL_SIZE,
+    REF_COLOR,
+    TICK_LABEL_SIZE,
+    TRACE_COLOR,
+    VOLTAGE_AXIS_BOUNDS,
+    apply_style,
+    save_pdf,
+    scaled_figsize,
+)
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUTPUT = os.path.join(
-    PROJECT_ROOT, "publication", "figures", "supp_figure3_ectopic.png"
+    PROJECT_ROOT, "paper", "figures", "supp_figure3_ectopic.pdf"
 )
 
 
@@ -81,6 +93,17 @@ def load_episode_with_interpolated_spikes(filepath, t_start, t_end, threshold):
     return processed_data
 
 
+def format_cell_label(name: str) -> str:
+    return re.sub(r"-C(?:-[^-]+)?$", "", name)
+
+
+def y_to_axes_frac(ax, y_value: float) -> float:
+    y_min, y_max = ax.get_ylim()
+    if abs(y_max - y_min) < 1e-9:
+        return 0.0
+    return float((y_value - y_min) / (y_max - y_min))
+
+
 def moving_average(x, window_pts):
     x = np.asarray(x, dtype=float)
     if len(x) == 0:
@@ -96,24 +119,19 @@ def moving_average(x, window_pts):
     return np.convolve(x_pad, kernel, mode="valid")
 
 
-def generate_png(episodes, output_path):
+def generate_figure(episodes, output_path):
     out_dir = os.path.dirname(output_path)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
-    plt.rcParams.update(
-        {
-            "font.family": "DejaVu Sans",
-            "axes.labelsize": 16,
-            "xtick.labelsize": 12,
-            "ytick.labelsize": 12,
-        }
-    )
+    apply_style()
 
+    # Match the vertical panel scale used by supp fig 4.
+    row_height = 4.0 / 1.5
     fig, axes = plt.subplots(
         len(episodes),
         1,
-        figsize=(12, 10),
+        figsize=scaled_figsize(18, row_height * len(episodes)),
         sharex=True,
         gridspec_kw={"hspace": 0.18},
     )
@@ -135,7 +153,6 @@ def generate_png(episodes, output_path):
 
         t_rel = ts - ts[0]
         vm_min = float(np.min(vms))
-        vm_max = float(np.max(vms))
         ref_max = vm_min - 5.0
         ref_min = ref_max - 25.0
 
@@ -149,67 +166,57 @@ def generate_png(episodes, output_path):
                 + ref_min
             )
 
-        ax.plot(t_rel, vms, color="#1f77b4", lw=1.0, alpha=0.95)
-        ax.plot(t_rel, ref_mapped, color="#2ca02c", lw=2.3, alpha=0.85)
+        ax.plot(t_rel, vms, color=TRACE_COLOR, lw=1.0, alpha=0.95)
+        ax.plot(t_rel, ref_mapped, color=REF_COLOR, lw=2.3, alpha=0.85)
         ax.axhline(0, color="gray", linestyle="--", lw=0.5, alpha=0.5)
 
-        ax.text(
-            0.015,
-            0.94,
-            name,
-            transform=ax.transAxes,
-            fontsize=18,
-            fontweight="bold",
-            va="top",
-            ha="left",
-            bbox=dict(facecolor="white", alpha=0.82, edgecolor="none", pad=0.35),
-        )
-
-        ytick_max = 20 if vm_max < 30 else 40
-        ax.set_yticks(np.arange(-60, ytick_max + 1, 20))
+        ax.set_yticks(np.arange(VOLTAGE_AXIS_BOUNDS[0], VOLTAGE_AXIS_BOUNDS[1] + 1, 20))
         ax.set_ylim(ref_min - 5, 40)
         ax.set_xlim(0, 25)
-        ax.grid(axis="y", alpha=0.18)
+        ax.set_ylabel(format_cell_label(name), fontsize=AXIS_LABEL_SIZE)
+        ax.yaxis.set_label_coords(-0.04, y_to_axes_frac(ax, 0.0))
+        ax.grid(axis="y", alpha=GRID_ALPHA)
         ax.set_facecolor("white")
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
-        ax.tick_params(axis="y", labelsize=12)
+        ax.spines["left"].set_bounds(*VOLTAGE_AXIS_BOUNDS)
+        ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE)
 
         if idx < len(episodes) - 1:
             ax.spines["bottom"].set_visible(False)
             ax.tick_params(axis="x", bottom=False, labelbottom=False)
         else:
             ax.set_xticks(np.arange(0, 26, 5))
-            ax.set_xlabel("Time (s)")
-            ax.tick_params(axis="x", labelsize=12)
+            ax.set_xlabel("Time (s)", labelpad=6)
+            ax.tick_params(axis="x", labelsize=TICK_LABEL_SIZE)
 
-    fig.subplots_adjust(left=0.08, right=0.98, top=0.98, bottom=0.07)
-    fig.savefig(output_path, dpi=300, bbox_inches="tight", pad_inches=0.02)
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.98, bottom=0.11)
+    save_pdf(fig, output_path, pad_inches=0.02)
     plt.close(fig)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Supplemental Figure 3 as PNG.")
-    parser.add_argument("--out", default=DEFAULT_OUTPUT, help="Output PNG path.")
+    parser = argparse.ArgumentParser(description="Generate Supplemental Figure 3 as PDF.")
+    parser.add_argument("--out", default=DEFAULT_OUTPUT, help="Output PDF path.")
     args = parser.parse_args()
 
     episodes = [
         (
-            "VGAT-I Cell 9 (~3394s)",
+            "VGAT-I-Cell9-C",
             os.path.join(PROJECT_ROOT, "data", "VGAT-I-Cell9-C"),
             3381.4,
             3406.4,
             -45.0,
         ),
         (
-            "VgluT2-I Cell 4 (~479s)",
+            "VgluT2-I-Cell4-C",
             os.path.join(PROJECT_ROOT, "data", "VgluT2-I-Cell4-C"),
             466.7,
             491.7,
             -35.0,
         ),
         (
-            "VgluT2-I Cell 10-C-1 (~2963s)",
+            "VgluT2-I-Cell10-C-1",
             os.path.join(PROJECT_ROOT, "data", "VgluT2-I-Cell10-C-1"),
             2950.0,
             2975.0,
@@ -217,7 +224,7 @@ def main():
         ),
     ]
 
-    generate_png(episodes, args.out)
+    generate_figure(episodes, args.out)
     print(f"Done! Saved to {args.out}")
 
 

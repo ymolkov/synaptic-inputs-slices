@@ -3,23 +3,41 @@ BIN_DIR     = bin
 SRC_DIR     = src
 SCRIPT_DIR  = scripts
 RESULTS_DIR = results
-PUB_DIR     = publication
 PAPER_DIR   = paper
-WEB_DIR = web
+FIG_DIR     = $(PAPER_DIR)/figures
+WEB_DIR     = web
+STYLE_SCRIPT = $(SCRIPT_DIR)/figure_style.py
 
 # List of groups to process
 GROUPS = VGAT-I VgluT2-I VGAT-E VgluT2-E
 # Map groups to their output CSV files (replacing - with _)
 CSV_OUTPUTS = $(foreach g,$(GROUPS),$(RESULTS_DIR)/$(subst -,_,$g)_conductances.csv)
-PREBOTC_MEDIA = $(wildcard $(PAPER_DIR)/Synaptic_Architecture_PreBotC_media/media/*.png)
+
+MAIN_FIGURES = \
+	$(FIG_DIR)/method_protocol_steps.pdf \
+	$(FIG_DIR)/figure1_method.pdf \
+	$(FIG_DIR)/figure2_four_populations.pdf \
+	$(FIG_DIR)/figure3_selected.pdf \
+	$(FIG_DIR)/figure4_phase_summary.pdf \
+	$(FIG_DIR)/figure4_summary.pdf \
+	$(FIG_DIR)/circuit_weighted.pdf
+
+SUPP_FIGURES = \
+	$(FIG_DIR)/supp_figure1_sensitivity.pdf \
+	$(FIG_DIR)/supp_figure2_linearity.pdf \
+	$(FIG_DIR)/supp_figure3_ectopic.pdf \
+	$(FIG_DIR)/supp_figure4_pre_i_recruitment.pdf \
+	$(FIG_DIR)/supp_figure5_pre_i_inhibition.pdf
+
+FIGURES = $(MAIN_FIGURES) $(SUPP_FIGURES)
+MANUSCRIPT = $(PAPER_DIR)/Synaptic_Architecture_PreBotC.pdf
 
 # Tool paths
 CXX = g++
 CXXFLAGS = -O3
-PANDOC = pandoc
 
 # --- Main Targets ---
-.PHONY: all analysis figures table paper methods methods-docx clean push help
+.PHONY: all analysis figures paper dashboard deploy push clean help
 
 all: paper
 
@@ -28,191 +46,76 @@ $(BIN_DIR)/trace_analyzer: $(SRC_DIR)/trace_analyzer.cpp
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) $< -o $@
 
-# 2. Run population analysis (runs if C++ binary or aggregation script changes)
-# We use a pattern rule for the CSVs.
+# 2. Run population analysis
 $(RESULTS_DIR)/%_conductances.csv: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/batch_analyze_conductances.py
 	@mkdir -p $(RESULTS_DIR)
 	python3 $(SCRIPT_DIR)/batch_analyze_conductances.py --group $(subst _,-,$*)
 
-# 3. Generate publication figures
-$(PUB_DIR)/figures/figure1_method.png: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig1 --captions
-	cp $(PUB_DIR)/figures/figure1_method.png $(PAPER_DIR)/figures/figure1_method.png
+# 3. Generate manuscript figures directly into paper/figures
+$(FIG_DIR)/method_protocol_steps.pdf: $(SCRIPT_DIR)/make_methods_protocol_figure.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_methods_protocol_figure.py --output $@
 
-$(PUB_DIR)/figures/figure2_four_populations.png: $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig2 --captions
-	cp $(PUB_DIR)/figures/figure2_four_populations.png $(PAPER_DIR)/figures/figure2_four_populations.png
+$(FIG_DIR)/figure1_method.pdf: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --fig1
 
-$(PUB_DIR)/figures/figure3_selected.png: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig3 --captions
-	cp $(PUB_DIR)/figures/figure3_selected.png $(PAPER_DIR)/figures/figure3_selected.png
+$(FIG_DIR)/figure2_four_populations.pdf: $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --fig2
 
-$(PUB_DIR)/figures/figure4_summary.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig4 --captions
-	cp $(PUB_DIR)/figures/figure4_summary.png $(PAPER_DIR)/figures/figure4_summary.png
+$(FIG_DIR)/figure3_selected.pdf: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --fig3
 
-$(PUB_DIR)/figures/figure4_phase_summary.png: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --fig4phase --captions
-	cp $(PUB_DIR)/figures/figure4_phase_summary.png $(PAPER_DIR)/figures/figure4_phase_summary.png
+$(FIG_DIR)/figure4_phase_summary.pdf: $(BIN_DIR)/trace_analyzer $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --fig4phase
 
-$(PUB_DIR)/figures/circuit_weighted.png: $(CSV_OUTPUTS) $(SCRIPT_DIR)/plot_weighted_circuit.py $(SCRIPT_DIR)/conductance_summary.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/plot_weighted_circuit.py --out $(PUB_DIR)/figures/circuit_weighted.png
+$(FIG_DIR)/figure4_summary.pdf: $(CSV_OUTPUTS) $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --fig4
 
-$(PUB_DIR)/figures/figure5_circuit_weighted.png: $(PUB_DIR)/figures/circuit_weighted.png
-	cp $(PUB_DIR)/figures/circuit_weighted.png $(PUB_DIR)/figures/figure5_circuit_weighted.png
+$(FIG_DIR)/circuit_weighted.pdf: $(CSV_OUTPUTS) $(SCRIPT_DIR)/plot_weighted_circuit.py $(SCRIPT_DIR)/conductance_summary.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/plot_weighted_circuit.py --out $@
 
-$(PUB_DIR)/figures/supp_figure1_sensitivity.png: $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --supp1 --captions
-	cp $(PUB_DIR)/figures/supp_figure1_sensitivity.png $(PAPER_DIR)/figures/supp_figure1_sensitivity.png
+$(FIG_DIR)/supp_figure1_sensitivity.pdf: $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --supp1
 
-$(PUB_DIR)/figures/supp_figure2_linearity.png: $(SCRIPT_DIR)/make_publication_figures.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_publication_figures.py --supp2 --captions
-	cp $(PUB_DIR)/figures/supp_figure2_linearity.png $(PAPER_DIR)/figures/supp_figure2_linearity.png
+$(FIG_DIR)/supp_figure2_linearity.pdf: $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --supp2
 
-$(PUB_DIR)/figures/supp_figure3_ectopic.png: $(SCRIPT_DIR)/make_ectopic_png.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_ectopic_png.py --out $(PUB_DIR)/figures/supp_figure3_ectopic.png
-	cp $(PUB_DIR)/figures/supp_figure3_ectopic.png $(PAPER_DIR)/figures/supp_figure3_ectopic.png
-	python3 $(SCRIPT_DIR)/generate_captions.py
+$(FIG_DIR)/supp_figure3_ectopic.pdf: $(SCRIPT_DIR)/make_ectopic_png.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
+	python3 $(SCRIPT_DIR)/make_ectopic_png.py --out $@
 
-$(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png: $(SCRIPT_DIR)/plot_refined_5x2.py
-	@mkdir -p $(PUB_DIR)/figures
+$(FIG_DIR)/supp_figure4_pre_i_recruitment.pdf: $(SCRIPT_DIR)/plot_refined_5x2.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
 	python3 $(SCRIPT_DIR)/plot_refined_5x2.py
-	python3 $(SCRIPT_DIR)/generate_captions.py
-	cp $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png $(PAPER_DIR)/figures/supp_figure4_pre_i_recruitment.png
-	cp $(PUB_DIR)/captions.md $(PAPER_DIR)/captions.md
 
-$(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png: $(SCRIPT_DIR)/plot_supp_figure5.py
-	@mkdir -p $(PUB_DIR)/figures
+$(FIG_DIR)/supp_figure5_pre_i_inhibition.pdf: $(SCRIPT_DIR)/plot_supp_figure5.py $(STYLE_SCRIPT)
+	@mkdir -p $(FIG_DIR)
 	python3 $(SCRIPT_DIR)/plot_supp_figure5.py
-	python3 $(SCRIPT_DIR)/generate_captions.py
-	cp $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png $(PAPER_DIR)/figures/supp_figure5_pre_i_inhibition.png
-	cp $(PUB_DIR)/captions.md $(PAPER_DIR)/captions.md
 
-$(PUB_DIR)/figures/method_protocol_steps.png: $(SCRIPT_DIR)/make_methods_protocol_figure.py
-	@mkdir -p $(PUB_DIR)/figures
-	python3 $(SCRIPT_DIR)/make_methods_protocol_figure.py --output $(PUB_DIR)/figures/method_protocol_steps.png
-	cp $(PUB_DIR)/figures/method_protocol_steps.png $(PAPER_DIR)/figures/method_protocol_steps.png
-
-$(PAPER_DIR)/figures/figure1_method.png: $(PUB_DIR)/figures/figure1_method.png
-	cp $(PUB_DIR)/figures/figure1_method.png $(PAPER_DIR)/figures/figure1_method.png
-
-$(PAPER_DIR)/figures/figure4_phase_summary.png: $(PUB_DIR)/figures/figure4_phase_summary.png
-	cp $(PUB_DIR)/figures/figure4_phase_summary.png $(PAPER_DIR)/figures/figure4_phase_summary.png
-
-$(PAPER_DIR)/figures/circuit_weighted.png: $(PUB_DIR)/figures/circuit_weighted.png
-	cp $(PUB_DIR)/figures/circuit_weighted.png $(PAPER_DIR)/figures/circuit_weighted.png
-
-$(PAPER_DIR)/figures/method_protocol_steps.png: $(PUB_DIR)/figures/method_protocol_steps.png
-	cp $(PUB_DIR)/figures/method_protocol_steps.png $(PAPER_DIR)/figures/method_protocol_steps.png
-
-# 4. Generate the summary table (Tex and Docx)
-$(PUB_DIR)/conductance_table.tex: $(CSV_OUTPUTS) $(SCRIPT_DIR)/generate_summary_table.py $(SCRIPT_DIR)/conductance_summary.py
-	@mkdir -p $(PUB_DIR)
-	python3 $(SCRIPT_DIR)/generate_summary_table.py
-	@if command -v $(PANDOC) >/dev/null 2>&1; then \
-		$(PANDOC) $(PUB_DIR)/conductance_table.tex -o $(PUB_DIR)/conductance_table.docx; \
-	fi
-	cp $(PUB_DIR)/conductance_table.tex $(PAPER_DIR)/conductance_table.tex
-
-# 5. Compile the LaTeX manuscript
-$(PAPER_DIR)/main.pdf: $(PAPER_DIR)/main.tex \
-                    $(PUB_DIR)/figures/figure1_method.png \
-                    $(PUB_DIR)/figures/figure2_four_populations.png \
-                    $(PUB_DIR)/figures/figure3_selected.png \
-                    $(PUB_DIR)/figures/figure4_summary.png \
-                    $(PUB_DIR)/figures/figure4_phase_summary.png \
-                    $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
-                    $(PUB_DIR)/figures/supp_figure2_linearity.png \
-                    $(PUB_DIR)/figures/supp_figure3_ectopic.png \
-                    $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png \
-                    $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png \
-                    $(PUB_DIR)/conductance_table.tex
-	cd $(PAPER_DIR) && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
-
-$(PAPER_DIR)/methods_standalone.pdf: $(PAPER_DIR)/methods_standalone.tex \
-                                     $(PAPER_DIR)/references.bib \
-                                     $(PAPER_DIR)/figures/figure1_method.png \
-                                     $(PAPER_DIR)/figures/method_protocol_steps.png
-	cd $(PAPER_DIR) && \
-		pdflatex -interaction=nonstopmode methods_standalone.tex && \
-		bibtex methods_standalone && \
-		pdflatex -interaction=nonstopmode methods_standalone.tex && \
-		pdflatex -interaction=nonstopmode methods_standalone.tex
-
-$(PAPER_DIR)/Synaptic_Architecture_PreBotC.pdf: $(PAPER_DIR)/Synaptic_Architecture_PreBotC.tex \
-                                                $(PAPER_DIR)/Synaptic_Architecture_PreBotC-supp.tex \
-                                                $(PAPER_DIR)/references.bib \
-                                                $(PAPER_DIR)/figures/figure1_method.png \
-                                                $(PAPER_DIR)/figures/figure2_four_populations.png \
-                                                $(PAPER_DIR)/figures/figure3_selected.png \
-                                                $(PAPER_DIR)/figures/figure4_phase_summary.png \
-                                                $(PAPER_DIR)/figures/figure4_summary.png \
-                                                $(PAPER_DIR)/figures/circuit_weighted.png \
-                                                $(PAPER_DIR)/figures/method_protocol_steps.png \
-                                                $(PAPER_DIR)/figures/supp_figure1_sensitivity.png \
-                                                $(PAPER_DIR)/figures/supp_figure2_linearity.png \
-                                                $(PUB_DIR)/figures/supp_figure3_ectopic.png \
-                                                $(PAPER_DIR)/figures/supp_figure4_pre_i_recruitment.png \
-                                                $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png \
-                                                $(PREBOTC_MEDIA)
+# 4. Compile the LaTeX manuscript
+$(MANUSCRIPT): $(PAPER_DIR)/Synaptic_Architecture_PreBotC.tex \
+               $(PAPER_DIR)/Synaptic_Architecture_PreBotC-supp.tex \
+               $(PAPER_DIR)/references.bib \
+               $(FIGURES) \
+               $(FIG_DIR)/Fig8.pdf
 	cd $(PAPER_DIR) && \
 		pdflatex -interaction=nonstopmode Synaptic_Architecture_PreBotC.tex && \
 		bibtex Synaptic_Architecture_PreBotC && \
 		pdflatex -interaction=nonstopmode Synaptic_Architecture_PreBotC.tex && \
 		pdflatex -interaction=nonstopmode Synaptic_Architecture_PreBotC.tex
 
-$(PAPER_DIR)/methods_standalone.docx: $(PAPER_DIR)/methods_standalone.pdf \
-                                      $(SCRIPT_DIR)/resolve_pandoc_refs.py
-	@mkdir -p tmp
-	cd $(PAPER_DIR) && \
-		$(PANDOC) methods_standalone.tex \
-			--from=latex \
-			--to=json \
-			--standalone \
-			--citeproc \
-			--bibliography=references.bib \
-			--metadata=reference-section-title:References \
-			--resource-path=. \
-			-o ../tmp/methods_standalone.pandoc.json
-	python3 $(SCRIPT_DIR)/resolve_pandoc_refs.py \
-		--aux $(PAPER_DIR)/methods_standalone.aux \
-		--input tmp/methods_standalone.pandoc.json \
-		--output tmp/methods_standalone.pandoc.resolved.json
-	cd $(PAPER_DIR) && \
-		$(PANDOC) ../tmp/methods_standalone.pandoc.resolved.json \
-			--from=json \
-			--to=docx \
-			--standalone \
-			--resource-path=. \
-			-o methods_standalone.docx
-
 # --- Shorthand commands ---
 analysis: $(CSV_OUTPUTS)
-figures:  $(PUB_DIR)/figures/figure1_method.png \
-          $(PUB_DIR)/figures/figure2_four_populations.png \
-          $(PUB_DIR)/figures/figure3_selected.png \
-          $(PUB_DIR)/figures/figure4_summary.png \
-          $(PUB_DIR)/figures/figure4_phase_summary.png \
-          $(PUB_DIR)/figures/circuit_weighted.png \
-          $(PUB_DIR)/figures/figure5_circuit_weighted.png \
-          $(PUB_DIR)/figures/supp_figure1_sensitivity.png \
-          $(PUB_DIR)/figures/supp_figure2_linearity.png \
-          $(PUB_DIR)/figures/supp_figure3_ectopic.png \
-          $(PUB_DIR)/figures/supp_figure4_pre_i_recruitment.png \
-          $(PUB_DIR)/figures/supp_figure5_pre_i_inhibition.png
-table:    $(PUB_DIR)/conductance_table.tex
-paper:    $(PAPER_DIR)/main.pdf
-methods:  $(PAPER_DIR)/methods_standalone.pdf
-methods-docx: $(PAPER_DIR)/methods_standalone.docx
+figures:  $(FIGURES)
+paper:    $(MANUSCRIPT)
 
 dashboard: $(BIN_DIR)/trace_analyzer
 	@mkdir -p $(WEB_DIR)
@@ -236,11 +139,8 @@ help:
 	@echo "Available targets:"
 	@echo "  all       : Complete pipeline (builds paper)"
 	@echo "  analysis  : Run all population analyses"
-	@echo "  figures   : Generate publication figures"
-	@echo "  table     : Generate summary tables"
+	@echo "  figures   : Generate manuscript figures"
 	@echo "  paper     : Compile LaTeX manuscript"
-	@echo "  methods   : Compile standalone methods draft"
-	@echo "  methods-docx : Export standalone methods draft to docx via Pandoc"
 	@echo "  dashboard : Generate standalone web-deployable dashboard"
 	@echo "  push      : Commit and push all changes"
 	@echo "  clean     : Remove binaries, temporary files and dashboard"

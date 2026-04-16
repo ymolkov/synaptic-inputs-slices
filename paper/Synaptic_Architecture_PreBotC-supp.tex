@@ -4,7 +4,7 @@
 
 The robustness of the synaptic conductance inference was evaluated by systematically varying the assumed reversal potentials for excitation (\emph{E\textsubscript{e}}) and inhibition (\emph{E\textsubscript{i}}) within biologically plausible ranges (\suppfigref{fig:supp1}). The resulting 3$\times$3 matrix illustrates the reconstructed excitatory (\emph{G\textsubscript{exc}}, red) and inhibitory (\emph{G\textsubscript{inh}}, blue) conductances across combinations of \emph{E\textsubscript{e}} at -20.0, -10.0, and 0.0 mV, and \emph{E\textsubscript{i}} at -90.0, -80.0, and -70.0 mV. Each panel represents the mean conductance over two normalized respiratory cycles for a representative inspiratory neuron.
 
-\includegraphics[width=\textwidth]{figures/supp_figure1_sensitivity.png}
+\includegraphics[width=\textwidth]{figures/supp_figure1_sensitivity.pdf}
 
 \refstepcounter{suppfigure}\label{fig:supp1}
 \noindent\textbf{Supplemental Figure \thesuppfigure. Sensitivity of reconstructed conductances to variations in reversal potentials (\emph{E\textsubscript{e}} and \emph{E\textsubscript{i}})}. The grid shows results for variations of $\pm$10 mV from default values.
@@ -21,22 +21,22 @@ The validity of the conductance reconstruction relies on the linear relationship
 
 The analysis of these I-V plots reveals high consistency between current-clamp (left panels) and voltage-clamp (right panels) recording configurations. In both modes, the slopes of the regressions undergo phase-dependent shifts that correspond to the dynamic changes in total membrane conductance. For inspiratory neurons, the separation between the red and blue regression lines illustrates the recruitment of phasic excitatory drive and the modulation of inhibitory conductance. For expiratory neurons, the steepness of the slopes during inspiration (red) reflects the strong phasic inhibition received by these cells. The high degree of linearity observed in the scatter points for both recording modes indicates that the inferred synaptic conductances are not significantly distorted by non-linear intrinsic currents within the sampled voltage ranges.
 
-\includegraphics[width=\textwidth]{figures/supp_figure2_linearity.png}
+\includegraphics[width=\textwidth]{figures/supp_figure2_linearity.pdf}
 
 \refstepcounter{suppfigure}\label{fig:supp2}
 \noindent\textbf{Supplemental Figure \thesuppfigure. I-V regressions for all cells and recording modes}. These regressions correspond to \figref{fig:conductance-workflow}. Scatter points represent data from specific phase bins (\(\phi \approx\) 0 in red, \(\phi \approx\) 0.5 in blue), with dashed lines indicating the corresponding linear fits.
 
-\includegraphics[width=\textwidth]{figures/supp_figure3_ectopic.png}
+\includegraphics[width=\textwidth]{figures/supp_figure3_ectopic.pdf}
 
 \refstepcounter{suppfigure}\label{fig:supp3}
 \noindent\textbf{Supplemental Figure \thesuppfigure. Ectopic Bursting in Inspiratory Neurons}. Representative 25-second episodes highlighting ectopic bursting behavior. Each panel displays the membrane potential (blue) and the synchronized rhythmic reference signal (green). Action potential peaks have been accurately restored using parabolic interpolation to mitigate 1000 Hz undersampling. Episodes were selected for having clear ectopic bursts (\(\geq 3\) spikes), a rhythmic network context (\(\geq 2\) main bursts), and a steady holding current.
 
-\includegraphics[width=\textwidth]{figures/supp_figure4_pre_i_recruitment.png}
+\includegraphics[width=\textwidth]{figures/supp_figure4_pre_i_recruitment.pdf}
 
 \refstepcounter{suppfigure}\label{fig:supp4}
 \noindent\textbf{Supplemental Figure \thesuppfigure. Pre-Inspiratory Activity}. High-resolution comparison of pre-inspiratory action potential firing and underlying synaptic drive. Left column: Current-clamp episodes show pre-inspiratory spiking (blue) preceding each network burst in the reference signal (green). Right column: Corresponding voltage-clamp episodes from the same cells show the pre-inspiratory inward current (blue) preceding the reference bursts (green). Each panel contains two adjacent reference bursts; pink shading marks the pre-inspiratory lead interval for each burst. Horizontal scale bars indicate 1 s, and Voltage Clamp panels include vertical current scale bars in native units.
 
-\includegraphics[width=\textwidth]{figures/supp_figure5_pre_i_inhibition.png}
+\includegraphics[width=\textwidth]{figures/supp_figure5_pre_i_inhibition.pdf}
 
 \refstepcounter{suppfigure}\label{fig:supp5}
 \noindent\textbf{Supplemental Figure \thesuppfigure. Pre-Inspiratory Inhibition of Expiratory Cells}. Examples of expiratory cells that stop firing before inspiratory onset and matched voltage-clamp recordings from the same cells showing a pre-inspiratory outward current. Left column: Current-clamp (CC) episodes show expiratory spiking (blue) terminating before each inspiratory burst in the reference signal (green). Right column: Corresponding voltage-clamp (VC) episodes show an outward synaptic current (blue) preceding the same inspiratory reference bursts (green). Each panel contains two adjacent reference bursts; pink shading marks the pre-inspiratory silent interval in CC and the pre-inspiratory outward-current interval in VC. Horizontal scale bars indicate 1 s, and VC panels include vertical current scale bars in native units.

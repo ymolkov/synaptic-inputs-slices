@@ -4,11 +4,15 @@ bin/
 results/
 *.rp
 .npm_cache/
+__pycache__/
 *.aux
 *.bbl
 *.blg
+*.fdb_latexmk
+*.fls
 *.log
 *.pdf
+!paper/figures/*.pdf
 *.bak
 web/
 web_deploy/

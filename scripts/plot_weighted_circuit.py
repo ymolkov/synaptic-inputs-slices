@@ -10,6 +10,14 @@ from matplotlib.patches import Circle, FancyArrowPatch, PathPatch, Polygon
 from matplotlib.path import Path as MplPath
 
 from conductance_summary import load_all_group_summaries
+from figure_style import ERROR_COLOR, apply_style, save_pdf
+
+apply_style()
+
+# Keep this diagram small and self-contained so it can be inserted at its
+# native size without TeX rescaling.
+CIRCUIT_FIGURE_WIDTH_IN = 2.17
+NODE_LABEL_SIZE = 7.0
 
 POS = {
     "VgluT2_I": np.array((0.0, 2.0)),
@@ -552,9 +560,9 @@ def draw_nodes(ax: plt.Axes) -> None:
             ha="center",
             va="center",
             multialignment="center",
-            fontsize=11.2,
+            fontsize=NODE_LABEL_SIZE,
             fontweight="normal",
-            color="#1A1A1A",
+            color=ERROR_COLOR,
             linespacing=0.88,
             zorder=5,
         )
@@ -563,7 +571,11 @@ def draw_nodes(ax: plt.Axes) -> None:
 def make_figure(results_dir: Path) -> tuple[plt.Figure, plt.Axes]:
     configure_connection_data(results_dir)
 
-    fig, ax = plt.subplots(figsize=(4.9, 4.8), facecolor="white")
+    fig, ax = plt.subplots(
+        figsize=(CIRCUIT_FIGURE_WIDTH_IN, CIRCUIT_FIGURE_WIDTH_IN),
+        facecolor="white",
+    )
+    fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99)
     ax.set_facecolor("white")
     ax.set_aspect("equal")
     # Keep just a small pad around the outer loops so the exported PNG is tight.
@@ -583,7 +595,7 @@ def make_figure(results_dir: Path) -> tuple[plt.Figure, plt.Axes]:
 
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
-    default_output = root / "publication" / "figures" / "figure5_circuit_weighted.png"
+    default_output = root / "paper" / "figures" / "circuit_weighted.pdf"
     default_results = root / "results"
 
     parser = argparse.ArgumentParser(
@@ -599,7 +611,7 @@ def main() -> None:
         "--out",
         type=Path,
         default=default_output,
-        help=f"Output image path (default: {default_output})",
+        help=f"Output PDF path (default: {default_output})",
     )
     parser.add_argument(
         "--show",
@@ -610,7 +622,7 @@ def main() -> None:
 
     fig, _ = make_figure(args.results_dir)
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(args.out, dpi=300, bbox_inches="tight", facecolor=fig.get_facecolor())
+    save_pdf(fig, args.out, facecolor=fig.get_facecolor())
 
     if args.show:
         plt.show()

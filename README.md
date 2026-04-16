@@ -4,14 +4,13 @@ This project implements a data analysis pipeline for electrophysiological record
 
 ## Overview
 
-The core of the pipeline is a C++ analyzer that performs cycle detection and linear regression on membrane current traces to separate excitation and inhibition components. The analyzer reports conductances normalized by leak conductance (`G_exc / g_leak`, `G_inh / g_leak`), and the Python automation layer plus root `Makefile` turn those outputs into CSV summaries, tables, and figures.
+The core of the pipeline is a C++ analyzer that performs cycle detection and linear regression on membrane current traces to separate excitation and inhibition components. The analyzer reports conductances normalized by leak conductance (`G_exc / g_leak`, `G_inh / g_leak`), and the Python automation layer plus root `Makefile` turn those outputs into CSV summaries and manuscript figures.
 
 ## Project Structure
 
 *   **/web**: Local directory containing the interactive analysis dashboard (`index.html`), high-res per-cell snapshots (`_full.png`, `_thumb.png`), and numerical analysis results (`.par`). (Ignored by Git)
 *   **/results**: Population-level CSV summaries (`*_conductances.csv`) produced from per-cell analyses.
-*   **/paper**: LaTeX manuscript source, standalone methods draft (`methods_standalone.tex`), and final publication figures.
-*   **/publication**: Staged publication assets including the formal summary table (LaTeX/Word).
+*   **/paper**: LaTeX manuscript source, supplemental LaTeX, and the generated PDF figures used by the paper.
 *   **/src**: Core C++ implementation (`trace_analyzer.cpp`) featuring the geometric pivoting algorithm.
 *   **/bin**: Destination for the compiled `trace_analyzer` binary.
 *   **/scripts**: Automation logic, plotting systems, and deployment tools.
@@ -23,12 +22,9 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 
 ### Core Commands
 *   `make analysis`: Compiles the C++ analyzer if needed and regenerates the per-group CSV summaries in `/results`.
-*   `make table`: Regenerates Table 1 at `publication/conductance_table.tex` from the CSV summaries.
-*   `make publication/figures/figure5_circuit_weighted.png`: Regenerates the weighted circuit diagram directly from the same CSV-derived summary values used in Table 1.
-*   `make figures`: Regenerates all publication figure assets, including `publication/figures/figure5_circuit_weighted.png`.
-*   `make all` (or `make paper`): Builds the LaTeX manuscript (`paper/main.pdf`) and its declared dependencies.
-*   `make methods`: Builds the standalone methods PDF (`paper/methods_standalone.pdf`) from `paper/methods_standalone.tex`.
-*   `make methods-docx`: Exports the standalone methods draft to Word (`paper/methods_standalone.docx`) via Pandoc. The build preserves citations plus figure, table, and equation cross-references for Google Docs import.
+*   `make paper/figures/circuit_weighted.pdf`: Regenerates the weighted circuit diagram directly from the CSV-derived summary values.
+*   `make figures`: Regenerates all generated PDF figures used by the manuscript.
+*   `make all` (or `make paper`): Builds the LaTeX manuscript (`paper/Synaptic_Architecture_PreBotC.pdf`) plus the supplemental section and its declared dependencies.
 *   `make dashboard`: Processes all 59 data files in parallel and generates the interactive dashboard in the `/web` directory.
 *   `make deploy`: (Prerequisite: `lftp`) Synchronizes the local `/web` dashboard to the remote server at `math.gsu.edu` via SFTP. Prompts for password interactively.
 *   `make clean`: Removes binaries, temporary files, and local web assets for a fresh start.
@@ -49,7 +45,6 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 *   **Gnuplot**: Required for trace visualization.
 *   **LaTeX**: `pdflatex` required for manuscript compilation.
 *   **lftp**: Required for the `make deploy` target.
-*   **Pandoc**: (Optional) Used to convert the summary table and standalone methods draft to Word `.docx`.
 
 ## Configuration
 
