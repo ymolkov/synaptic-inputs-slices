@@ -37,7 +37,7 @@ CXX = g++
 CXXFLAGS = -O3
 
 # --- Main Targets ---
-.PHONY: all analysis figures paper dashboard deploy push clean help
+.PHONY: all analysis figures paper dashboard clean help
 
 all: paper
 
@@ -122,14 +122,6 @@ dashboard: $(BIN_DIR)/trace_analyzer
 	python3 $(SCRIPT_DIR)/batch_run_all.py --outdir $(WEB_DIR)
 	python3 $(SCRIPT_DIR)/generate_report.py --outdir $(WEB_DIR)
 
-deploy:
-	bash $(SCRIPT_DIR)/deploy_web.sh
-
-push:
-	git add -A
-	git commit -m "Build update via Makefile"
-	git push origin main
-
 clean:
 	rm -rf $(BIN_DIR)/*
 	rm -rf tmp/*
@@ -142,5 +134,4 @@ help:
 	@echo "  figures   : Generate manuscript figures"
 	@echo "  paper     : Compile LaTeX manuscript"
 	@echo "  dashboard : Generate standalone web-deployable dashboard"
-	@echo "  push      : Commit and push all changes"
 	@echo "  clean     : Remove binaries, temporary files and dashboard"

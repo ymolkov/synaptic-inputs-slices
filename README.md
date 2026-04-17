@@ -23,7 +23,8 @@ CLAMP is designed around a reusable pattern:
 *   **/paper**: LaTeX manuscript source, supplemental LaTeX, and the generated PDF figures used by the paper.
 *   **/src**: Core C++ implementation (`trace_analyzer.cpp`) featuring the geometric pivoting algorithm.
 *   **/bin**: Destination for the compiled `trace_analyzer` binary.
-*   **/scripts**: Automation logic, plotting systems, and deployment tools.
+*   **/scripts**: Automation logic and plotting systems used by the Makefile targets.
+*   **/legacy**: Retired helpers, historical artifacts, and non-build files kept out of the active tree.
 *   **/config**: Global and per-file analysis parameter overrides.
 
 ## Building and Usage
@@ -36,9 +37,7 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 *   `make figures`: Regenerates all generated PDF figures used by the manuscript.
 *   `make all` (or `make paper`): Builds the LaTeX manuscript (`paper/Synaptic_Architecture_PreBotC.pdf`) plus the supplemental section and its declared dependencies.
 *   `make dashboard`: Processes all 59 data files in parallel, writes per-recording dashboard artifacts to `web/assets/recordings/`, and regenerates `web/dashboard.html`.
-*   `make deploy`: (Prerequisite: `lftp`) Synchronizes the local `/web` dashboard to the remote server at `math.gsu.edu` via SFTP. Prompts for password interactively.
 *   `make clean`: Removes binaries, temporary files, and generated web output for a fresh start. Regenerate `web/` before committing if you want to preserve the tracked companion-site snapshot.
-*   `make push`: Stages all changes, creates a commit with the fixed message `Build update via Makefile`, and pushes to `origin main`.
 
 ## Method Companion Site and Dashboard
 
@@ -78,7 +77,6 @@ web/
 *   **Python 3**: With `numpy`, `matplotlib`, and `scipy`.
 *   **Gnuplot**: Required for trace visualization.
 *   **LaTeX**: `pdflatex` required for manuscript compilation.
-*   **lftp**: Required for the `make deploy` target.
 
 ## Configuration
 
@@ -90,8 +88,17 @@ Example: `VgluT2-E-Cell1-V = -f 25 -x 100000`
 
 ## Authors
 
-*   **Y. Molkov** (Primary Investigator)
-*   Antigravity AI (Implementation and Refactoring)
+*   **Yaroslav I. Molkov** - [math.gsu.edu/ymolkov](https://math.gsu.edu/ymolkov)<br>
+    Department of Mathematics and Statistics, Georgia State University, Atlanta, GA, USA<br>
+    Neuroscience Institute, Georgia State University, Atlanta, GA, USA
+*   **Hidehiko Koizumi**<br>
+    Cellular and Systems Neurobiology Section, National Institute of Neurological Disorders and Stroke, National Institutes of Health, Bethesda, MD, USA
+*   **Jeffrey C. Smith**<br>
+    Cellular and Systems Neurobiology Section, National Institute of Neurological Disorders and Stroke, National Institutes of Health, Bethesda, MD, USA
+
+## License
+
+This repository is shared under the Creative Commons Attribution 4.0 International License (CC BY 4.0) unless otherwise noted.
 
 ---
 *Private Research Repository*
