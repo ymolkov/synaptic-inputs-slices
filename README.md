@@ -4,6 +4,8 @@ This project packages the CLAMP conductance-inference workflow for intracellular
 
 The respiratory slice dataset in this repository is a worked example of the method. The same inference strategy was introduced and applied to mature rat in situ respiratory CPG recordings in the eLife article [Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits](https://doi.org/10.7554/eLife.101959) (Molkov et al., 2025, eLife 13:RP101959).
 
+Live companion site: [ymolkov.github.io/synaptic-inputs-slices](https://ymolkov.github.io/synaptic-inputs-slices/)
+
 ## Overview
 
 The core of the pipeline is a C++ analyzer that detects network-cycle phase, pools current-voltage samples by phase, fits local I-V relationships, estimates recording-specific reversal geometry, and separates excitation from inhibition. The analyzer reports conductances normalized by leak conductance (`G_exc / g_leak`, `G_inh / g_leak`), and the Python automation layer plus root `Makefile` turn those outputs into CSV summaries, manuscript figures, and a companion web view.
