@@ -24,7 +24,6 @@ CLAMP is designed around a reusable pattern:
 *   **/src**: Core C++ implementation (`trace_analyzer.cpp`) featuring the geometric pivoting algorithm.
 *   **/bin**: Destination for the compiled `trace_analyzer` binary.
 *   **/scripts**: Automation logic and plotting systems used by the Makefile targets.
-*   **/legacy**: Retired helpers, historical artifacts, and non-build files kept out of the active tree.
 *   **/config**: Global and per-file analysis parameter overrides.
 
 ## Building and Usage
