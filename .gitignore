@@ -14,5 +14,4 @@ __pycache__/
 *.pdf
 !paper/figures/*.pdf
 *.bak
-web/
 web_deploy/

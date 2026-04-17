@@ -1,0 +1,1169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Dashboard | Synaptic Slices</title>
+    <style>
+        :root {
+            --ink: #17191c;
+            --muted: #626a73;
+            --paper: #f7f6f2;
+            --panel: #ffffff;
+            --soft: #edf1f3;
+            --line: #d7dde3;
+            --dark: #111417;
+            --exc: #c64056;
+            --inh: #0f8499;
+            --amber: #b77822;
+            --green: #30795b;
+            --shadow: 0 14px 34px rgba(17, 20, 23, 0.12);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        button, input, select {
+            font: inherit;
+        }
+
+        button, a {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        svg, img {
+            display: block;
+        }
+
+        .topbar {
+            height: 68px;
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) auto auto;
+            align-items: center;
+            gap: 18px;
+            padding: 0 18px;
+            background: rgba(255, 255, 255, 0.92);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .title-block {
+            min-width: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.08rem;
+            line-height: 1.15;
+        }
+
+        .subtitle {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .stat-strip {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .stat {
+            min-width: 86px;
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+        }
+
+        .stat span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .stat strong {
+            display: block;
+            margin-top: 1px;
+            font-size: 1.15rem;
+            line-height: 1;
+        }
+
+        .top-actions,
+        .viewer-actions,
+        .segment {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-button,
+        .link-button,
+        .segment button,
+        .record-button {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .icon-button,
+        .link-button {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 12px;
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .icon-button {
+            width: 38px;
+            padding: 0;
+        }
+
+        .icon-button svg,
+        .link-button svg,
+        .search-wrap svg,
+        .empty-state svg {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon-button:hover,
+        .link-button:hover,
+        .segment button:hover,
+        .record-button:hover {
+            border-color: #aeb8c2;
+            transform: translateY(-1px);
+        }
+
+        .app-layout {
+            height: calc(100% - 68px);
+            display: grid;
+            grid-template-columns: 230px 330px minmax(420px, 1fr) 300px;
+            min-width: 0;
+        }
+
+        .panel {
+            min-width: 0;
+            min-height: 0;
+            border-right: 1px solid var(--line);
+            background: var(--panel);
+            overflow: hidden;
+        }
+
+        .filter-panel,
+        .browser-panel,
+        .inspector-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-panel {
+            background: #fbfbf8;
+        }
+
+        .panel-head {
+            padding: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .panel-kicker {
+            margin: 0 0 7px;
+            color: var(--amber);
+            font-size: 0.72rem;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 850;
+        }
+
+        .population-list {
+            display: grid;
+            gap: 8px;
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .population-button {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 10px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .population-button.is-active {
+            border-color: var(--dark);
+            box-shadow: 0 0 0 1px var(--dark) inset;
+        }
+
+        .pop-dot {
+            width: 10px;
+            height: 42px;
+            border-radius: 8px;
+            background: var(--muted);
+        }
+
+        .pop-dot.exc { background: var(--exc); }
+        .pop-dot.inh { background: var(--inh); }
+        .pop-main {
+            min-width: 0;
+        }
+        .pop-name {
+            display: block;
+            font-weight: 850;
+        }
+        .pop-meta {
+            display: block;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+        .pop-count {
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .filter-block {
+            padding: 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        .segment {
+            width: 100%;
+            padding: 3px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--soft);
+        }
+
+        .segment button {
+            min-height: 32px;
+            flex: 1;
+            border-color: transparent;
+            background: transparent;
+            font-weight: 800;
+        }
+
+        .segment button.is-active {
+            background: #fff;
+            border-color: var(--line);
+            box-shadow: 0 1px 2px rgba(17, 20, 23, 0.08);
+        }
+
+        .browser-panel {
+            background: #f8faf9;
+        }
+
+        .browser-top {
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .search-wrap {
+            min-height: 40px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            gap: 9px;
+            padding: 0 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--muted);
+        }
+
+        .search-wrap input {
+            min-width: 0;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: var(--ink);
+        }
+
+        .list-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .recording-list {
+            min-height: 0;
+            overflow-y: auto;
+            padding: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .record-button {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 58px minmax(0, 1fr);
+            gap: 10px;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .record-button.is-active {
+            border-color: var(--dark);
+            box-shadow: 0 0 0 1px var(--dark) inset;
+            background: #fff;
+        }
+
+        .record-thumb {
+            width: 58px;
+            height: 58px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            object-fit: cover;
+            background: #fff;
+        }
+
+        .record-main {
+            min-width: 0;
+            display: grid;
+            gap: 5px;
+        }
+
+        .record-title-row,
+        .badge-row {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .record-name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 850;
+        }
+
+        .record-file {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 21px;
+            padding: 0 7px;
+            border-radius: 6px;
+            background: var(--soft);
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 850;
+        }
+
+        .badge.mode-c {
+            background: rgba(198, 64, 86, 0.13);
+            color: var(--exc);
+        }
+
+        .badge.mode-v {
+            background: rgba(15, 132, 153, 0.13);
+            color: var(--inh);
+        }
+
+        .badge.accepted {
+            background: rgba(48, 121, 91, 0.14);
+            color: var(--green);
+        }
+
+        .badge.warn {
+            background: rgba(183, 120, 34, 0.15);
+            color: var(--amber);
+        }
+
+        .viewer-panel {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            background: #eff2f2;
+            border-right: 1px solid var(--line);
+        }
+
+        .viewer-toolbar {
+            min-width: 0;
+            min-height: 64px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #fff;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .selected-name {
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 1rem;
+            font-weight: 850;
+        }
+
+        .selected-subtitle {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        .image-stage {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            place-items: center;
+            overflow: auto;
+            padding: 18px;
+        }
+
+        .image-stage img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transform-origin: center center;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: var(--shadow);
+        }
+
+        .inspector-panel {
+            border-right: 0;
+            background: #fff;
+        }
+
+        .inspector-scroll {
+            min-height: 0;
+            overflow-y: auto;
+            padding: 12px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .info-section {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .info-section h2 {
+            margin: 0;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            background: #f8faf9;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+        }
+
+        .kv-list {
+            display: grid;
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: minmax(92px, 0.85fr) minmax(0, 1fr);
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--soft);
+        }
+
+        .kv:last-child {
+            border-bottom: 0;
+        }
+
+        .kv dt {
+            color: var(--muted);
+            font-weight: 750;
+        }
+
+        .kv dd {
+            margin: 0;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            font-weight: 750;
+            text-align: right;
+        }
+
+        .meters {
+            display: grid;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .meter-pair {
+            display: grid;
+            gap: 6px;
+        }
+
+        .meter-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 850;
+        }
+
+        .meter-track {
+            height: 8px;
+            display: grid;
+            grid-template-columns: var(--excw, 0%) var(--inhw, 0%) 1fr;
+            overflow: hidden;
+            border-radius: 8px;
+            background: var(--soft);
+        }
+
+        .meter-exc {
+            background: var(--exc);
+        }
+
+        .meter-inh {
+            background: var(--inh);
+        }
+
+        .meter-values {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 0.72rem;
+        }
+
+        .empty-state {
+            width: min(420px, calc(100% - 28px));
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            padding: 28px;
+            border: 1px dashed #b8c2cc;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .empty-state svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        @media (max-width: 1180px) {
+            .topbar {
+                grid-template-columns: minmax(220px, 1fr) auto;
+            }
+
+            .stat-strip {
+                display: none;
+            }
+
+            .app-layout {
+                grid-template-columns: 210px 300px minmax(380px, 1fr);
+            }
+
+            .inspector-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 820px) {
+            html, body {
+                overflow: auto;
+                overflow-x: hidden;
+            }
+
+            .topbar {
+                height: auto;
+                min-height: 68px;
+                grid-template-columns: 1fr;
+                align-items: start;
+                padding: 12px;
+            }
+
+            .app-layout,
+            .panel,
+            .viewer-panel {
+                width: 100%;
+                max-width: 100vw;
+            }
+
+            .top-actions {
+                justify-content: flex-start;
+            }
+
+            .app-layout {
+                height: auto;
+                min-height: calc(100vh - 92px);
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .panel,
+            .viewer-panel {
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .population-button {
+                grid-template-columns: 10px minmax(0, 1fr);
+            }
+
+            .pop-count {
+                display: none;
+            }
+
+            .segment,
+            .search-wrap {
+                max-width: calc(100vw - 32px);
+            }
+
+            .population-list,
+            .recording-list {
+                max-height: 320px;
+            }
+
+            .viewer-toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .viewer-actions {
+                flex-wrap: wrap;
+            }
+
+            .image-stage {
+                min-height: 520px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="title-block">
+            <h1>Synaptic Conductance Dashboard</h1>
+            <div class="subtitle">Per-recording audit view for CLAMP phase-binned inference</div>
+        </div>
+        <div id="summaryStats" class="stat-strip" aria-label="Dashboard summary"></div>
+        <div class="top-actions">
+            <a class="link-button" href="index.html">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+                <span>Companion</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <aside class="panel filter-panel">
+            <div class="panel-head">
+                <p class="panel-kicker">Filter</p>
+                <p class="panel-title">Populations</p>
+            </div>
+            <div id="populationList" class="population-list"></div>
+            <div class="filter-block">
+                <span class="filter-label">Acquisition</span>
+                <div class="segment" role="group" aria-label="Acquisition mode">
+                    <button class="is-active" type="button" data-mode="All">All</button>
+                    <button type="button" data-mode="C">C</button>
+                    <button type="button" data-mode="V">V</button>
+                </div>
+            </div>
+        </aside>
+
+        <section class="panel browser-panel" aria-label="Recording browser">
+            <div class="browser-top">
+                <label class="search-wrap">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"></path><path d="M16 16l5 5"></path></svg>
+                    <input id="searchInput" type="search" placeholder="Search cell or file" autocomplete="off">
+                </label>
+                <div class="list-meta">
+                    <span id="visibleCount">0 recordings</span>
+                    <span id="activeFilter">All populations</span>
+                </div>
+            </div>
+            <div id="recordingList" class="recording-list"></div>
+        </section>
+
+        <main class="viewer-panel" aria-label="Selected recording">
+            <div class="viewer-toolbar">
+                <div class="selected-copy">
+                    <p id="selectedName" class="selected-name">No recording selected</p>
+                    <div id="selectedSubtitle" class="selected-subtitle">Choose a recording from the browser</div>
+                </div>
+                <div class="viewer-actions">
+                    <button id="prevButton" class="icon-button" type="button" aria-label="Previous recording">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+                    </button>
+                    <button id="nextButton" class="icon-button" type="button" aria-label="Next recording">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+                    </button>
+                    <button id="zoomOutButton" class="icon-button" type="button" aria-label="Zoom out">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+                    </button>
+                    <button id="fitButton" class="icon-button" type="button" aria-label="Fit image">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5"></path><path d="M16 3h5v5"></path><path d="M8 21H3v-5"></path><path d="M16 21h5v-5"></path></svg>
+                    </button>
+                    <button id="zoomInButton" class="icon-button" type="button" aria-label="Zoom in">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                    </button>
+                    <a id="openImageLink" class="link-button" href="#" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M10 14 20 4"></path><path d="M20 14v6H4V4h6"></path></svg>
+                        <span>Open PNG</span>
+                    </a>
+                </div>
+            </div>
+            <div id="imageStage" class="image-stage">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+                    <span>No recording selected</span>
+                </div>
+            </div>
+        </main>
+
+        <aside class="panel inspector-panel" aria-label="Recording parameters">
+            <div class="panel-head">
+                <p class="panel-kicker">Inspector</p>
+                <p class="panel-title">Parameters</p>
+            </div>
+            <div id="inspector" class="inspector-scroll"></div>
+        </aside>
+    </div>
+
+    <script id="dashboardData" type="application/json">{"populations":[{"accepted":20,"cells":12,"current":12,"identity":"Excitatory","name":"VgluT2-I","phase":"Inspiratory","recordings":23,"voltage":11},{"accepted":12,"cells":9,"current":8,"identity":"Inhibitory","name":"VGAT-I","phase":"Inspiratory","recordings":17,"voltage":9},{"accepted":17,"cells":9,"current":8,"identity":"Inhibitory","name":"VGAT-E","phase":"Expiratory","recordings":17,"voltage":9},{"accepted":1,"cells":1,"current":1,"identity":"Excitatory","name":"VgluT2-E","phase":"Expiratory","recordings":2,"voltage":1}],"records":[{"accepted":true,"basename":"VgluT2-I-Cell1-C","category":"VgluT2-I","cell":"VgluT2-I-Cell1","cellLabel":"Cell1","cycles":52,"full":"assets/recordings/VgluT2-I-Cell1-C_full.png","id":"VgluT2-I-Cell1-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell1-C.par","params":{"Du":0.0429158,"E":-36.2975,"Ee":-10,"Ei":-68.7481,"G":0.0197377,"G_exc_ph0":0.149895,"G_exc_st":0.00527787,"G_exc_st_max":0.0145725,"G_exc_st_min":0,"G_exc_tr":0.0871049,"G_exc_tr_max":0.272435,"G_exc_tr_min":0.0129457,"G_inh_ph0":0.100432,"G_inh_st":0.32242,"G_inh_st_max":0.392826,"G_inh_st_min":0.241418,"G_inh_tr":0.159516,"G_inh_tr_max":0.345153,"G_inh_tr_min":-6.10217e-17,"Ge0":0.00519802,"Gi0":0.317452,"I":0.854896,"Ie":0.394484,"Ii":-0.486784,"N":52,"Ta":5.30735,"Vmax":-38.19,"Vmin":-75.84,"dGe":0.00669422,"dGi":0.117258,"dTa":1.4859,"g":0.0150008,"q":0.00285,"tr_end":126,"tr_start":980},"thumb":"assets/recordings/VgluT2-I-Cell1-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell2-C","category":"VgluT2-I","cell":"VgluT2-I-Cell2","cellLabel":"Cell2","cycles":45,"full":"assets/recordings/VgluT2-I-Cell2-C_full.png","id":"VgluT2-I-Cell2-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell2-C.par","params":{"Du":0.0344297,"E":-44.2869,"Ee":-10,"Ei":-68.3514,"G":0.0364222,"G_exc_ph0":0.270131,"G_exc_st":0.00312513,"G_exc_st_max":0.00765658,"G_exc_st_min":0,"G_exc_tr":0.0779241,"G_exc_tr_max":0.297167,"G_exc_tr_min":0.00758691,"G_inh_ph0":0.208485,"G_inh_st":0.247615,"G_inh_st_max":0.2846,"G_inh_st_min":0.20995,"G_inh_tr":0.118954,"G_inh_tr_max":0.273869,"G_inh_tr_min":-2.84249e-17,"Ge0":0.00330671,"Gi0":0.24592,"I":1.76284,"Ie":1.00407,"Ii":-0.704715,"N":45,"Ta":6.47502,"Vmax":-40.88,"Vmin":-77.72,"dGe":0.00425102,"dGi":0.0353402,"dTa":1.66128,"g":0.0292845,"q":0.0031,"tr_end":110,"tr_start":981},"thumb":"assets/recordings/VgluT2-I-Cell2-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell2-V","category":"VgluT2-I","cell":"VgluT2-I-Cell2","cellLabel":"Cell2","cycles":49,"full":"assets/recordings/VgluT2-I-Cell2-V_full.png","id":"VgluT2-I-Cell2-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell2-V.par","params":{"Du":0.0345929,"E":-47.9295,"Ee":-10,"Ei":-70.6017,"G":0.0459658,"G_exc_ph0":0.249283,"G_exc_st":0.00331946,"G_exc_st_max":0.00748437,"G_exc_st_min":0,"G_exc_tr":0.0771527,"G_exc_tr_max":0.271173,"G_exc_tr_min":0.00857344,"G_inh_ph0":0.128043,"G_inh_st":0.247382,"G_inh_st_max":0.285615,"G_inh_st_min":0.21177,"G_inh_tr":0.168065,"G_inh_tr_max":0.300613,"G_inh_tr_min":-2.11739e-16,"Ge0":0.0035901,"Gi0":0.247185,"I":2.3841,"Ie":1.39473,"Ii":-0.833698,"N":49,"Ta":6.11131,"Vmax":-60.34,"Vmin":-85.88,"dGe":0.00418979,"dGi":0.0591732,"dTa":1.72033,"g":0.0367717,"q":0.00305,"tr_end":98,"tr_start":977},"thumb":"assets/recordings/VgluT2-I-Cell2-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell3-V","category":"VgluT2-I","cell":"VgluT2-I-Cell3","cellLabel":"Cell3","cycles":41,"full":"assets/recordings/VgluT2-I-Cell3-V_full.png","id":"VgluT2-I-Cell3-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell3-V.par","params":{"Du":0.0540786,"E":-30.4584,"Ee":-10,"Ei":-62.002,"G":0.037589,"G_exc_ph0":0.312331,"G_exc_st":0.0125149,"G_exc_st_max":0.0399599,"G_exc_st_min":0,"G_exc_tr":0.151522,"G_exc_tr_max":0.375733,"G_exc_tr_min":0.0316655,"G_inh_ph0":0.33133,"G_inh_st":0.605997,"G_inh_st_max":0.732774,"G_inh_st_min":0.33437,"G_inh_tr":0.481907,"G_inh_tr_max":0.675512,"G_inh_tr_min":1.49539e-16,"Ge0":0.0124744,"Gi0":0.606207,"I":1.56456,"Ie":0.474636,"Ii":-0.731814,"N":41,"Ta":4.51646,"Vmax":-56.53,"Vmin":-86.06,"dGe":0.0189326,"dGi":0.13077,"dTa":1.25532,"g":0.0232001,"q":0.0034,"tr_end":90,"tr_start":977},"thumb":"assets/recordings/VgluT2-I-Cell3-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell4-C","category":"VgluT2-I","cell":"VgluT2-I-Cell4","cellLabel":"Cell4","cycles":76,"full":"assets/recordings/VgluT2-I-Cell4-C_full.png","id":"VgluT2-I-Cell4-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell4-C.par","params":{"Du":0.0156616,"E":-40.635,"Ee":-10,"Ei":-60.3192,"G":0.0342396,"G_exc_ph0":0.719616,"G_exc_st":0.0334555,"G_exc_st_max":0.0951504,"G_exc_st_min":0,"G_exc_tr":0.438885,"G_exc_tr_max":1.03017,"G_exc_tr_min":0.0486613,"G_inh_ph0":1.0381,"G_inh_st":0.917992,"G_inh_st_max":1.12183,"G_inh_st_min":0.700621,"G_inh_tr":0.574719,"G_inh_tr_max":1.56297,"G_inh_tr_min":6.30548e-17,"Ge0":0.0389817,"Gi0":0.913057,"I":1.65934,"Ie":0.535978,"Ii":-0.344386,"N":76,"Ta":8.47108,"Vmax":-25.31,"Vmin":-83.37,"dGe":0.0587413,"dGi":0.201835,"dTa":2.45168,"g":0.0174956,"q":0.0035,"tr_end":86,"tr_start":997},"thumb":"assets/recordings/VgluT2-I-Cell4-C_thumb.png","variant":""},{"accepted":false,"basename":"VgluT2-I-Cell4-V","category":"VgluT2-I","cell":"VgluT2-I-Cell4","cellLabel":"Cell4","cycles":15,"full":"assets/recordings/VgluT2-I-Cell4-V_full.png","id":"VgluT2-I-Cell4-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell4-V.par","params":{"Du":0.0172264,"E":-32.9163,"Ee":-10,"Ei":-65.1016,"G":0.0294576,"G_exc_ph0":0.614744,"G_exc_st":0.0269193,"G_exc_st_max":0.0574569,"G_exc_st_min":1.77568e-16,"G_exc_tr":0.281053,"G_exc_tr_max":0.621205,"G_exc_tr_min":0.0634923,"G_inh_ph0":0.0846245,"G_inh_st":0.452453,"G_inh_st_max":0.777139,"G_inh_st_min":1.22457e-16,"G_inh_tr":0.626782,"G_inh_tr_max":1.2546,"G_inh_tr_min":0.0846245,"Ge0":0.0289775,"Gi0":0.471549,"I":1.24184,"Ie":0.447756,"Ii":-0.628859,"N":15,"Ta":7.72847,"Vmax":-61.53,"Vmin":-81.13,"dGe":0.0290104,"dGi":0.471313,"dTa":2.98285,"g":0.0195387,"q":0.0035,"tr_end":61,"tr_start":996},"thumb":"assets/recordings/VgluT2-I-Cell4-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell4-V-2","category":"VgluT2-I","cell":"VgluT2-I-Cell4","cellLabel":"Cell4","cycles":49,"full":"assets/recordings/VgluT2-I-Cell4-V-2_full.png","id":"VgluT2-I-Cell4-V-2","mode":"V","modeLabel":"V2","par":"assets/recordings/VgluT2-I-Cell4-V-2.par","params":{"Du":0.0177981,"E":-41.1212,"Ee":-10,"Ei":-66.0351,"G":0.0228878,"G_exc_ph0":0.179894,"G_exc_st":0.00595172,"G_exc_st_max":0.013844,"G_exc_st_min":0,"G_exc_tr":0.0675124,"G_exc_tr_max":0.190809,"G_exc_tr_min":0.0143428,"G_inh_ph0":-8.54019e-17,"G_inh_st":0.113121,"G_inh_st_max":0.176853,"G_inh_st_min":0.0424963,"G_inh_tr":0.158111,"G_inh_tr_max":0.302465,"G_inh_tr_min":-8.54019e-17,"Ge0":0.00606465,"Gi0":0.116067,"I":0.993349,"Ie":0.631753,"Ii":-0.505745,"N":49,"Ta":7.43145,"Vmax":-55.59,"Vmin":-75.91,"dGe":0.00816246,"dGi":0.0787346,"dTa":2.47164,"g":0.0202998,"q":0.0035,"tr_end":70,"tr_start":992},"thumb":"assets/recordings/VgluT2-I-Cell4-V-2_thumb.png","variant":"2"},{"accepted":true,"basename":"VgluT2-I-Cell5-C","category":"VgluT2-I","cell":"VgluT2-I-Cell5","cellLabel":"Cell5","cycles":80,"full":"assets/recordings/VgluT2-I-Cell5-C_full.png","id":"VgluT2-I-Cell5-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell5-C.par","params":{"Du":0.0241295,"E":-41.6249,"Ee":-10,"Ei":-69.2316,"G":0.0232062,"G_exc_ph0":0.158892,"G_exc_st":0.00317088,"G_exc_st_max":0.00730028,"G_exc_st_min":0,"G_exc_tr":0.0440794,"G_exc_tr_max":0.180283,"G_exc_tr_min":0.00740491,"G_inh_ph0":0.104678,"G_inh_st":0.196878,"G_inh_st_max":0.22629,"G_inh_st_min":0.160378,"G_inh_tr":0.128686,"G_inh_tr_max":0.220252,"G_inh_tr_min":2.71849e-17,"Ge0":0.00332535,"Gi0":0.194685,"I":1.06184,"Ie":0.613269,"Ii":-0.535348,"N":80,"Ta":7.11421,"Vmax":-30.84,"Vmin":-80.87,"dGe":0.00407004,"dGi":0.0443168,"dTa":2.35799,"g":0.019392,"q":0.0033,"tr_end":102,"tr_start":980},"thumb":"assets/recordings/VgluT2-I-Cell5-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell5-V","category":"VgluT2-I","cell":"VgluT2-I-Cell5","cellLabel":"Cell5","cycles":49,"full":"assets/recordings/VgluT2-I-Cell5-V_full.png","id":"VgluT2-I-Cell5-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell5-V.par","params":{"Du":0.0177981,"E":-41.1212,"Ee":-10,"Ei":-66.0351,"G":0.0228878,"G_exc_ph0":0.179894,"G_exc_st":0.00595172,"G_exc_st_max":0.013844,"G_exc_st_min":0,"G_exc_tr":0.0675124,"G_exc_tr_max":0.190809,"G_exc_tr_min":0.0143428,"G_inh_ph0":-8.54019e-17,"G_inh_st":0.113121,"G_inh_st_max":0.176853,"G_inh_st_min":0.0424963,"G_inh_tr":0.158111,"G_inh_tr_max":0.302465,"G_inh_tr_min":-8.54019e-17,"Ge0":0.00606465,"Gi0":0.116067,"I":0.993349,"Ie":0.631753,"Ii":-0.505745,"N":49,"Ta":7.43145,"Vmax":-55.59,"Vmin":-75.91,"dGe":0.00816246,"dGi":0.0787346,"dTa":2.47164,"g":0.0202998,"q":0.0035,"tr_end":70,"tr_start":992},"thumb":"assets/recordings/VgluT2-I-Cell5-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell6-C","category":"VgluT2-I","cell":"VgluT2-I-Cell6","cellLabel":"Cell6","cycles":56,"full":"assets/recordings/VgluT2-I-Cell6-C_full.png","id":"VgluT2-I-Cell6-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell6-C.par","params":{"Du":0.0930367,"E":-42.9259,"Ee":-10,"Ei":-80.1111,"G":0.0233127,"G_exc_ph0":0.228574,"G_exc_st":0.00784263,"G_exc_st_max":0.0302191,"G_exc_st_min":0,"G_exc_tr":0.158866,"G_exc_tr_max":0.357349,"G_exc_tr_min":0.0261117,"G_inh_ph0":0.352826,"G_inh_st":0.718926,"G_inh_st_max":0.854557,"G_inh_st_min":0.572339,"G_inh_tr":0.386357,"G_inh_tr_max":0.816791,"G_inh_tr_min":2.50937e-17,"Ge0":0.00808315,"Gi0":0.706464,"I":1.31616,"Ie":0.454511,"Ii":-0.513307,"N":56,"Ta":3.46791,"Vmax":-45.97,"Vmin":-87.72,"dGe":0.0173927,"dGi":0.178845,"dTa":0.965572,"g":0.0138041,"q":2.08102,"tr_end":164,"tr_start":956},"thumb":"assets/recordings/VgluT2-I-Cell6-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell6-V","category":"VgluT2-I","cell":"VgluT2-I-Cell6","cellLabel":"Cell6","cycles":54,"full":"assets/recordings/VgluT2-I-Cell6-V_full.png","id":"VgluT2-I-Cell6-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell6-V.par","params":{"Du":0.0867603,"E":-49.1634,"Ee":-10,"Ei":-57.1256,"G":0.0186903,"G_exc_ph0":0.254445,"G_exc_st":0.0171936,"G_exc_st_max":0.0475968,"G_exc_st_min":1.12714e-16,"G_exc_tr":0.205792,"G_exc_tr_max":0.405726,"G_exc_tr_min":0.0493018,"G_inh_ph0":0.144003,"G_inh_st":0.170076,"G_inh_st_max":0.345245,"G_inh_st_min":0.0369226,"G_inh_tr":0.12429,"G_inh_tr_max":0.369,"G_inh_tr_min":3.10931e-17,"Ge0":0.0192913,"Gi0":0.167087,"I":0.90669,"Ie":0.602743,"Ii":-0.122543,"N":54,"Ta":3.45801,"Vmax":-50.59,"Vmin":-80.84,"dGe":0.0299836,"dGi":0.132612,"dTa":0.977204,"g":0.0153905,"q":2.02714,"tr_end":143,"tr_start":954},"thumb":"assets/recordings/VgluT2-I-Cell6-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell7-C","category":"VgluT2-I","cell":"VgluT2-I-Cell7","cellLabel":"Cell7","cycles":144,"full":"assets/recordings/VgluT2-I-Cell7-C_full.png","id":"VgluT2-I-Cell7-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell7-C.par","params":{"Du":0.0937221,"E":-55.6248,"Ee":-10,"Ei":-81.1805,"G":0.0240494,"G_exc_ph0":0.142262,"G_exc_st":0.0124873,"G_exc_st_max":0.0619744,"G_exc_st_min":0,"G_exc_tr":0.147529,"G_exc_tr_max":0.299508,"G_exc_tr_min":0.032327,"G_inh_ph0":0.0860786,"G_inh_st":0.174499,"G_inh_st_max":0.337522,"G_inh_st_min":0.0544005,"G_inh_tr":0.123884,"G_inh_tr_max":0.315224,"G_inh_tr_min":7.79735e-17,"Ge0":0.0122365,"Gi0":0.168102,"I":1.38856,"Ie":0.912648,"Ii":-0.511198,"N":144,"Ta":3.34396,"Vmax":-45.44,"Vmin":-93.75,"dGe":0.0199428,"dGi":0.124499,"dTa":1.04162,"g":0.0200033,"q":2.03433,"tr_end":147,"tr_start":967},"thumb":"assets/recordings/VgluT2-I-Cell7-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell7-V","category":"VgluT2-I","cell":"VgluT2-I-Cell7","cellLabel":"Cell7","cycles":98,"full":"assets/recordings/VgluT2-I-Cell7-V_full.png","id":"VgluT2-I-Cell7-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell7-V.par","params":{"Du":0.0851583,"E":-53.034,"Ee":-10,"Ei":-71.2369,"G":0.0194682,"G_exc_ph0":0.237099,"G_exc_st":0.0277806,"G_exc_st_max":0.106691,"G_exc_st_min":0,"G_exc_tr":0.233833,"G_exc_tr_max":0.37457,"G_exc_tr_min":0.0727264,"G_inh_ph0":0.238103,"G_inh_st":0.217885,"G_inh_st_max":0.413417,"G_inh_st_min":0.0121341,"G_inh_tr":0.261725,"G_inh_tr_max":0.620112,"G_inh_tr_min":6.32961e-17,"Ge0":0.0278391,"Gi0":0.221019,"I":1.05806,"Ie":0.654834,"Ii":-0.276986,"N":98,"Ta":3.5552,"Vmax":-50.56,"Vmin":-90.84,"dGe":0.0436554,"dGi":0.168177,"dTa":1.06264,"g":0.0152167,"q":2.02329,"tr_end":113,"tr_start":979},"thumb":"assets/recordings/VgluT2-I-Cell7-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell8-C","category":"VgluT2-I","cell":"VgluT2-I-Cell8","cellLabel":"Cell8","cycles":46,"full":"assets/recordings/VgluT2-I-Cell8-C_full.png","id":"VgluT2-I-Cell8-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell8-C.par","params":{"Du":0.0243654,"E":-36.3491,"Ee":-10,"Ei":-58.8388,"G":0.0248326,"G_exc_ph0":0.103502,"G_exc_st":0.00472959,"G_exc_st_max":0.0116228,"G_exc_st_min":0,"G_exc_tr":0.0702067,"G_exc_tr_max":0.160055,"G_exc_tr_min":0.0116985,"G_inh_ph0":0.0836475,"G_inh_st":0.0820939,"G_inh_st_max":0.118679,"G_inh_st_min":0.045146,"G_inh_tr":0.0573923,"G_inh_tr_max":0.150563,"G_inh_tr_min":1.71699e-17,"Ge0":0.00481464,"Gi0":0.0804966,"I":0.936164,"Ie":0.599594,"Ii":-0.511769,"N":46,"Ta":5.92339,"Vmax":-35.38,"Vmin":-75.06,"dGe":0.00680012,"dGi":0.0462652,"dTa":2.02852,"g":0.0227558,"q":0.0045,"tr_end":81,"tr_start":973},"thumb":"assets/recordings/VgluT2-I-Cell8-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell8-V","category":"VgluT2-I","cell":"VgluT2-I-Cell8","cellLabel":"Cell8","cycles":44,"full":"assets/recordings/VgluT2-I-Cell8-V_full.png","id":"VgluT2-I-Cell8-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell8-V.par","params":{"Du":0.0236539,"E":-39.8048,"Ee":-10,"Ei":-62.5567,"G":0.025964,"G_exc_ph0":0.0832571,"G_exc_st":0.00412736,"G_exc_st_max":0.0113177,"G_exc_st_min":0,"G_exc_tr":0.0532941,"G_exc_tr_max":0.101454,"G_exc_tr_min":0.0115339,"G_inh_ph0":0.019469,"G_inh_st":0.0698965,"G_inh_st_max":0.119089,"G_inh_st_min":0.0413683,"G_inh_tr":0.0408917,"G_inh_tr_max":0.0704974,"G_inh_tr_min":-1.43612e-16,"Ge0":0.00407137,"Gi0":0.0679695,"I":1.06413,"Ie":0.719262,"Ii":-0.549056,"N":44,"Ta":6.16273,"Vmax":-55.53,"Vmin":-81.59,"dGe":0.007461,"dGi":0.0396516,"dTa":1.96139,"g":0.0241324,"q":0.0045,"tr_end":73,"tr_start":981},"thumb":"assets/recordings/VgluT2-I-Cell8-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell9-C","category":"VgluT2-I","cell":"VgluT2-I-Cell9","cellLabel":"Cell9","cycles":60,"full":"assets/recordings/VgluT2-I-Cell9-C_full.png","id":"VgluT2-I-Cell9-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell9-C.par","params":{"Du":0.0209062,"E":-43.5291,"Ee":-10,"Ei":-61.3355,"G":0.0466631,"G_exc_ph0":0.123485,"G_exc_st":0.00508993,"G_exc_st_max":0.010671,"G_exc_st_min":0,"G_exc_tr":0.0708755,"G_exc_tr_max":0.142822,"G_exc_tr_min":0.0117457,"G_inh_ph0":0.0396576,"G_inh_st":0.0793126,"G_inh_st_max":0.11851,"G_inh_st_min":0.0343502,"G_inh_tr":0.0471598,"G_inh_tr_max":0.0995382,"G_inh_tr_min":-1.1332e-16,"Ge0":0.00520332,"Gi0":0.0780874,"I":2.0764,"Ie":1.43976,"Ii":-0.764619,"N":60,"Ta":10.4347,"Vmax":-40.88,"Vmin":-77.75,"dGe":0.00632695,"dGi":0.0572769,"dTa":2.96868,"g":0.0429406,"q":0.00395,"tr_end":57,"tr_start":990},"thumb":"assets/recordings/VgluT2-I-Cell9-C_thumb.png","variant":""},{"accepted":false,"basename":"VgluT2-I-Cell9-V","category":"VgluT2-I","cell":"VgluT2-I-Cell9","cellLabel":"Cell9","cycles":23,"full":"assets/recordings/VgluT2-I-Cell9-V_full.png","id":"VgluT2-I-Cell9-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell9-V.par","params":{"Du":0.0184679,"E":-39.3169,"Ee":-10,"Ei":-72.9598,"G":0.0526998,"G_exc_ph0":0.045666,"G_exc_st":0.00259521,"G_exc_st_max":0.00760569,"G_exc_st_min":0,"G_exc_tr":0.0233379,"G_exc_tr_max":0.049465,"G_exc_tr_min":0.00545309,"G_inh_ph0":0.000859819,"G_inh_st":0.0749809,"G_inh_st_max":0.0907243,"G_inh_st_min":0.0506318,"G_inh_tr":0.0501661,"G_inh_tr_max":0.0981595,"G_inh_tr_min":-3.71752e-17,"Ge0":0.00268967,"Gi0":0.0746113,"I":2.1875,"Ie":1.43409,"Ii":-1.6457,"N":23,"Ta":10.46,"Vmax":-62.41,"Vmin":-90.91,"dGe":0.00356716,"dGi":0.0145687,"dTa":2.45626,"g":0.0489168,"q":0.00395,"tr_end":55,"tr_start":997},"thumb":"assets/recordings/VgluT2-I-Cell9-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell10-C-1","category":"VgluT2-I","cell":"VgluT2-I-Cell10","cellLabel":"Cell10","cycles":45,"full":"assets/recordings/VgluT2-I-Cell10-C-1_full.png","id":"VgluT2-I-Cell10-C-1","mode":"C","modeLabel":"C1","par":"assets/recordings/VgluT2-I-Cell10-C-1.par","params":{"Du":0.0255818,"E":-47.7303,"Ee":-10,"Ei":-64.2778,"G":0.0109997,"G_exc_ph0":1.07919,"G_exc_st":0.0752009,"G_exc_st_max":0.221746,"G_exc_st_min":0,"G_exc_tr":0.725532,"G_exc_tr_max":1.67097,"G_exc_tr_min":0.179782,"G_inh_ph0":0.744122,"G_inh_st":0.519952,"G_inh_st_max":1.86424,"G_inh_st_min":0.168291,"G_inh_tr":0.966589,"G_inh_tr_max":2.7786,"G_inh_tr_min":9.79225e-17,"Ge0":0.0761759,"Gi0":0.492414,"I":0.553485,"Ie":0.246289,"Ii":-0.108016,"N":45,"Ta":6.92333,"Vmax":-35.78,"Vmin":-87.97,"dGe":0.0971761,"dGi":0.375045,"dTa":2.15121,"g":0.00652763,"q":0.00345,"tr_end":67,"tr_start":986},"thumb":"assets/recordings/VgluT2-I-Cell10-C-1_thumb.png","variant":"1"},{"accepted":true,"basename":"VgluT2-I-Cell10-C-2","category":"VgluT2-I","cell":"VgluT2-I-Cell10","cellLabel":"Cell10","cycles":32,"full":"assets/recordings/VgluT2-I-Cell10-C-2_full.png","id":"VgluT2-I-Cell10-C-2","mode":"C","modeLabel":"C2","par":"assets/recordings/VgluT2-I-Cell10-C-2.par","params":{"Du":0.0244849,"E":-12.7124,"Ee":-10,"Ei":-83.0381,"G":0.0106916,"G_exc_ph0":0.752896,"G_exc_st":0.0409155,"G_exc_st_max":0.203089,"G_exc_st_min":0,"G_exc_tr":0.425418,"G_exc_tr_max":1.0117,"G_exc_tr_min":0.081073,"G_inh_ph0":0.620651,"G_inh_st":0.926002,"G_inh_st_max":1.46545,"G_inh_st_min":0.540542,"G_inh_tr":0.412213,"G_inh_tr_max":0.764673,"G_inh_tr_min":1.64849e-16,"Ge0":0.0387984,"Gi0":0.910527,"I":0.46966,"Ie":0.0148505,"Ii":-0.385028,"N":32,"Ta":6.84094,"Vmax":-41.72,"Vmin":-96.28,"dGe":0.0680699,"dGi":0.30094,"dTa":2.29327,"g":0.00547493,"q":0.00345,"tr_end":88,"tr_start":980},"thumb":"assets/recordings/VgluT2-I-Cell10-C-2_thumb.png","variant":"2"},{"accepted":false,"basename":"VgluT2-I-Cell10-V","category":"VgluT2-I","cell":"VgluT2-I-Cell10","cellLabel":"Cell10","cycles":10,"full":"assets/recordings/VgluT2-I-Cell10-V_full.png","id":"VgluT2-I-Cell10-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell10-V.par","params":{"Du":0.0244491,"E":-69.8272,"Ee":-10,"Ei":-63.4054,"G":0.00826515,"G_exc_ph0":-0.582498,"G_exc_st":-0.0634351,"G_exc_st_max":0,"G_exc_st_min":-1.08784,"G_exc_tr":-0.316313,"G_exc_tr_max":-0.0810153,"G_exc_tr_min":-0.613898,"G_inh_ph0":-1.14361,"G_inh_st":-1.4398,"G_inh_st_max":-0.393929,"G_inh_st_min":-20.6435,"G_inh_tr":-1.30751,"G_inh_tr_max":9.62045e-17,"G_inh_tr_min":-3.1735,"Ge0":-0.0610308,"Gi0":-1.38333,"I":0.352819,"Ie":-0.969593,"Ii":-0.104075,"N":10,"Ta":6.626,"Vmax":-1.56,"Vmin":-100.75,"dGe":0.0265032,"dGi":0.35341,"dTa":2.06849,"g":-0.0162066,"q":0.0034,"tr_end":44,"tr_start":989},"thumb":"assets/recordings/VgluT2-I-Cell10-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell11-C","category":"VgluT2-I","cell":"VgluT2-I-Cell11","cellLabel":"Cell11","cycles":56,"full":"assets/recordings/VgluT2-I-Cell11-C_full.png","id":"VgluT2-I-Cell11-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell11-C.par","params":{"Du":0.0212407,"E":-34.0028,"Ee":-10,"Ei":-62.2262,"G":0.0171958,"G_exc_ph0":0.0821531,"G_exc_st":0.0107088,"G_exc_st_max":0.0244127,"G_exc_st_min":0,"G_exc_tr":0.0528728,"G_exc_tr_max":0.0942475,"G_exc_tr_min":0.025067,"G_inh_ph0":0.01528,"G_inh_st":0.121633,"G_inh_st_max":0.175673,"G_inh_st_min":0.0671135,"G_inh_tr":0.0742831,"G_inh_tr_max":0.12658,"G_inh_tr_min":-1.29012e-16,"Ge0":0.0112719,"Gi0":0.11984,"I":0.630806,"Ie":0.364607,"Ii":-0.428719,"N":56,"Ta":5.76976,"Vmax":-42.03,"Vmin":-84.03,"dGe":0.0133329,"dGi":0.070725,"dTa":1.66734,"g":0.0151902,"q":0.0024,"tr_end":40,"tr_start":981},"thumb":"assets/recordings/VgluT2-I-Cell11-C_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell11-V","category":"VgluT2-I","cell":"VgluT2-I-Cell11","cellLabel":"Cell11","cycles":32,"full":"assets/recordings/VgluT2-I-Cell11-V_full.png","id":"VgluT2-I-Cell11-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-I-Cell11-V.par","params":{"Du":0.0219656,"E":-31.9498,"Ee":-10,"Ei":-60.8391,"G":0.0152464,"G_exc_ph0":0.0722319,"G_exc_st":0.00944412,"G_exc_st_max":0.0229413,"G_exc_st_min":0,"G_exc_tr":0.0512764,"G_exc_tr_max":0.0948437,"G_exc_tr_min":0.0242219,"G_inh_ph0":0.0586362,"G_inh_st":0.172106,"G_inh_st_max":0.235909,"G_inh_st_min":0.118514,"G_inh_tr":0.102108,"G_inh_tr_max":0.153699,"G_inh_tr_min":-5.01874e-17,"Ge0":0.0100341,"Gi0":0.167828,"I":0.546922,"Ie":0.283545,"Ii":-0.373188,"N":32,"Ta":5.78745,"Vmax":-50.47,"Vmin":-81.81,"dGe":0.0133679,"dGi":0.0740637,"dTa":1.34637,"g":0.0129179,"q":0.0024,"tr_end":36,"tr_start":991},"thumb":"assets/recordings/VgluT2-I-Cell11-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-I-Cell12-C","category":"VgluT2-I","cell":"VgluT2-I-Cell12","cellLabel":"Cell12","cycles":27,"full":"assets/recordings/VgluT2-I-Cell12-C_full.png","id":"VgluT2-I-Cell12-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-I-Cell12-C.par","params":{"Du":0.0198751,"E":-13.9792,"Ee":-10,"Ei":-77.4229,"G":0.0118122,"G_exc_ph0":0.0225958,"G_exc_st":0.00576753,"G_exc_st_max":0.0123107,"G_exc_st_min":0,"G_exc_tr":0.0228407,"G_exc_tr_max":0.0312736,"G_exc_tr_min":0.0122448,"G_inh_ph0":0.0708712,"G_inh_st":0.0781224,"G_inh_st_max":0.109908,"G_inh_st_min":0.0334078,"G_inh_tr":0.0393458,"G_inh_tr_max":0.0994667,"G_inh_tr_min":4.42358e-17,"Ge0":0.00581982,"Gi0":0.0783555,"I":0.217962,"Ie":0.0433952,"Ii":-0.691893,"N":27,"Ta":5.75444,"Vmax":-48.13,"Vmin":-84.59,"dGe":0.00644942,"dGi":0.0371375,"dTa":1.65636,"g":0.0109056,"q":0.00245,"tr_end":30,"tr_start":996},"thumb":"assets/recordings/VgluT2-I-Cell12-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell1-C","category":"VGAT-I","cell":"VGAT-I-Cell1","cellLabel":"Cell1","cycles":32,"full":"assets/recordings/VGAT-I-Cell1-C_full.png","id":"VGAT-I-Cell1-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell1-C.par","params":{"Du":0.0202968,"E":-45.3525,"Ee":-10,"Ei":-60.6009,"G":0.0226724,"G_exc_ph0":0.0751309,"G_exc_st":0.00682708,"G_exc_st_max":0.0170407,"G_exc_st_min":0,"G_exc_tr":0.0439375,"G_exc_tr_max":0.0837135,"G_exc_tr_min":0.0177199,"G_inh_ph0":0.341094,"G_inh_st":0.0605708,"G_inh_st_max":0.120719,"G_inh_st_min":0.0150888,"G_inh_tr":0.105004,"G_inh_tr_max":0.38107,"G_inh_tr_min":-1.87499e-16,"Ge0":0.00726342,"Gi0":0.0592586,"I":1.04164,"Ie":0.746581,"Ii":-0.322016,"N":32,"Ta":5.90149,"Vmax":-43.72,"Vmin":-82.63,"dGe":0.00988809,"dGi":0.0684684,"dTa":2.10918,"g":0.0211182,"q":0.0044,"tr_end":60,"tr_start":985},"thumb":"assets/recordings/VGAT-I-Cell1-C_thumb.png","variant":""},{"accepted":false,"basename":"VGAT-I-Cell1-V","category":"VGAT-I","cell":"VGAT-I-Cell1","cellLabel":"Cell1","cycles":24,"full":"assets/recordings/VGAT-I-Cell1-V_full.png","id":"VGAT-I-Cell1-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell1-V.par","params":{"Du":0.0214941,"E":-54.2898,"Ee":-10,"Ei":-63.7022,"G":0.0250543,"G_exc_ph0":0.0938904,"G_exc_st":0.00684695,"G_exc_st_max":0.015827,"G_exc_st_min":0,"G_exc_tr":0.0500035,"G_exc_tr_max":0.103168,"G_exc_tr_min":0.0160022,"G_inh_ph0":0.24804,"G_inh_st":0.157555,"G_inh_st_max":0.243004,"G_inh_st_min":0.0890049,"G_inh_tr":0.104462,"G_inh_tr_max":0.282604,"G_inh_tr_min":-1.06516e-16,"Ge0":0.00680907,"Gi0":0.15558,"I":1.38134,"Ie":0.953645,"Ii":-0.202669,"N":24,"Ta":5.74188,"Vmax":-60.41,"Vmin":-81,"dGe":0.0084966,"dGi":0.101571,"dTa":2.39142,"g":0.0215319,"q":0.0044,"tr_end":66,"tr_start":985},"thumb":"assets/recordings/VGAT-I-Cell1-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell2-C","category":"VGAT-I","cell":"VGAT-I-Cell2","cellLabel":"Cell2","cycles":27,"full":"assets/recordings/VGAT-I-Cell2-C_full.png","id":"VGAT-I-Cell2-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell2-C.par","params":{"Du":0.0307826,"E":-28.8722,"Ee":-10,"Ei":-72.5129,"G":0.107005,"G_exc_ph0":0.0505683,"G_exc_st":0.00429527,"G_exc_st_max":0.0136334,"G_exc_st_min":-1.45664e-16,"G_exc_tr":0.0311056,"G_exc_tr_max":0.0551383,"G_exc_tr_min":0.0120221,"G_inh_ph0":0.0174367,"G_inh_st":0.12189,"G_inh_st_max":0.162189,"G_inh_st_min":0.0768944,"G_inh_tr":0.0643603,"G_inh_tr_max":0.10284,"G_inh_tr_min":7.57297e-17,"Ge0":0.00421761,"Gi0":0.119411,"I":3.56008,"Ie":1.798,"Ii":-4.15775,"N":27,"Ta":4.03427,"Vmax":-54.13,"Vmin":-83.28,"dGe":0.00765625,"dGi":0.0618029,"dTa":1.22199,"g":0.0952725,"q":0.0046,"tr_end":63,"tr_start":965},"thumb":"assets/recordings/VGAT-I-Cell2-C_thumb.png","variant":""},{"accepted":false,"basename":"VGAT-I-Cell2-V","category":"VGAT-I","cell":"VGAT-I-Cell2","cellLabel":"Cell2","cycles":20,"full":"assets/recordings/VGAT-I-Cell2-V_full.png","id":"VGAT-I-Cell2-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell2-V.par","params":{"Du":0.024255,"E":-31.232,"Ee":-10,"Ei":-62.8127,"G":0.0308845,"G_exc_ph0":0.285167,"G_exc_st":0.013947,"G_exc_st_max":0.036988,"G_exc_st_min":0,"G_exc_tr":0.146769,"G_exc_tr_max":0.302252,"G_exc_tr_min":0.0362599,"G_inh_ph0":0.360987,"G_inh_st":0.455117,"G_inh_st_max":0.755709,"G_inh_st_min":0.156706,"G_inh_tr":0.525962,"G_inh_tr_max":0.82583,"G_inh_tr_min":1.2669e-16,"Ge0":0.0141194,"Gi0":0.461625,"I":1.25537,"Ie":0.440382,"Ii":-0.655031,"N":20,"Ta":4.95156,"Vmax":-60.31,"Vmin":-71.72,"dGe":0.0218334,"dGi":0.237722,"dTa":2.10684,"g":0.0207415,"q":0.00465,"tr_end":70,"tr_start":973},"thumb":"assets/recordings/VGAT-I-Cell2-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell3-C","category":"VGAT-I","cell":"VGAT-I-Cell3","cellLabel":"Cell3","cycles":110,"full":"assets/recordings/VGAT-I-Cell3-C_full.png","id":"VGAT-I-Cell3-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell3-C.par","params":{"Du":0.0484252,"E":-52.2904,"Ee":-10,"Ei":-75.4327,"G":0.0867537,"G_exc_ph0":0.045581,"G_exc_st":0.00284233,"G_exc_st_max":0.00759099,"G_exc_st_min":0,"G_exc_tr":0.0297151,"G_exc_tr_max":0.0684783,"G_exc_tr_min":0.00636162,"G_inh_ph0":-1.07104e-16,"G_inh_st":0.0236357,"G_inh_st_max":0.0422453,"G_inh_st_min":0.00460145,"G_inh_tr":0.0351055,"G_inh_tr_max":0.0723506,"G_inh_tr_min":-1.07104e-16,"Ge0":0.00296029,"Gi0":0.0232226,"I":4.56402,"Ie":3.55918,"Ii":-1.94768,"N":110,"Ta":5.60996,"Vmax":-69.91,"Vmin":-100.88,"dGe":0.00330486,"dGi":0.0232695,"dTa":1.83936,"g":0.0841607,"q":2.04197,"tr_end":91,"tr_start":979},"thumb":"assets/recordings/VGAT-I-Cell3-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell3-V","category":"VGAT-I","cell":"VGAT-I-Cell3","cellLabel":"Cell3","cycles":42,"full":"assets/recordings/VGAT-I-Cell3-V_full.png","id":"VGAT-I-Cell3-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell3-V.par","params":{"Du":0.0490188,"E":-43.8912,"Ee":-10,"Ei":-75.9524,"G":0.0634508,"G_exc_ph0":0.0379671,"G_exc_st":0.00398226,"G_exc_st_max":0.0101048,"G_exc_st_min":0,"G_exc_tr":0.0322389,"G_exc_tr_max":0.0650994,"G_exc_tr_min":0.00834905,"G_inh_ph0":0.106686,"G_inh_st":0.0535463,"G_inh_st_max":0.0923265,"G_inh_st_min":-1.54643e-17,"G_inh_tr":0.1054,"G_inh_tr_max":0.21374,"G_inh_tr_min":0.0285848,"Ge0":0.00407192,"Gi0":0.0551077,"I":2.88346,"Ie":2.01755,"Ii":-1.90861,"N":42,"Ta":5.8481,"Vmax":-70.63,"Vmin":-86.66,"dGe":0.00462288,"dGi":0.0406895,"dTa":1.73414,"g":0.0595302,"q":1.98908,"tr_end":87,"tr_start":984},"thumb":"assets/recordings/VGAT-I-Cell3-V_thumb.png","variant":""},{"accepted":false,"basename":"VGAT-I-Cell4-C","category":"VGAT-I","cell":"VGAT-I-Cell4","cellLabel":"Cell4","cycles":23,"full":"assets/recordings/VGAT-I-Cell4-C_full.png","id":"VGAT-I-Cell4-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell4-C.par","params":{"Du":0.0167331,"E":-28.3513,"Ee":-10,"Ei":-60.6403,"G":0.00725593,"G_exc_ph0":0.0699055,"G_exc_st":0.0200042,"G_exc_st_max":0.0415519,"G_exc_st_min":0,"G_exc_tr":0.0637629,"G_exc_tr_max":0.089153,"G_exc_tr_min":0.043957,"G_inh_ph0":0.0759046,"G_inh_st":0.13905,"G_inh_st_max":0.282895,"G_inh_st_min":0.0141808,"G_inh_tr":0.0961018,"G_inh_tr_max":0.192823,"G_inh_tr_min":-3.55687e-17,"Ge0":0.0207668,"Gi0":0.138875,"I":0.231126,"Ie":0.114881,"Ii":-0.202132,"N":23,"Ta":10.4037,"Vmax":-34.12,"Vmin":-72.72,"dGe":0.0229304,"dGi":0.144112,"dTa":3.21797,"g":0.00626009,"q":0.003,"tr_end":21,"tr_start":993},"thumb":"assets/recordings/VGAT-I-Cell4-C_thumb.png","variant":""},{"accepted":false,"basename":"VGAT-I-Cell4-V","category":"VGAT-I","cell":"VGAT-I-Cell4","cellLabel":"Cell4","cycles":13,"full":"assets/recordings/VGAT-I-Cell4-V_full.png","id":"VGAT-I-Cell4-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell4-V.par","params":{"Du":0.0140375,"E":-9.22314,"Ee":-10,"Ei":-50.5478,"G":0.0117292,"G_exc_ph0":0.0538974,"G_exc_st":0.0404691,"G_exc_st_max":0.097437,"G_exc_st_min":-1.95899e-16,"G_exc_tr":0.0973267,"G_exc_tr_max":0.124921,"G_exc_tr_min":0.0854388,"G_inh_ph0":0.131267,"G_inh_st":0.277024,"G_inh_st_max":0.53225,"G_inh_st_min":7.24698e-17,"G_inh_tr":0.514417,"G_inh_tr_max":0.738848,"G_inh_tr_min":0.404664,"Ge0":0.0375817,"Gi0":0.300855,"I":0.211926,"Ie":-0.00687926,"Ii":-0.365937,"N":13,"Ta":12.5269,"Vmax":-30.59,"Vmin":-81,"dGe":0.0471903,"dGi":0.31111,"dTa":4.20435,"g":0.00885518,"q":0.00305,"tr_end":944,"tr_start":921},"thumb":"assets/recordings/VGAT-I-Cell4-V_thumb.png","variant":""},{"accepted":false,"basename":"VGAT-I-Cell5-C","category":"VGAT-I","cell":"VGAT-I-Cell5","cellLabel":"Cell5","cycles":22,"full":"assets/recordings/VGAT-I-Cell5-C_full.png","id":"VGAT-I-Cell5-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell5-C.par","params":{"Du":0.0180403,"E":-15.1712,"Ee":-10,"Ei":-55.9172,"G":0.0929469,"G_exc_ph0":0.0696262,"G_exc_st":0.00619017,"G_exc_st_max":0.0139954,"G_exc_st_min":0,"G_exc_tr":0.0379793,"G_exc_tr_max":0.0740184,"G_exc_tr_min":0.013944,"G_inh_ph0":0.197375,"G_inh_st":0.282102,"G_inh_st_max":0.365363,"G_inh_st_min":0.207406,"G_inh_tr":0.166821,"G_inh_tr_max":0.285152,"G_inh_tr_min":-2.08425e-18,"Ge0":0.00633722,"Gi0":0.277802,"I":2.21441,"Ie":0.374937,"Ii":-2.95427,"N":22,"Ta":8.77075,"Vmax":-52.53,"Vmin":-72.66,"dGe":0.00735419,"dGi":0.0893272,"dTa":5.55457,"g":0.0725045,"q":0.0035,"tr_end":48,"tr_start":973},"thumb":"assets/recordings/VGAT-I-Cell5-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell5-V","category":"VGAT-I","cell":"VGAT-I-Cell5","cellLabel":"Cell5","cycles":34,"full":"assets/recordings/VGAT-I-Cell5-V_full.png","id":"VGAT-I-Cell5-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell5-V.par","params":{"Du":0.0185745,"E":-11.7896,"Ee":-10,"Ei":-59.3245,"G":0.0578449,"G_exc_ph0":0.0925718,"G_exc_st":0.00422148,"G_exc_st_max":0.0108975,"G_exc_st_min":0,"G_exc_tr":0.0451785,"G_exc_tr_max":0.0986672,"G_exc_tr_min":0.0111568,"G_inh_ph0":0.0515264,"G_inh_st":0.0902445,"G_inh_st_max":0.120383,"G_inh_st_min":0.051933,"G_inh_tr":0.0473544,"G_inh_tr_max":0.0980759,"G_inh_tr_min":-7.45193e-17,"Ge0":0.00437854,"Gi0":0.0898913,"I":0.900394,"Ie":0.0945965,"Ii":-2.51263,"N":34,"Ta":8.60129,"Vmax":-50.56,"Vmin":-70.81,"dGe":0.00645815,"dGi":0.0411384,"dTa":3.33852,"g":0.0528588,"q":0.0036,"tr_end":41,"tr_start":971},"thumb":"assets/recordings/VGAT-I-Cell5-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell6-C","category":"VGAT-I","cell":"VGAT-I-Cell6","cellLabel":"Cell6","cycles":101,"full":"assets/recordings/VGAT-I-Cell6-C_full.png","id":"VGAT-I-Cell6-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell6-C.par","params":{"Du":0.0178868,"E":-34.8929,"Ee":-10,"Ei":-88.882,"G":0.0306644,"G_exc_ph0":0.283483,"G_exc_st":0.00748867,"G_exc_st_max":0.0193893,"G_exc_st_min":-1.23265e-16,"G_exc_tr":0.100891,"G_exc_tr_max":0.351416,"G_exc_tr_min":0.0190527,"G_inh_ph0":0.264458,"G_inh_st":0.0700712,"G_inh_st_max":0.160128,"G_inh_st_min":2.53931e-17,"G_inh_tr":0.120159,"G_inh_tr_max":0.264458,"G_inh_tr_min":0.0373957,"Ge0":0.00740843,"Gi0":0.0714492,"I":1.17209,"Ie":0.700641,"Ii":-1.51958,"N":101,"Ta":6.88101,"Vmax":-50.91,"Vmin":-98.56,"dGe":0.0116175,"dGi":0.0707246,"dTa":2.01726,"g":0.0281462,"q":0.00335,"tr_end":40,"tr_start":958},"thumb":"assets/recordings/VGAT-I-Cell6-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell6-V","category":"VGAT-I","cell":"VGAT-I-Cell6","cellLabel":"Cell6","cycles":64,"full":"assets/recordings/VGAT-I-Cell6-V_full.png","id":"VGAT-I-Cell6-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell6-V.par","params":{"Du":0.0186831,"E":-39.7013,"Ee":-10,"Ei":-60.8968,"G":0.0254815,"G_exc_ph0":0.159149,"G_exc_st":0.0100301,"G_exc_st_max":0.0195472,"G_exc_st_min":0,"G_exc_tr":0.0494583,"G_exc_tr_max":0.278905,"G_exc_tr_min":1.53838e-16,"G_inh_ph0":0.65212,"G_inh_st":0.0894681,"G_inh_st_max":0.187448,"G_inh_st_min":7.77361e-17,"G_inh_tr":0.420439,"G_inh_tr_max":0.794698,"G_inh_tr_min":0.163214,"Ge0":0.00976844,"Gi0":0.0941517,"I":1.05851,"Ie":0.669841,"Ii":-0.478015,"N":64,"Ta":6.38026,"Vmax":-50.59,"Vmin":-70.81,"dGe":0.0105001,"dGi":0.0936652,"dTa":1.79663,"g":0.0225526,"q":0.0034,"tr_end":37,"tr_start":956},"thumb":"assets/recordings/VGAT-I-Cell6-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell7-V","category":"VGAT-I","cell":"VGAT-I-Cell7","cellLabel":"Cell7","cycles":38,"full":"assets/recordings/VGAT-I-Cell7-V_full.png","id":"VGAT-I-Cell7-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell7-V.par","params":{"Du":0.0177766,"E":-41.9926,"Ee":-10,"Ei":-85.321,"G":0.0368358,"G_exc_ph0":0.187336,"G_exc_st":0.0115463,"G_exc_st_max":0.0285675,"G_exc_st_min":0,"G_exc_tr":0.0811544,"G_exc_tr_max":0.222263,"G_exc_tr_min":0.0232971,"G_inh_ph0":0.170128,"G_inh_st":0.134695,"G_inh_st_max":0.253166,"G_inh_st_min":0.0511883,"G_inh_tr":0.140965,"G_inh_tr_max":0.269227,"G_inh_tr_min":-2.593e-17,"Ge0":0.0113228,"Gi0":0.13276,"I":1.71688,"Ie":1.02297,"Ii":-1.38543,"N":38,"Ta":7.06132,"Vmax":-70.19,"Vmin":-100.94,"dGe":0.0111071,"dGi":0.072482,"dTa":2.13049,"g":0.0319753,"q":0.00335,"tr_end":41,"tr_start":966},"thumb":"assets/recordings/VGAT-I-Cell7-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell8-C","category":"VGAT-I","cell":"VGAT-I-Cell8","cellLabel":"Cell8","cycles":133,"full":"assets/recordings/VGAT-I-Cell8-C_full.png","id":"VGAT-I-Cell8-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell8-C.par","params":{"Du":0.0223708,"E":-45.1931,"Ee":-10,"Ei":-71.4725,"G":0.046631,"G_exc_ph0":0.301624,"G_exc_st":0.00542276,"G_exc_st_max":0.0148808,"G_exc_st_min":0,"G_exc_tr":0.111861,"G_exc_tr_max":0.310557,"G_exc_tr_min":0.0151453,"G_inh_ph0":0.107451,"G_inh_st":0.266215,"G_inh_st_max":0.318359,"G_inh_st_min":0.18744,"G_inh_tr":0.137605,"G_inh_tr_max":0.284568,"G_inh_tr_min":-9.22013e-17,"Ge0":0.00558246,"Gi0":0.264799,"I":2.33378,"Ie":1.29256,"Ii":-0.965184,"N":133,"Ta":7.47046,"Vmax":-47.78,"Vmin":-90.09,"dGe":0.00814436,"dGi":0.0646064,"dTa":2.23412,"g":0.0367277,"q":0.005,"tr_end":60,"tr_start":971},"thumb":"assets/recordings/VGAT-I-Cell8-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell8-V","category":"VGAT-I","cell":"VGAT-I-Cell8","cellLabel":"Cell8","cycles":76,"full":"assets/recordings/VGAT-I-Cell8-V_full.png","id":"VGAT-I-Cell8-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell8-V.par","params":{"Du":0.022574,"E":-44.2179,"Ee":-10,"Ei":-62.7912,"G":0.0370992,"G_exc_ph0":0.319374,"G_exc_st":0.00459875,"G_exc_st_max":0.0120388,"G_exc_st_min":0,"G_exc_tr":0.1048,"G_exc_tr_max":0.319374,"G_exc_tr_min":0.0127546,"G_inh_ph0":0.0744545,"G_inh_st":0.120566,"G_inh_st_max":0.195412,"G_inh_st_min":0.0597215,"G_inh_tr":0.127455,"G_inh_tr_max":0.279835,"G_inh_tr_min":2.01028e-16,"Ge0":0.00506327,"Gi0":0.114896,"I":1.6988,"Ie":1.11866,"Ii":-0.607201,"N":76,"Ta":7.24635,"Vmax":-55.59,"Vmin":-75.84,"dGe":0.00758247,"dGi":0.0930088,"dTa":2.07249,"g":0.0326922,"q":0.005,"tr_end":64,"tr_start":975},"thumb":"assets/recordings/VGAT-I-Cell8-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell9-C","category":"VGAT-I","cell":"VGAT-I-Cell9","cellLabel":"Cell9","cycles":98,"full":"assets/recordings/VGAT-I-Cell9-C_full.png","id":"VGAT-I-Cell9-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-I-Cell9-C.par","params":{"Du":0.0185754,"E":-39.6067,"Ee":-10,"Ei":-71.3062,"G":0.0344172,"G_exc_ph0":0.372109,"G_exc_st":0.00788582,"G_exc_st_max":0.0271886,"G_exc_st_min":0,"G_exc_tr":0.119054,"G_exc_tr_max":0.395118,"G_exc_tr_min":0.0218274,"G_inh_ph0":0.46226,"G_inh_st":0.377607,"G_inh_st_max":0.483086,"G_inh_st_min":0.274282,"G_inh_tr":0.260835,"G_inh_tr_max":0.643657,"G_inh_tr_min":1.27531e-16,"Ge0":0.00785994,"Gi0":0.376154,"I":1.63934,"Ie":0.735729,"Ii":-0.787733,"N":98,"Ta":8.39929,"Vmax":-48.16,"Vmin":-88.56,"dGe":0.0112829,"dGi":0.101272,"dTa":2.50005,"g":0.0248501,"q":0.005,"tr_end":49,"tr_start":961},"thumb":"assets/recordings/VGAT-I-Cell9-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-I-Cell9-V","category":"VGAT-I","cell":"VGAT-I-Cell9","cellLabel":"Cell9","cycles":124,"full":"assets/recordings/VGAT-I-Cell9-V_full.png","id":"VGAT-I-Cell9-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-I-Cell9-V.par","params":{"Du":0.0197437,"E":-42.4876,"Ee":-10,"Ei":-63.4704,"G":0.0310695,"G_exc_ph0":0.311629,"G_exc_st":0.00733943,"G_exc_st_max":0.0230387,"G_exc_st_min":-1.27619e-16,"G_exc_tr":0.108916,"G_exc_tr_max":0.315618,"G_exc_tr_min":0.0182378,"G_inh_ph0":0.252716,"G_inh_st":0.129803,"G_inh_st_max":0.185533,"G_inh_st_min":0.06812,"G_inh_tr":0.0970115,"G_inh_tr_max":0.270871,"G_inh_tr_min":2.12418e-16,"Ge0":0.00749329,"Gi0":0.127782,"I":1.37863,"Ie":0.883208,"Ii":-0.570438,"N":124,"Ta":8.00581,"Vmax":-40.56,"Vmin":-85.84,"dGe":0.00991161,"dGi":0.0554989,"dTa":2.63791,"g":0.027186,"q":0.0051,"tr_end":47,"tr_start":965},"thumb":"assets/recordings/VGAT-I-Cell9-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell1-C","category":"VGAT-E","cell":"VGAT-E-Cell1","cellLabel":"Cell1","cycles":46,"full":"assets/recordings/VGAT-E-Cell1-C_full.png","id":"VGAT-E-Cell1-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell1-C.par","params":{"Du":0.0175798,"E":-45.4526,"Ee":-10,"Ei":-60.4435,"G":0.0162658,"G_exc_ph0":0.0558979,"G_exc_st":0.0104712,"G_exc_st_max":0.0224529,"G_exc_st_min":0,"G_exc_tr":0.0279956,"G_exc_tr_max":0.0652856,"G_exc_tr_min":1.25908e-16,"G_inh_ph0":2.03823,"G_inh_st":0.109345,"G_inh_st_max":0.216958,"G_inh_st_min":5.80325e-17,"G_inh_tr":0.745298,"G_inh_tr_max":2.09611,"G_inh_tr_min":0.115087,"Ge0":0.010215,"Gi0":0.117822,"I":0.768211,"Ie":0.488455,"Ii":-0.20654,"N":46,"Ta":7.08941,"Vmax":-41.44,"Vmin":-80.41,"dGe":0.0120683,"dGi":0.10954,"dTa":2.29966,"g":0.0137777,"q":0.00425,"tr_end":70,"tr_start":978},"thumb":"assets/recordings/VGAT-E-Cell1-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell2-C","category":"VGAT-E","cell":"VGAT-E-Cell2","cellLabel":"Cell2","cycles":42,"full":"assets/recordings/VGAT-E-Cell2-C_full.png","id":"VGAT-E-Cell2-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell2-C.par","params":{"Du":0.0152516,"E":-40.6259,"Ee":-10,"Ei":-66.4814,"G":0.0295852,"G_exc_ph0":0.127722,"G_exc_st":0.00593809,"G_exc_st_max":0.0157377,"G_exc_st_min":0,"G_exc_tr":0.053614,"G_exc_tr_max":0.127949,"G_exc_tr_min":0.0113125,"G_inh_ph0":0.176273,"G_inh_st":0.0552214,"G_inh_st_max":0.08909,"G_inh_st_min":0.0126423,"G_inh_tr":0.0754196,"G_inh_tr_max":0.200514,"G_inh_tr_min":-4.04071e-17,"Ge0":0.0062224,"Gi0":0.0553167,"I":1.23449,"Ie":0.849667,"Ii":-0.717318,"N":42,"Ta":8.1381,"Vmax":-56.81,"Vmin":-90.81,"dGe":0.00721631,"dGi":0.0308303,"dTa":2.94251,"g":0.0277434,"q":0.00415,"tr_end":54,"tr_start":978},"thumb":"assets/recordings/VGAT-E-Cell2-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell2-V","category":"VGAT-E","cell":"VGAT-E-Cell2","cellLabel":"Cell2","cycles":32,"full":"assets/recordings/VGAT-E-Cell2-V_full.png","id":"VGAT-E-Cell2-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell2-V.par","params":{"Du":0.0185833,"E":-38.8889,"Ee":-10,"Ei":-70.5117,"G":0.0304447,"G_exc_ph0":0.216393,"G_exc_st":0.00433055,"G_exc_st_max":0.00887256,"G_exc_st_min":0,"G_exc_tr":0.0865298,"G_exc_tr_max":0.216393,"G_exc_tr_min":0.00453777,"G_inh_ph0":0.149809,"G_inh_st":0.123738,"G_inh_st_max":0.158651,"G_inh_st_min":0.0951601,"G_inh_tr":0.104736,"G_inh_tr_max":0.173796,"G_inh_tr_min":8.53823e-17,"Ge0":0.00450512,"Gi0":0.123003,"I":1.27891,"Ie":0.775968,"Ii":-0.849402,"N":32,"Ta":6.84756,"Vmax":-62.47,"Vmin":-81.56,"dGe":0.00552025,"dGi":0.0324369,"dTa":2.54531,"g":0.0268604,"q":0.0044,"tr_end":50,"tr_start":966},"thumb":"assets/recordings/VGAT-E-Cell2-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell2-V-2","category":"VGAT-E","cell":"VGAT-E-Cell2","cellLabel":"Cell2","cycles":49,"full":"assets/recordings/VGAT-E-Cell2-V-2_full.png","id":"VGAT-E-Cell2-V-2","mode":"V","modeLabel":"V2","par":"assets/recordings/VGAT-E-Cell2-V-2.par","params":{"Du":0.0188298,"E":-42.5583,"Ee":-10,"Ei":-109.717,"G":0.0330303,"G_exc_ph0":0.103124,"G_exc_st":0.00354187,"G_exc_st_max":0.0108919,"G_exc_st_min":-2.16932e-16,"G_exc_tr":0.0446735,"G_exc_tr_max":0.104245,"G_exc_tr_min":0.00770836,"G_inh_ph0":0.0244186,"G_inh_st":0.0254291,"G_inh_st_max":0.0599716,"G_inh_st_min":0.00437214,"G_inh_tr":0.0300694,"G_inh_tr_max":0.0674613,"G_inh_tr_min":7.43744e-17,"Ge0":0.00354621,"Gi0":0.024867,"I":1.45402,"Ie":1.04143,"Ii":-2.14816,"N":49,"Ta":7.16408,"Vmax":-70.47,"Vmin":-131.88,"dGe":0.00386352,"dGi":0.0212739,"dTa":2.63455,"g":0.0319865,"q":0.0043,"tr_end":56,"tr_start":977},"thumb":"assets/recordings/VGAT-E-Cell2-V-2_thumb.png","variant":"2"},{"accepted":true,"basename":"VGAT-E-Cell3-C","category":"VGAT-E","cell":"VGAT-E-Cell3","cellLabel":"Cell3","cycles":29,"full":"assets/recordings/VGAT-E-Cell3-C_full.png","id":"VGAT-E-Cell3-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell3-C.par","params":{"Du":0.0581875,"E":-43.1418,"Ee":-10,"Ei":-73.7364,"G":0.0179952,"G_exc_ph0":0.0179702,"G_exc_st":0.00796787,"G_exc_st_max":0.0161117,"G_exc_st_min":0,"G_exc_tr":0.0269093,"G_exc_tr_max":0.039214,"G_exc_tr_min":0.00979006,"G_inh_ph0":0.289731,"G_inh_st":0.104919,"G_inh_st_max":0.225143,"G_inh_st_min":-1.13117e-16,"G_inh_tr":0.334039,"G_inh_tr_max":0.434135,"G_inh_tr_min":0.23355,"Ge0":0.00804581,"Gi0":0.106389,"I":0.829098,"Ie":0.529289,"Ii":-0.488611,"N":29,"Ta":3.72873,"Vmax":-48.25,"Vmin":-84.06,"dGe":0.00862066,"dGi":0.123111,"dTa":1.1316,"g":0.0159705,"q":0.00295,"tr_end":47,"tr_start":992},"thumb":"assets/recordings/VGAT-E-Cell3-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell3-V","category":"VGAT-E","cell":"VGAT-E-Cell3","cellLabel":"Cell3","cycles":51,"full":"assets/recordings/VGAT-E-Cell3-V_full.png","id":"VGAT-E-Cell3-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell3-V.par","params":{"Du":0.0546755,"E":-10.2464,"Ee":-10,"Ei":-67.3844,"G":0.00830138,"G_exc_ph0":0.0114805,"G_exc_st":0.0328073,"G_exc_st_max":0.0589953,"G_exc_st_min":0,"G_exc_tr":0.0187159,"G_exc_tr_max":0.0378605,"G_exc_tr_min":2.46712e-16,"G_inh_ph0":0.8446,"G_inh_st":0.0987611,"G_inh_st_max":0.237916,"G_inh_st_min":1.07482e-17,"G_inh_tr":0.67028,"G_inh_tr_max":1.03219,"G_inh_tr_min":0.242409,"Ge0":0.0322555,"Gi0":0.100352,"I":0.144888,"Ie":0.00173246,"Ii":-0.401758,"N":51,"Ta":3.88316,"Vmax":-40.59,"Vmin":-70.87,"dGe":0.0294258,"dGi":0.137144,"dTa":1.63928,"g":0.00703136,"q":0.003,"tr_end":65,"tr_start":978},"thumb":"assets/recordings/VGAT-E-Cell3-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell4-C","category":"VGAT-E","cell":"VGAT-E-Cell4","cellLabel":"Cell4","cycles":201,"full":"assets/recordings/VGAT-E-Cell4-C_full.png","id":"VGAT-E-Cell4-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell4-C.par","params":{"Du":0.0197151,"E":-39.4786,"Ee":-10,"Ei":-63.0554,"G":0.0574458,"G_exc_ph0":0.0142529,"G_exc_st":0.00775949,"G_exc_st_max":0.0207525,"G_exc_st_min":0,"G_exc_tr":0.00798153,"G_exc_tr_max":0.0180529,"G_exc_tr_min":0,"G_inh_ph0":0.362766,"G_inh_st":0.0808619,"G_inh_st_max":0.26159,"G_inh_st_min":1.4027e-16,"G_inh_tr":0.29515,"G_inh_tr_max":0.419969,"G_inh_tr_min":0.20073,"Ge0":0.00758035,"Gi0":0.0768033,"I":2.36971,"Ie":1.53919,"Ii":-1.23104,"N":201,"Ta":4.94607,"Vmax":-33.41,"Vmin":-87.72,"dGe":0.00958791,"dGi":0.12213,"dTa":1.8369,"g":0.0522137,"q":0.003,"tr_end":36,"tr_start":983},"thumb":"assets/recordings/VGAT-E-Cell4-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell4-V","category":"VGAT-E","cell":"VGAT-E-Cell4","cellLabel":"Cell4","cycles":59,"full":"assets/recordings/VGAT-E-Cell4-V_full.png","id":"VGAT-E-Cell4-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell4-V.par","params":{"Du":0.0200281,"E":-40.0962,"Ee":-10,"Ei":-64.2366,"G":0.0529739,"G_exc_ph0":0.0239055,"G_exc_st":0.0070282,"G_exc_st_max":0.014471,"G_exc_st_min":1.44188e-16,"G_exc_tr":0.0189736,"G_exc_tr_max":0.0332088,"G_exc_tr_min":0.00318801,"G_inh_ph0":0.332494,"G_inh_st":0.0816788,"G_inh_st_max":0.177239,"G_inh_st_min":-5.91516e-17,"G_inh_tr":0.258382,"G_inh_tr_max":0.358137,"G_inh_tr_min":0.144372,"Ge0":0.00728879,"Gi0":0.0838417,"I":2.22079,"Ie":1.44835,"Ii":-1.16173,"N":59,"Ta":5.17915,"Vmax":-50.62,"Vmin":-80.84,"dGe":0.00753412,"dGi":0.0593643,"dTa":1.23921,"g":0.0481239,"q":0.0031,"tr_end":34,"tr_start":971},"thumb":"assets/recordings/VGAT-E-Cell4-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell5-C","category":"VGAT-E","cell":"VGAT-E-Cell5","cellLabel":"Cell5","cycles":102,"full":"assets/recordings/VGAT-E-Cell5-C_full.png","id":"VGAT-E-Cell5-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell5-C.par","params":{"Du":0.0177068,"E":-41.4184,"Ee":-10,"Ei":-62.9838,"G":0.0585798,"G_exc_ph0":0.017274,"G_exc_st":0.00262145,"G_exc_st_max":0.00557249,"G_exc_st_min":1.23206e-16,"G_exc_tr":0.00649806,"G_exc_tr_max":0.0184409,"G_exc_tr_min":1.23206e-16,"G_inh_ph0":0.344885,"G_inh_st":0.0213387,"G_inh_st_max":0.0466571,"G_inh_st_min":-1.33562e-16,"G_inh_tr":0.171477,"G_inh_tr_max":0.383151,"G_inh_tr_min":0.0496307,"Ge0":0.0026497,"Gi0":0.0220549,"I":2.46598,"Ie":1.76947,"Ii":-1.21455,"N":102,"Ta":5.2406,"Vmax":-44.75,"Vmin":-76.5,"dGe":0.00308886,"dGi":0.0247639,"dTa":1.80812,"g":0.0563196,"q":0.00295,"tr_end":67,"tr_start":963},"thumb":"assets/recordings/VGAT-E-Cell5-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell5-V","category":"VGAT-E","cell":"VGAT-E-Cell5","cellLabel":"Cell5","cycles":109,"full":"assets/recordings/VGAT-E-Cell5-V_full.png","id":"VGAT-E-Cell5-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell5-V.par","params":{"Du":0.019545,"E":-41.8796,"Ee":-10,"Ei":-67.7756,"G":0.0610018,"G_exc_ph0":0.0355352,"G_exc_st":0.00706929,"G_exc_st_max":0.0152013,"G_exc_st_min":0,"G_exc_tr":0.0257017,"G_exc_tr_max":0.0461466,"G_exc_tr_min":0.011076,"G_inh_ph0":0.297062,"G_inh_st":0.0511937,"G_inh_st_max":0.121929,"G_inh_st_min":-8.6007e-17,"G_inh_tr":0.222776,"G_inh_tr_max":0.381152,"G_inh_tr_min":0.110125,"Ge0":0.00721946,"Gi0":0.0513292,"I":2.6323,"Ie":1.81546,"Ii":-1.47471,"N":109,"Ta":5.29477,"Vmax":-50.62,"Vmin":-80.84,"dGe":0.00604318,"dGi":0.0502894,"dTa":1.98145,"g":0.0569472,"q":0.003,"tr_end":46,"tr_start":979},"thumb":"assets/recordings/VGAT-E-Cell5-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell6-V","category":"VGAT-E","cell":"VGAT-E-Cell6","cellLabel":"Cell6","cycles":93,"full":"assets/recordings/VGAT-E-Cell6-V_full.png","id":"VGAT-E-Cell6-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell6-V.par","params":{"Du":0.0235618,"E":-34.6504,"Ee":-10,"Ei":-63.711,"G":0.0367012,"G_exc_ph0":0.0530711,"G_exc_st":0.0412283,"G_exc_st_max":0.080718,"G_exc_st_min":2.14198e-16,"G_exc_tr":0.0455963,"G_exc_tr_max":0.0708756,"G_exc_tr_min":0,"G_inh_ph0":0.610303,"G_inh_st":0.0702627,"G_inh_st_max":0.209999,"G_inh_st_min":-6.10659e-17,"G_inh_tr":0.381247,"G_inh_tr_max":0.622141,"G_inh_tr_min":0.164334,"Ge0":0.0435341,"Gi0":0.0709871,"I":1.32461,"Ie":0.798545,"Ii":-0.941409,"N":93,"Ta":4.88763,"Vmax":-40.59,"Vmin":-80.81,"dGe":0.0398182,"dGi":0.0741016,"dTa":1.32507,"g":0.0323948,"q":0.0045,"tr_end":38,"tr_start":971},"thumb":"assets/recordings/VGAT-E-Cell6-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell7-C","category":"VGAT-E","cell":"VGAT-E-Cell7","cellLabel":"Cell7","cycles":70,"full":"assets/recordings/VGAT-E-Cell7-C_full.png","id":"VGAT-E-Cell7-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell7-C.par","params":{"Du":0.0217573,"E":-45.6146,"Ee":-10,"Ei":-65.8848,"G":0.0469344,"G_exc_ph0":0.0396106,"G_exc_st":0.00853823,"G_exc_st_max":0.0216252,"G_exc_st_min":0,"G_exc_tr":0.0364574,"G_exc_tr_max":0.0606196,"G_exc_tr_min":0.0194851,"G_inh_ph0":0.303844,"G_inh_st":0.139126,"G_inh_st_max":0.291704,"G_inh_st_min":-8.64479e-17,"G_inh_tr":0.255847,"G_inh_tr_max":0.343408,"G_inh_tr_min":0.137224,"Ge0":0.00856489,"Gi0":0.139557,"I":2.24572,"Ie":1.44827,"Ii":-0.824285,"N":70,"Ta":5.64014,"Vmax":-53.66,"Vmin":-80.94,"dGe":0.00944048,"dGi":0.0950372,"dTa":1.45351,"g":0.040665,"q":0.00335,"tr_end":33,"tr_start":989},"thumb":"assets/recordings/VGAT-E-Cell7-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell7-V","category":"VGAT-E","cell":"VGAT-E-Cell7","cellLabel":"Cell7","cycles":75,"full":"assets/recordings/VGAT-E-Cell7-V_full.png","id":"VGAT-E-Cell7-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell7-V.par","params":{"Du":0.0220629,"E":-45.1341,"Ee":-10,"Ei":-60.9807,"G":0.0476111,"G_exc_ph0":0.0234396,"G_exc_st":0.0176875,"G_exc_st_max":0.0351391,"G_exc_st_min":0,"G_exc_tr":0.0191304,"G_exc_tr_max":0.0278327,"G_exc_tr_min":0.00767495,"G_inh_ph0":0.330946,"G_inh_st":0.112898,"G_inh_st_max":0.310109,"G_inh_st_min":-9.00204e-17,"G_inh_tr":0.292683,"G_inh_tr_max":0.376022,"G_inh_tr_min":0.235708,"Ge0":0.0177779,"Gi0":0.112294,"I":2.20058,"Ie":1.47413,"Ii":-0.664878,"N":75,"Ta":5.5236,"Vmax":-50.59,"Vmin":-75.84,"dGe":0.0162106,"dGi":0.104354,"dTa":1.715,"g":0.0419572,"q":0.0034,"tr_end":18,"tr_start":996},"thumb":"assets/recordings/VGAT-E-Cell7-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell8-C","category":"VGAT-E","cell":"VGAT-E-Cell8","cellLabel":"Cell8","cycles":127,"full":"assets/recordings/VGAT-E-Cell8-C_full.png","id":"VGAT-E-Cell8-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell8-C.par","params":{"Du":0.0253251,"E":-41.1098,"Ee":-10,"Ei":-62.8678,"G":0.0363711,"G_exc_ph0":0.0149923,"G_exc_st":0.00414769,"G_exc_st_max":0.00836435,"G_exc_st_min":0,"G_exc_tr":0.00854913,"G_exc_tr_max":0.0172127,"G_exc_tr_min":0,"G_inh_ph0":0.482291,"G_inh_st":0.0159814,"G_inh_st_max":0.0434238,"G_inh_st_min":3.69642e-17,"G_inh_tr":0.225728,"G_inh_tr_max":0.492782,"G_inh_tr_min":0.0462516,"Ge0":0.00422665,"Gi0":0.0172983,"I":1.51995,"Ie":1.08391,"Ii":-0.758082,"N":127,"Ta":4.74025,"Vmax":-35.63,"Vmin":-79.22,"dGe":0.00494608,"dGi":0.0265578,"dTa":1.36531,"g":0.0348415,"q":0.00455,"tr_end":60,"tr_start":950},"thumb":"assets/recordings/VGAT-E-Cell8-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell8-V","category":"VGAT-E","cell":"VGAT-E-Cell8","cellLabel":"Cell8","cycles":84,"full":"assets/recordings/VGAT-E-Cell8-V_full.png","id":"VGAT-E-Cell8-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell8-V.par","params":{"Du":0.0265415,"E":-42.4475,"Ee":-10,"Ei":-62.6819,"G":0.032775,"G_exc_ph0":0.0226006,"G_exc_st":0.00393574,"G_exc_st_max":0.00877129,"G_exc_st_min":0,"G_exc_tr":0.0120083,"G_exc_tr_max":0.0268058,"G_exc_tr_min":1.11874e-16,"G_inh_ph0":0.568979,"G_inh_st":0.0278031,"G_inh_st_max":0.0651968,"G_inh_st_min":-1.10227e-16,"G_inh_tr":0.258853,"G_inh_tr_max":0.572464,"G_inh_tr_min":0.0580327,"Ge0":0.00395952,"Gi0":0.0276941,"I":1.41908,"Ie":1.00627,"Ii":-0.627511,"N":84,"Ta":4.47906,"Vmax":-50.59,"Vmin":-70.97,"dGe":0.00457713,"dGi":0.0378574,"dTa":1.34593,"g":0.0310121,"q":0.0045,"tr_end":54,"tr_start":950},"thumb":"assets/recordings/VGAT-E-Cell8-V_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell9-C","category":"VGAT-E","cell":"VGAT-E-Cell9","cellLabel":"Cell9","cycles":58,"full":"assets/recordings/VGAT-E-Cell9-C_full.png","id":"VGAT-E-Cell9-C","mode":"C","modeLabel":"C","par":"assets/recordings/VGAT-E-Cell9-C.par","params":{"Du":0.0316331,"E":-52.594,"Ee":-10,"Ei":-67.0506,"G":0.0605111,"G_exc_ph0":0.176192,"G_exc_st":0.00395609,"G_exc_st_max":0.0220748,"G_exc_st_min":0,"G_exc_tr":0.0760872,"G_exc_tr_max":0.208485,"G_exc_tr_min":0.0107403,"G_inh_ph0":0.879783,"G_inh_st":0.0815736,"G_inh_st_max":0.470713,"G_inh_st_min":-7.64944e-17,"G_inh_tr":0.399323,"G_inh_tr_max":0.879783,"G_inh_tr_min":0.0294086,"Ge0":0.00396573,"Gi0":0.0869811,"I":3.24605,"Ie":2.27937,"Ii":-0.773628,"N":58,"Ta":3.93466,"Vmax":-55.78,"Vmin":-80.78,"dGe":0.00590442,"dGi":0.104035,"dTa":0.903642,"g":0.0535138,"q":0.00425,"tr_end":61,"tr_start":946},"thumb":"assets/recordings/VGAT-E-Cell9-C_thumb.png","variant":""},{"accepted":true,"basename":"VGAT-E-Cell9-V","category":"VGAT-E","cell":"VGAT-E-Cell9","cellLabel":"Cell9","cycles":87,"full":"assets/recordings/VGAT-E-Cell9-V_full.png","id":"VGAT-E-Cell9-V","mode":"V","modeLabel":"V","par":"assets/recordings/VGAT-E-Cell9-V.par","params":{"Du":0.0292952,"E":-50.5136,"Ee":-10,"Ei":-56.359,"G":0.058146,"G_exc_ph0":0.0508796,"G_exc_st":0.0054337,"G_exc_st_max":0.0112938,"G_exc_st_min":0,"G_exc_tr":0.0246992,"G_exc_tr_max":0.0895189,"G_exc_tr_min":1.27346e-16,"G_inh_ph0":0.523987,"G_inh_st":0.0374811,"G_inh_st_max":0.0933872,"G_inh_st_min":1.04728e-16,"G_inh_tr":0.299761,"G_inh_tr_max":0.567297,"G_inh_tr_min":0.100081,"Ge0":0.00543989,"Gi0":0.037293,"I":2.94063,"Ie":2.20752,"Ii":-0.318508,"N":87,"Ta":4.3391,"Vmax":-55.56,"Vmin":-75.81,"dGe":0.00806353,"dGi":0.0609708,"dTa":1.14044,"g":0.0544883,"q":0.00425,"tr_end":51,"tr_start":966},"thumb":"assets/recordings/VGAT-E-Cell9-V_thumb.png","variant":""},{"accepted":true,"basename":"VgluT2-E-Cell1-C","category":"VgluT2-E","cell":"VgluT2-E-Cell1","cellLabel":"Cell1","cycles":28,"full":"assets/recordings/VgluT2-E-Cell1-C_full.png","id":"VgluT2-E-Cell1-C","mode":"C","modeLabel":"C","par":"assets/recordings/VgluT2-E-Cell1-C.par","params":{"Du":0.0312529,"E":-50.2366,"Ee":-10,"Ei":-71.4847,"G":0.0220416,"G_exc_ph0":0.0941486,"G_exc_st":0.00654246,"G_exc_st_max":0.0154674,"G_exc_st_min":0,"G_exc_tr":0.0537767,"G_exc_tr_max":0.100808,"G_exc_tr_min":0.0160228,"G_inh_ph0":0.269871,"G_inh_st":0.073434,"G_inh_st_max":0.127646,"G_inh_st_min":0.0307321,"G_inh_tr":0.126296,"G_inh_tr_max":0.300022,"G_inh_tr_min":-2.72666e-17,"Ge0":0.00703525,"Gi0":0.0748053,"I":1.13152,"Ie":0.811872,"Ii":-0.428732,"N":28,"Ta":5.59491,"Vmax":-59.75,"Vmin":-87.06,"dGe":0.00871281,"dGi":0.0573485,"dTa":1.16817,"g":0.0201775,"q":0.0036,"tr_end":88,"tr_start":965},"thumb":"assets/recordings/VgluT2-E-Cell1-C_thumb.png","variant":""},{"accepted":false,"basename":"VgluT2-E-Cell1-V","category":"VgluT2-E","cell":"VgluT2-E-Cell1","cellLabel":"Cell1","cycles":21,"full":"assets/recordings/VgluT2-E-Cell1-V_full.png","id":"VgluT2-E-Cell1-V","mode":"V","modeLabel":"V","par":"assets/recordings/VgluT2-E-Cell1-V.par","params":{"Du":0.0257205,"E":-11.5121,"Ee":-10,"Ei":-71.0659,"G":0.0113615,"G_exc_ph0":0.137676,"G_exc_st":0.0344774,"G_exc_st_max":0.0567969,"G_exc_st_min":0.00176746,"G_exc_tr":0.0625974,"G_exc_tr_max":0.144941,"G_exc_tr_min":0,"G_inh_ph0":1.46855,"G_inh_st":0.0796553,"G_inh_st_max":0.200366,"G_inh_st_min":-9.34388e-17,"G_inh_tr":0.796313,"G_inh_tr_max":1.47496,"G_inh_tr_min":0.154458,"Ge0":0.0361166,"Gi0":0.0829017,"I":0.215333,"Ie":0.0144809,"Ii":-0.570328,"N":21,"Ta":7.36673,"Vmax":-40.56,"Vmin":-80.94,"dGe":0.0293003,"dGi":0.0811874,"dTa":2.32795,"g":0.00957668,"q":0.0035,"tr_end":70,"tr_start":974},"thumb":"assets/recordings/VgluT2-E-Cell1-V_thumb.png","variant":""}],"summary":{"accepted":50,"cells":31,"current":29,"medianCycles":49,"recordings":59,"voltage":30}}</script>
+    <script>
+        const DATA = JSON.parse(document.getElementById("dashboardData").textContent);
+        const state = {
+            population: "All",
+            mode: "All",
+            search: "",
+            selectedId: null,
+            zoom: 1,
+            filtered: []
+        };
+
+        const els = {
+            summaryStats: document.getElementById("summaryStats"),
+            populationList: document.getElementById("populationList"),
+            recordingList: document.getElementById("recordingList"),
+            visibleCount: document.getElementById("visibleCount"),
+            activeFilter: document.getElementById("activeFilter"),
+            searchInput: document.getElementById("searchInput"),
+            selectedName: document.getElementById("selectedName"),
+            selectedSubtitle: document.getElementById("selectedSubtitle"),
+            imageStage: document.getElementById("imageStage"),
+            inspector: document.getElementById("inspector"),
+            openImageLink: document.getElementById("openImageLink"),
+            prevButton: document.getElementById("prevButton"),
+            nextButton: document.getElementById("nextButton"),
+            zoomOutButton: document.getElementById("zoomOutButton"),
+            zoomInButton: document.getElementById("zoomInButton"),
+            fitButton: document.getElementById("fitButton")
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[char]));
+        }
+
+        function formatNumber(value, digits = 3) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return "n/a";
+            }
+            const number = Number(value);
+            if (Math.abs(number) >= 100 || Number.isInteger(number)) {
+                return String(Math.round(number));
+            }
+            if (Math.abs(number) < 0.001 && number !== 0) {
+                return number.toExponential(2);
+            }
+            return number.toFixed(digits);
+        }
+
+        function plural(count, singular, pluralLabel = `${singular}s`) {
+            return `${count} ${count === 1 ? singular : pluralLabel}`;
+        }
+
+        function popClass(populationName) {
+            return populationName.startsWith("VgluT2") ? "exc" : "inh";
+        }
+
+        function modeClass(mode) {
+            return mode === "C" ? "mode-c" : mode === "V" ? "mode-v" : "";
+        }
+
+        function selectedRecord() {
+            return DATA.records.find((record) => record.id === state.selectedId) || null;
+        }
+
+        function renderSummary() {
+            const stats = [
+                ["Recordings", DATA.summary.recordings],
+                ["Cells", DATA.summary.cells],
+                [">25 cycles", DATA.summary.accepted],
+                ["Median N", formatNumber(DATA.summary.medianCycles, 1)]
+            ];
+            els.summaryStats.innerHTML = stats.map(([label, value]) => `
+                <div class="stat">
+                    <span>${escapeHtml(label)}</span>
+                    <strong>${escapeHtml(value)}</strong>
+                </div>
+            `).join("");
+        }
+
+        function renderPopulationFilters() {
+            const allRecordings = DATA.summary.recordings;
+            const allCells = DATA.summary.cells;
+            const buttons = [
+                {
+                    name: "All",
+                    cells: allCells,
+                    recordings: allRecordings,
+                    identity: "All identities",
+                    phase: "All phases"
+                },
+                ...DATA.populations
+            ];
+
+            els.populationList.innerHTML = buttons.map((population) => {
+                const active = state.population === population.name;
+                const dotClass = population.name === "All" ? "" : popClass(population.name);
+                return `
+                    <button class="population-button ${active ? "is-active" : ""}" type="button" data-population="${escapeHtml(population.name)}">
+                        <span class="pop-dot ${dotClass}" aria-hidden="true"></span>
+                        <span class="pop-main">
+                            <span class="pop-name">${escapeHtml(population.name)}</span>
+                            <span class="pop-meta">${escapeHtml(population.identity)} / ${escapeHtml(population.phase)}</span>
+                        </span>
+                        <span class="pop-count">${population.recordings} rec<br>${population.cells} cells</span>
+                    </button>
+                `;
+            }).join("");
+
+            els.populationList.querySelectorAll("[data-population]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    state.population = button.dataset.population;
+                    render();
+                });
+            });
+        }
+
+        function getFilteredRecords() {
+            const term = state.search.trim().toLowerCase();
+            return DATA.records.filter((record) => {
+                if (state.population !== "All" && record.category !== state.population) {
+                    return false;
+                }
+                if (state.mode !== "All" && record.mode !== state.mode) {
+                    return false;
+                }
+                if (!term) {
+                    return true;
+                }
+                return [
+                    record.basename,
+                    record.cell,
+                    record.category,
+                    record.modeLabel,
+                    record.par
+                ].some((field) => String(field).toLowerCase().includes(term));
+            });
+        }
+
+        function renderRecordList() {
+            state.filtered = getFilteredRecords();
+            els.visibleCount.textContent = plural(state.filtered.length, "recording");
+            els.activeFilter.textContent = state.population === "All" ? "All populations" : state.population;
+
+            if (!state.filtered.length) {
+                els.recordingList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"></path><path d="M16 16l5 5"></path></svg>
+                        <span>No recordings match the current filters</span>
+                    </div>
+                `;
+                state.selectedId = null;
+                renderSelection();
+                return;
+            }
+
+            if (!state.filtered.some((record) => record.id === state.selectedId)) {
+                state.selectedId = state.filtered[0].id;
+                state.zoom = 1;
+            }
+
+            els.recordingList.innerHTML = state.filtered.map((record) => {
+                const active = record.id === state.selectedId;
+                const cycles = record.cycles === null || record.cycles === undefined ? "n/a" : formatNumber(record.cycles, 0);
+                return `
+                    <button class="record-button ${active ? "is-active" : ""}" type="button" data-id="${escapeHtml(record.id)}">
+                        <img class="record-thumb" src="${escapeHtml(record.thumb)}" alt="">
+                        <span class="record-main">
+                            <span class="record-title-row">
+                                <span class="badge ${modeClass(record.mode)}">${escapeHtml(record.modeLabel)}</span>
+                                <span class="record-name">${escapeHtml(record.cellLabel)}</span>
+                            </span>
+                            <span class="record-file">${escapeHtml(record.basename)}</span>
+                            <span class="badge-row">
+                                <span class="badge">${escapeHtml(record.category)}</span>
+                                <span class="badge ${record.accepted ? "accepted" : "warn"}">N=${cycles}</span>
+                            </span>
+                        </span>
+                    </button>
+                `;
+            }).join("");
+
+            els.recordingList.querySelectorAll("[data-id]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    state.selectedId = button.dataset.id;
+                    state.zoom = 1;
+                    render();
+                });
+            });
+        }
+
+        function kvRows(rows) {
+            return rows.map(([key, value]) => `
+                <div class="kv">
+                    <dt>${escapeHtml(key)}</dt>
+                    <dd>${escapeHtml(value)}</dd>
+                </div>
+            `).join("");
+        }
+
+        function meter(label, exc, inh) {
+            const values = [Number(exc) || 0, Number(inh) || 0];
+            const max = Math.max(...values, 0.001);
+            const excWidth = Math.max(0, Math.min(100, values[0] / max * 100));
+            const inhWidth = Math.max(0, Math.min(100, values[1] / max * 100));
+            const total = excWidth + inhWidth;
+            const scale = total > 100 ? 100 / total : 1;
+            return `
+                <div class="meter-pair">
+                    <div class="meter-head">
+                        <span>${escapeHtml(label)}</span>
+                        <span>G/g_leak</span>
+                    </div>
+                    <div class="meter-track" style="--excw:${excWidth * scale}%; --inhw:${inhWidth * scale}%;">
+                        <span class="meter-exc"></span>
+                        <span class="meter-inh"></span>
+                        <span></span>
+                    </div>
+                    <div class="meter-values">
+                        <span>Exc ${formatNumber(exc)}</span>
+                        <span>Inh ${formatNumber(inh)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderInspector(record) {
+            if (!record) {
+                els.inspector.innerHTML = "";
+                return;
+            }
+
+            const p = record.params || {};
+            els.inspector.innerHTML = `
+                <section class="info-section">
+                    <h2>Recording</h2>
+                    <dl class="kv-list">
+                        ${kvRows([
+                            ["Population", record.category],
+                            ["Cell", record.cellLabel],
+                            ["Mode", record.mode === "C" ? "Current clamp" : record.mode === "V" ? "Voltage clamp" : record.mode],
+                            ["Cycles", formatNumber(record.cycles, 0)],
+                            ["Screen", record.accepted ? "Accepted" : "Below threshold"]
+                        ])}
+                    </dl>
+                </section>
+                <section class="info-section">
+                    <h2>Conductance Summary</h2>
+                    <div class="meters">
+                        ${meter("Phase 0", p.G_exc_ph0, p.G_inh_ph0)}
+                        ${meter("Stationary", p.G_exc_st, p.G_inh_st)}
+                        ${meter("Transient", p.G_exc_tr, p.G_inh_tr)}
+                    </div>
+                </section>
+                <section class="info-section">
+                    <h2>Geometry</h2>
+                    <dl class="kv-list">
+                        ${kvRows([
+                            ["Ei", `${formatNumber(p.Ei)} mV`],
+                            ["Ee", `${formatNumber(p.Ee)} mV`],
+                            ["E leak", `${formatNumber(p.E)} mV`],
+                            ["g leak", formatNumber(p.g)],
+                            ["V range", `${formatNumber(p.Vmin)} to ${formatNumber(p.Vmax)} mV`]
+                        ])}
+                    </dl>
+                </section>
+                <section class="info-section">
+                    <h2>Files</h2>
+                    <dl class="kv-list">
+                        ${kvRows([
+                            ["Image", record.full],
+                            ["Thumb", record.thumb],
+                            ["Params", record.par]
+                        ])}
+                    </dl>
+                </section>
+            `;
+        }
+
+        function renderSelection() {
+            const record = selectedRecord();
+            if (!record) {
+                els.selectedName.textContent = "No recording selected";
+                els.selectedSubtitle.textContent = "Choose a recording from the browser";
+                els.imageStage.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+                        <span>No recording selected</span>
+                    </div>
+                `;
+                els.openImageLink.href = "#";
+                renderInspector(null);
+                return;
+            }
+
+            els.selectedName.textContent = record.basename;
+            els.selectedSubtitle.textContent = `${record.category} / ${record.mode === "C" ? "current clamp" : "voltage clamp"} / ${record.accepted ? "accepted" : "below cycle threshold"}`;
+            els.imageStage.innerHTML = `<img id="mainImage" src="${escapeHtml(record.full)}" alt="Analysis snapshot for ${escapeHtml(record.basename)}">`;
+            const image = document.getElementById("mainImage");
+            image.style.transform = `scale(${state.zoom})`;
+            els.openImageLink.href = record.full;
+            renderInspector(record);
+        }
+
+        function moveSelection(delta) {
+            if (!state.filtered.length) {
+                return;
+            }
+            const index = state.filtered.findIndex((record) => record.id === state.selectedId);
+            const nextIndex = (index + delta + state.filtered.length) % state.filtered.length;
+            state.selectedId = state.filtered[nextIndex].id;
+            state.zoom = 1;
+            render();
+        }
+
+        function setZoom(nextZoom) {
+            state.zoom = Math.max(0.55, Math.min(2.4, nextZoom));
+            const image = document.getElementById("mainImage");
+            if (image) {
+                image.style.transform = `scale(${state.zoom})`;
+            }
+        }
+
+        function render() {
+            renderSummary();
+            renderPopulationFilters();
+            renderRecordList();
+            renderSelection();
+        }
+
+        document.querySelectorAll("[data-mode]").forEach((button) => {
+            button.addEventListener("click", () => {
+                state.mode = button.dataset.mode;
+                document.querySelectorAll("[data-mode]").forEach((modeButton) => {
+                    modeButton.classList.toggle("is-active", modeButton.dataset.mode === state.mode);
+                });
+                render();
+            });
+        });
+
+        els.searchInput.addEventListener("input", () => {
+            state.search = els.searchInput.value;
+            render();
+        });
+
+        els.prevButton.addEventListener("click", () => moveSelection(-1));
+        els.nextButton.addEventListener("click", () => moveSelection(1));
+        els.zoomOutButton.addEventListener("click", () => setZoom(state.zoom - 0.15));
+        els.zoomInButton.addEventListener("click", () => setZoom(state.zoom + 0.15));
+        els.fitButton.addEventListener("click", () => setZoom(1));
+
+        document.addEventListener("keydown", (event) => {
+            if (event.target && event.target.tagName === "INPUT") {
+                return;
+            }
+            if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+                event.preventDefault();
+                moveSelection(-1);
+            }
+            if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+                event.preventDefault();
+                moveSelection(1);
+            }
+            if (event.key === "+" || event.key === "=") {
+                setZoom(state.zoom + 0.15);
+            }
+            if (event.key === "-") {
+                setZoom(state.zoom - 0.15);
+            }
+            if (event.key === "0") {
+                setZoom(1);
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>
