@@ -96,7 +96,4 @@ Example: `VgluT2-E-Cell1-V = -f 25 -x 100000`
 
 ## License
 
-This repository is shared under the Creative Commons Attribution 4.0 International License (CC BY 4.0) unless otherwise noted.
-
----
-*Private Research Repository*
+This repository is shared under the Creative Commons Attribution 4.0 International License (CC BY 4.0) unless otherwise noted. See [LICENSE](LICENSE).
