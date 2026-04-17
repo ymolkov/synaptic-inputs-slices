@@ -75,7 +75,6 @@ web/
 
 *   **C++ Compiler**: `g++` (C++11 support required).
 *   **Python 3**: With `numpy`, `matplotlib`, and `scipy`.
-*   **Gnuplot**: Required for trace visualization.
 *   **LaTeX**: `pdflatex` required for manuscript compilation.
 
 ## Configuration

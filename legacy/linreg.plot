@@ -1,5 +1,3 @@
-load 'tmp.rp'
-
 set term pdfcairo enh size 7,5 font "Helvetica,10"
 set out "linreg.pdf"
 
