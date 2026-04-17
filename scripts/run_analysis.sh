@@ -94,12 +94,13 @@ gnuplot -e "par_file='$PAR_FILE'" \
         -e "out_thumb='$TMP_THUMB'" \
         "$GP_SCRIPT"
 
-# Move/Rename final outputs to web directory
-WEB_DIR="$PROJECT_ROOT/web"
-mkdir -p "$WEB_DIR"
-mv "$TMP_FULL" "$WEB_DIR/${BASENAME}_full.png"
-mv "$TMP_THUMB" "$WEB_DIR/${BASENAME}_thumb.png"
-cp "$PAR_FILE" "$WEB_DIR/${BASENAME}.par"
+# Move/Rename final outputs to the dashboard recording asset directory.
+WEB_DIR="${CLAMP_WEB_DIR:-$PROJECT_ROOT/web}"
+RECORDINGS_DIR="$WEB_DIR/assets/recordings"
+mkdir -p "$RECORDINGS_DIR"
+mv "$TMP_FULL" "$RECORDINGS_DIR/${BASENAME}_full.png"
+mv "$TMP_THUMB" "$RECORDINGS_DIR/${BASENAME}_thumb.png"
+cp "$PAR_FILE" "$RECORDINGS_DIR/${BASENAME}.par"
 
 # Cleanup
 rm -f "$DAT_FILE" "$PH_FILE" "$PH_DBL_FILE" "$PAR_FILE" "$TRIG_FILE" "$TRIG_Y_FILE"

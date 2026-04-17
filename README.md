@@ -8,7 +8,7 @@ The core of the pipeline is a C++ analyzer that performs cycle detection and lin
 
 ## Project Structure
 
-*   **/web**: Local directory containing the interactive analysis dashboard (`index.html`), high-res per-cell snapshots (`_full.png`, `_thumb.png`), and numerical analysis results (`.par`). (Ignored by Git)
+*   **/web**: Local directory containing the companion site (`index.html`), the interactive analysis dashboard (`dashboard.html`), site figures in `assets/site/`, and generated per-recording snapshots/parameters in `assets/recordings/`. This directory is generated/deployable output and is ignored by Git.
 *   **/results**: Population-level CSV summaries (`*_conductances.csv`) produced from per-cell analyses.
 *   **/paper**: LaTeX manuscript source, supplemental LaTeX, and the generated PDF figures used by the paper.
 *   **/src**: Core C++ implementation (`trace_analyzer.cpp`) featuring the geometric pivoting algorithm.
@@ -25,10 +25,29 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 *   `make paper/figures/circuit_weighted.pdf`: Regenerates the weighted circuit diagram directly from the CSV-derived summary values.
 *   `make figures`: Regenerates all generated PDF figures used by the manuscript.
 *   `make all` (or `make paper`): Builds the LaTeX manuscript (`paper/Synaptic_Architecture_PreBotC.pdf`) plus the supplemental section and its declared dependencies.
-*   `make dashboard`: Processes all 59 data files in parallel and generates the interactive dashboard in the `/web` directory.
+*   `make dashboard`: Processes all 59 data files in parallel, writes per-recording dashboard artifacts to `web/assets/recordings/`, and regenerates `web/dashboard.html`.
 *   `make deploy`: (Prerequisite: `lftp`) Synchronizes the local `/web` dashboard to the remote server at `math.gsu.edu` via SFTP. Prompts for password interactively.
 *   `make clean`: Removes binaries, temporary files, and local web assets for a fresh start.
 *   `make push`: Stages all changes, creates a commit with the fixed message `Build update via Makefile`, and pushes to `origin main`.
+
+## Companion Site and Dashboard
+
+The web companion is a static, deployable view of the method and its per-recording analysis outputs. It is intentionally kept out of Git because the dashboard artifacts are generated from the raw data and analysis scripts.
+
+The generated layout is:
+
+```text
+web/
+  index.html
+  index.css
+  index.js
+  dashboard.html
+  assets/
+    site/         # companion-site figures and hero imagery
+    recordings/  # generated *_full.png, *_thumb.png, and *.par files
+```
+
+`scripts/run_analysis.sh` writes recording-level images and parameter files into `web/assets/recordings/`. `scripts/generate_report.py` scans that directory, parses the `.par` files, and embeds the dashboard index as static JSON inside `web/dashboard.html`. The dashboard can therefore be opened locally or deployed as plain static files without a server-side backend.
 
 ## Conductance Conventions
 

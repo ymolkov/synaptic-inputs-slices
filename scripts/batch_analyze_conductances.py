@@ -18,7 +18,7 @@ GROUP_Clean = GROUP.replace('-', '_') # For filenames
 # Configuration
 DATA_DIR = "data"
 RESULTS_DIR = "results"
-WEB_DIR = "web"
+WEB_DIR = os.path.join("web", "assets", "recordings")
 BIN_ANALYZER = "bin/trace_analyzer"
 OUTPUT_CSV = os.path.join(RESULTS_DIR, f"{GROUP_Clean}_conductances.csv")
 
