@@ -62,6 +62,8 @@ web/
 
 `scripts/run_analysis.sh` writes recording-level images and parameter files into `web/assets/recordings/`. `scripts/generate_report.py` scans that directory, parses the `.par` files, and embeds the dashboard index as static JSON inside `web/dashboard.html`. The dashboard can therefore be opened locally or deployed as plain static files without a server-side backend.
 
+To publish the companion site with GitHub Pages, set the repository Pages source to GitHub Actions. The workflow in `.github/workflows/pages.yml` publishes `web/` as the site root.
+
 ## Conductance Conventions
 
 *   The analyzer outputs normalized conductances, not absolute nS values.
