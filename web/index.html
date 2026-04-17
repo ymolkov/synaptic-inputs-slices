@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLAMP | Synaptic Conductance Inference</title>
-    <meta name="description" content="Companion site for the CLAMP conductance inference method used to reconstruct excitatory and inhibitory synaptic drive from rhythmic slice recordings.">
+    <title>CLAMP | Phase-Resolved Synaptic Conductance Inference</title>
+    <meta name="description" content="CLAMP infers excitatory and inhibitory synaptic conductance profiles from intracellular recordings made inside periodically active neural preparations.">
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <a class="skip-link" href="#method">Skip to method</a>
+    <a class="skip-link" href="#fit">Skip to fit checklist</a>
 
     <header class="site-header">
         <nav class="nav-shell" aria-label="Primary navigation">
@@ -23,10 +23,10 @@
                 <span>CLAMP</span>
             </a>
             <div class="nav-links">
+                <a href="#inputs">Inputs</a>
                 <a href="#method">Method</a>
-                <a href="#geometry">Geometry</a>
-                <a href="#circuit">Circuit</a>
-                <a href="#explorer">Explorer</a>
+                <a href="#fit">Fit</a>
+                <a href="#examples">Examples</a>
             </div>
             <a class="nav-action" href="dashboard.html">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -44,20 +44,19 @@
             <div class="hero-media" aria-hidden="true"></div>
             <div class="hero-overlay" aria-hidden="true"></div>
             <div class="hero-content">
-                <p class="eyebrow">Dynamic-Ei conductance inference for rhythmic slices</p>
-                <h1 id="hero-title">CLAMP turns stepped recordings into phase-resolved synaptic drive.</h1>
+                <p class="eyebrow">Phase-resolved conductance inference</p>
+                <h1 id="hero-title">See the synaptic input behind a rhythm.</h1>
                 <p class="hero-copy">
-                    The method pools current and voltage samples by respiratory phase, fits local I-V relationships,
-                    estimates each recording's inhibitory reversal geometry, then separates excitation and inhibition
-                    as normalized conductances.
+                    CLAMP is an analysis workflow for recordings from cells embedded in periodically active preparations.
+                    Give it current, voltage, and a cycle reference collected while you step current or voltage.
+                    It returns excitatory and inhibitory conductance profiles over one normalized cycle.
                 </p>
                 <div class="hero-actions" aria-label="Primary actions">
-                    <a class="button button-primary" href="#method">
+                    <a class="button button-primary" href="#fit">
                         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path d="M12 5v14"></path>
-                            <path d="M6 13l6 6 6-6"></path>
+                            <path d="M20 7 9 18l-5-5"></path>
                         </svg>
-                        <span>Follow The Method</span>
+                        <span>Check Your Experiment</span>
                     </a>
                     <a class="button button-secondary" href="#explorer">
                         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -65,87 +64,154 @@
                             <path d="M8 9h8"></path>
                             <path d="M8 13h5"></path>
                         </svg>
-                        <span>Open Evidence</span>
+                        <span>Inspect The Example</span>
                     </a>
                 </div>
                 <dl class="hero-metrics" aria-label="Analysis inventory">
                     <div>
-                        <dt>Candidate files</dt>
-                        <dd>59</dd>
-                    </div>
-                    <div>
-                        <dt>Accepted recordings</dt>
-                        <dd>50</dd>
+                        <dt>Data channels</dt>
+                        <dd>4</dd>
                     </div>
                     <div>
                         <dt>Phase bins</dt>
                         <dd>1000</dd>
                     </div>
                     <div>
-                        <dt>Populations</dt>
-                        <dd>4</dd>
+                        <dt>Slice files</dt>
+                        <dd>59</dd>
+                    </div>
+                    <div>
+                        <dt>Accepted</dt>
+                        <dd>50</dd>
                     </div>
                 </dl>
             </div>
         </section>
 
-        <section class="intro-band" aria-labelledby="intro-title">
-            <div class="section-shell intro-grid">
+        <section id="inputs" class="inputs-section" aria-labelledby="inputs-title">
+            <div class="section-shell inputs-grid">
                 <div>
-                    <p class="section-kicker">Problem</p>
-                    <h2 id="intro-title">A respiratory neuron records one mixed current. The circuit asks for two drives.</h2>
+                    <p class="section-kicker">Experimental Contract</p>
+                    <h2 id="inputs-title">Record one cell. Read out the network.</h2>
+                    <p>
+                        The recorded cell sits inside a periodically active network and receives phase-locked synaptic input.
+                        CLAMP uses the cell as a postsynaptic sensor: perturb its membrane current or voltage, align the
+                        responses to the network cycle, and infer the conductances that best explain the observed I-V
+                        relationships.
+                    </p>
                 </div>
-                <p>
-                    Each whole-cell trace contains leak, excitation, inhibition, command steps, and respiratory-cycle timing.
-                    CLAMP makes the decomposition tractable by treating respiratory phase as the organizing coordinate:
-                    samples from many cycles and command levels are pooled into phase bins, so each moment of the rhythm
-                    gets its own current-voltage estimate.
-                </p>
+                <div class="channel-panel" aria-label="Repository file channels">
+                    <h3>What each exported file contains</h3>
+                    <div class="channel-table" role="table" aria-label="Recording channels">
+                        <div role="row">
+                            <span role="cell">1</span>
+                            <strong role="cell">Time</strong>
+                            <span role="cell">sample time in seconds</span>
+                        </div>
+                        <div role="row">
+                            <span role="cell">2</span>
+                            <strong role="cell">Current channel</strong>
+                            <span role="cell">injected current in current clamp; holding current in voltage clamp</span>
+                        </div>
+                        <div role="row">
+                            <span role="cell">3</span>
+                            <strong role="cell">Voltage channel</strong>
+                            <span role="cell">membrane potential in current clamp; command voltage in voltage clamp</span>
+                        </div>
+                        <div role="row">
+                            <span role="cell">4</span>
+                            <strong role="cell">Cycle reference</strong>
+                            <span role="cell">integrated XII activity here; any reliable phase marker in another preparation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="setup-section" aria-labelledby="setup-title">
+            <div class="section-shell">
+                <div class="section-heading">
+                    <p class="section-kicker">What You Bring</p>
+                    <h2 id="setup-title">A rhythm, a perturbation axis, and a phase clock.</h2>
+                    <p>
+                        The method is agnostic to whether the rhythm is spontaneous, pharmacologically maintained, or
+                        induced by stimulation. What matters is that repeated cycles can be aligned and that the recording
+                        samples enough current-voltage space to estimate a local relationship at each phase.
+                    </p>
+                </div>
+                <div class="setup-grid">
+                    <article class="setup-card">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M4 13c3-9 5 9 8 0s5 9 8 0"></path>
+                            <path d="M4 18h16"></path>
+                        </svg>
+                        <h3>Postsynaptic recording</h3>
+                        <p>Intracellular current and voltage from one identified cell while the surrounding network remains active.</p>
+                    </article>
+                    <article class="setup-card">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M4 17h3V7h4v10h4V7h5"></path>
+                        </svg>
+                        <h3>Command spread</h3>
+                        <p>Current steps or voltage steps distributed across many cycles, giving the regression something to fit.</p>
+                    </article>
+                    <article class="setup-card">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M12 3a9 9 0 1 0 9 9"></path>
+                            <path d="M12 3v9l6 3"></path>
+                        </svg>
+                        <h3>Cycle reference</h3>
+                        <p>A nerve burst, stimulus trigger, population signal, or other marker that assigns each sample a phase.</p>
+                    </article>
+                </div>
             </div>
         </section>
 
         <section id="method" class="method-section" aria-labelledby="method-title">
             <div class="section-shell">
                 <div class="section-heading">
-                    <p class="section-kicker">Method Map</p>
-                    <h2 id="method-title">From command steps to interpretable conductance fingerprints.</h2>
+                    <p class="section-kicker">Method</p>
+                    <h2 id="method-title">CLAMP treats phase as the independent variable.</h2>
                     <p>
-                        The pipeline is organized around five transformations. Each transformation preserves the same
-                        phase clock, so the final traces and circuit diagram can be read back against the respiratory cycle.
+                        The algorithm does not average away the command perturbations. It uses them. For each phase of the
+                        cycle, samples collected at different command levels form a small I-V experiment inside the ongoing
+                        network rhythm.
                     </p>
                 </div>
 
                 <div class="method-tool">
                     <div class="stage-rail" role="tablist" aria-label="Method stages">
-                        <button class="stage-button is-active" type="button" role="tab" aria-selected="true" aria-controls="stage-panel" data-stage="protocol">
+                        <button class="stage-button is-active" type="button" role="tab" aria-selected="true" aria-controls="stage-panel" data-stage="record">
                             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M4 12h4l2-5 4 10 2-5h4"></path>
                             </svg>
-                            <span>Protocol</span>
+                            <span>Record</span>
                         </button>
-                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="phase">
+                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="clock">
                             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M12 3a9 9 0 1 0 9 9"></path>
-                                <path d="M12 3v9l6 3"></path>
+                                <path d="M12 7v5l4 2"></path>
                             </svg>
-                            <span>Phase</span>
+                            <span>Clock</span>
                         </button>
-                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="wedge">
+                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="fit">
                             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M5 19 19 5"></path>
+                                <path d="M5 15h4"></path>
+                                <path d="M10 11h4"></path>
+                                <path d="M15 7h4"></path>
+                            </svg>
+                            <span>Fit</span>
+                        </button>
+                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="separate">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M5 19h14"></path>
+                                <path d="M5 19 19 5"></path>
                                 <path d="M19 5v14"></path>
                             </svg>
-                            <span>Wedge</span>
+                            <span>Separate</span>
                         </button>
-                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="conductance">
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path d="M4 16c3-8 5 8 8 0s5 8 8 0"></path>
-                                <path d="M4 8c3 8 5-8 8 0s5-8 8 0"></path>
-                            </svg>
-                            <span>Conductance</span>
-                        </button>
-                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="circuit">
+                        <button class="stage-button" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" data-stage="compare">
                             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M7 7h.01"></path>
                                 <path d="M17 7h.01"></path>
@@ -153,29 +219,30 @@
                                 <path d="M17 17h.01"></path>
                                 <path d="M7 7h10v10H7z"></path>
                             </svg>
-                            <span>Circuit</span>
+                            <span>Compare</span>
                         </button>
                     </div>
 
                     <div id="stage-panel" class="stage-panel" role="tabpanel">
                         <figure class="stage-figure">
-                            <img id="stage-image" src="assets/site/method-protocol.png" alt="Representative current-clamp and voltage-clamp step protocols aligned with XII respiratory activity.">
+                            <img id="stage-image" src="assets/site/method-protocol.png" alt="Representative current-clamp and voltage-clamp command steps aligned to a respiratory cycle reference.">
                         </figure>
                         <div class="stage-copy">
-                            <p id="stage-kicker" class="section-kicker">Stage 01</p>
-                            <h3 id="stage-title">Stepped acquisition supplies the I-V spread.</h3>
+                            <p id="stage-kicker" class="section-kicker">Step 01</p>
+                            <h3 id="stage-title">Record across command levels while the network keeps cycling.</h3>
                             <p id="stage-description">
-                                Current-clamp and voltage-clamp command levels are held piecewise constant while the slice continues to cycle.
-                                The analysis uses the whole accepted interval rather than a single step.
+                                Current-clamp and voltage-clamp files provide the same ingredients: a current coordinate,
+                                a voltage coordinate, and a cycle reference. CLAMP uses the full accepted interval rather
+                                than treating each step as a separate experiment.
                             </p>
                             <dl class="stage-facts">
                                 <div>
                                     <dt>Input</dt>
-                                    <dd id="stage-input">Aligned current, voltage, and XII traces</dd>
+                                    <dd id="stage-input">current, voltage, time, phase reference</dd>
                                 </div>
                                 <div>
                                     <dt>Output</dt>
-                                    <dd id="stage-output">Usable command epochs across many cycles</dd>
+                                    <dd id="stage-output">samples spanning many cycles and command levels</dd>
                                 </div>
                             </dl>
                         </div>
@@ -188,36 +255,132 @@
             <div class="section-shell geometry-grid">
                 <div class="geometry-copy">
                     <p class="section-kicker">Inference Geometry</p>
-                    <h2 id="geometry-title">The wedge is the method's hinge.</h2>
+                    <h2 id="geometry-title">At every phase, the data ask for a line.</h2>
                     <p>
-                        In each phase bin, CLAMP fits a robust line through the pooled I-V samples:
-                        <strong>I = G<sub>tot</sub>V + I<sub>0</sub></strong>. Across the cycle, those fitted slopes
-                        and intercepts trace a cloud in <strong>(G<sub>tot</sub>, I<sub>0</sub>)</strong> space.
+                        Samples with the same normalized phase are pooled across cycles and command levels. CLAMP fits
+                        <strong>I = G<sub>tot</sub>V + I<sub>0</sub></strong> in each bin, so the changing slope reports
+                        total conductance and the changing intercept reports the phase-dependent current offset.
                     </p>
                     <p>
-                        The upper envelope of that cloud estimates the recording-specific inhibitory reversal boundary.
-                        With <strong>E<sub>i</sub></strong>, <strong>E<sub>e</sub></strong>, and the leak-only limits fixed,
-                        the geometry resolves the mixed synaptic current into <strong>G<sub>exc</sub>/g<sub>leak</sub></strong>
-                        and <strong>G<sub>inh</sub>/g<sub>leak</sub></strong>.
+                        The fitted slope-intercept trajectory forms a wedge. Its envelope estimates the inhibitory boundary
+                        for that recording; with the excitatory reversal fixed, the mixed synaptic drive separates into
+                        <strong>G<sub>exc</sub>/g<sub>leak</sub></strong> and
+                        <strong>G<sub>inh</sub>/g<sub>leak</sub></strong>.
                     </p>
                 </div>
                 <figure class="feature-figure">
-                    <img src="assets/site/method-workflow.png" alt="Geometric conductance inference workflow showing I-V regressions, wedge plot, and reconstructed conductance traces.">
-                    <figcaption>Regression, wedge boundary, and conductance reconstruction shown for one representative recording.</figcaption>
+                    <img src="assets/site/method-workflow.png" alt="Geometric conductance inference workflow showing phase-binned I-V regressions, wedge geometry, and reconstructed conductance traces.">
+                    <figcaption>One slice recording, shown from phase-binned I-V fits to separated conductance profiles.</figcaption>
                 </figure>
+            </div>
+        </section>
+
+        <section id="fit" class="fit-section" aria-labelledby="fit-title">
+            <div class="section-shell fit-grid">
+                <div>
+                    <p class="section-kicker">Fit Checklist</p>
+                    <h2 id="fit-title">Use CLAMP when the rhythm gives you repeatable phase.</h2>
+                    <p>
+                        The method was developed for respiratory CPG preparations, but its real target is broader:
+                        periodically active networks where synaptic input to a recorded cell can be sampled repeatedly
+                        at different command levels.
+                    </p>
+                </div>
+                <div class="fit-lists">
+                    <div class="fit-list">
+                        <h3>Good fit</h3>
+                        <ul>
+                            <li>Cycles repeat often enough to populate phase bins.</li>
+                            <li>The network period is much longer than the membrane time constant and spike timescale.</li>
+                            <li>The recording has enough current or voltage spread for local I-V regression.</li>
+                            <li>A reference signal marks the cycle consistently.</li>
+                            <li>The analyzed interval is reasonably stationary.</li>
+                        </ul>
+                    </div>
+                    <div class="fit-list caution">
+                        <h3>Use caution</h3>
+                        <ul>
+                            <li>Single events or drifting rhythms with no stable phase reference.</li>
+                            <li>Recordings with little command spread near key phases.</li>
+                            <li>Strong intrinsic nonlinearities dominating the sampled voltage range.</li>
+                            <li>Network dynamics changing faster than the membrane can equilibrate.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="examples" class="examples-section" aria-labelledby="examples-title">
+            <div class="section-shell">
+                <div class="section-heading">
+                    <p class="section-kicker">Respiration As Testbed</p>
+                    <h2 id="examples-title">Two respiratory preparations demonstrate the same method at different scales.</h2>
+                    <p>
+                        The point is not that CLAMP belongs only to respiration. Respiration is a demanding validation arena:
+                        the network is rhythmic, the postsynaptic inputs are mixed, and the preparation can be compared
+                        across intact and reduced circuit states.
+                    </p>
+                </div>
+                <div class="example-grid">
+                    <article class="example-card">
+                        <p class="example-label">Published method paper</p>
+                        <h3>In situ respiratory CPG</h3>
+                        <p>
+                            Molkov and colleagues introduced the technique in mature rat brainstem-spinal cord recordings,
+                            using respiratory motor outputs as phase references to infer excitatory and inhibitory conductance
+                            profiles in active respiratory microcircuits.
+                        </p>
+                        <a class="text-link" href="https://doi.org/10.7554/eLife.101959" target="_blank" rel="noreferrer">
+                            <span>Read eLife RP101959</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M7 17 17 7"></path>
+                                <path d="M9 7h8v8"></path>
+                            </svg>
+                        </a>
+                    </article>
+                    <article class="example-card">
+                        <p class="example-label">This repository</p>
+                        <h3>Rhythmic medullary slice</h3>
+                        <p>
+                            This site exposes the same inference workflow on VgluT2 and VGAT whole-cell recordings from
+                            neonatal mouse slices. The dashboard keeps every accepted and rejected recording visible,
+                            including parameters, snapshots, cycle counts, and conductance summaries.
+                        </p>
+                        <a class="text-link" href="#explorer">
+                            <span>Open the audit trail</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M12 5v14"></path>
+                                <path d="M6 13l6 6 6-6"></path>
+                            </svg>
+                        </a>
+                    </article>
+                    <article class="example-card">
+                        <p class="example-label">Transferable idea</p>
+                        <h3>Your rhythmic preparation</h3>
+                        <p>
+                            Replace XII or phrenic activity with your own phase marker: stimulation pulse, population
+                            activity, motor output, imaging trace, or another clock. If the cell receives repeatable
+                            phase-locked synaptic drive, CLAMP gives you a way to ask which conductance carries it.
+                        </p>
+                    </article>
+                </div>
             </div>
         </section>
 
         <section class="evidence-section" aria-labelledby="evidence-title">
             <div class="section-shell">
                 <div class="section-heading compact">
-                    <p class="section-kicker">Evidence Trail</p>
-                    <h2 id="evidence-title">The same phase clock connects raw traces, single-cell profiles, and population summaries.</h2>
+                    <p class="section-kicker">What This Repo Shows</p>
+                    <h2 id="evidence-title">The slice data are the inspectable worked example.</h2>
+                    <p>
+                        The generated figures and dashboard are not decorative summaries. They are the audit path from
+                        command protocol to single-cell profile to population-level circuit interpretation.
+                    </p>
                 </div>
                 <div class="evidence-grid">
                     <a class="evidence-card" href="assets/site/method-protocol.png">
                         <img src="assets/site/method-protocol.png" alt="Representative stepped acquisition protocols.">
-                        <span>Stepped protocols</span>
+                        <span>Command protocol</span>
                     </a>
                     <a class="evidence-card" href="assets/site/conductance-profiles.png">
                         <img src="assets/site/conductance-profiles.png" alt="Representative excitatory and inhibitory conductance profiles across cell populations.">
@@ -225,33 +388,33 @@
                     </a>
                     <a class="evidence-card" href="assets/site/phase-summary.png">
                         <img src="assets/site/phase-summary.png" alt="Phase-aligned normalized conductances around burst onset.">
-                        <span>Phase-aligned traces</span>
+                        <span>Phase-locked input</span>
                     </a>
                     <a class="evidence-card" href="assets/site/population-summary.png">
                         <img src="assets/site/population-summary.png" alt="Population summary bars for normalized excitatory and inhibitory conductances.">
-                        <span>Population metrics</span>
+                        <span>Population summaries</span>
                     </a>
                 </div>
             </div>
         </section>
 
-        <section id="circuit" class="circuit-section" aria-labelledby="circuit-title">
+        <section class="circuit-section" aria-labelledby="circuit-title">
             <div class="section-shell circuit-grid">
                 <figure class="circuit-figure">
                     <img src="assets/site/circuit-weighted.png" alt="Conductance-weighted inferred circuit diagram for VgluT2 and VGAT inspiratory and expiratory populations.">
                 </figure>
                 <div>
-                    <p class="section-kicker">Circuit Readout</p>
-                    <h2 id="circuit-title">A reduced slice network with a strong inhibitory scaffold.</h2>
+                    <p class="section-kicker">Biological Readout</p>
+                    <h2 id="circuit-title">For the slice, the conductance profiles imply a compact respiratory circuit.</h2>
                     <p>
-                        The reconstructed conductances support a compact preBotC circuit: a VgluT2 inspiratory
-                        rhythmogenic kernel, tonic expiratory inhibition from VGAT-E neurons, and phasic inspiratory
-                        inhibition from VGAT-I neurons.
+                        In this worked example, inspiratory VgluT2 cells carry the excitatory kernel, VGAT expiratory cells
+                        provide tonic expiratory inhibition, and VGAT inspiratory cells add phasic inhibition near the
+                        inspiratory burst.
                     </p>
                     <ul class="circuit-list">
-                        <li><strong class="exc">Excitation</strong> is concentrated in the inspiratory phase and supports the VgluT2-I kernel.</li>
-                        <li><strong class="inh">Inhibition</strong> appears as tonic expiratory drive and phasic inspiratory drive across populations.</li>
-                        <li><strong>VgluT2-E</strong> is rare in the slice data and appears largely passive in the active expiratory interval.</li>
+                        <li><strong class="exc">Excitation</strong> is strongest around inspiration in the VgluT2-I population.</li>
+                        <li><strong class="inh">Inhibition</strong> appears both as tonic expiratory drive and phasic inspiratory drive.</li>
+                        <li>The slice profile is simpler than the richer in situ respiratory connectome.</li>
                     </ul>
                 </div>
             </div>
@@ -260,17 +423,17 @@
         <section class="compare-section" aria-labelledby="compare-title">
             <div class="section-shell compare-grid">
                 <div>
-                    <p class="section-kicker">Interpretation</p>
-                    <h2 id="compare-title">The slice keeps the rhythmogenic core and simplifies the intact connectome.</h2>
+                    <p class="section-kicker">Preparation Matters</p>
+                    <h2 id="compare-title">Same analysis, different preparation, different circuit answer.</h2>
                     <p>
-                        The companion manuscript frames the slice as a functionally reduced state. Instead of the richer
-                        three-phase in situ sequence, the isolated preparation preserves a compact excitatory kernel plus
-                        an inhibitory half-center motif that organizes inspiratory-expiratory switching.
+                        The in situ paper uses the method to resolve a richer respiratory CPG organization. The slice study
+                        uses the same conductance logic to expose the reduced circuit retained in an isolated preparation.
+                        That contrast is the advertisement: CLAMP is useful because it separates method from preparation.
                     </p>
                 </div>
                 <figure class="feature-figure">
                     <img src="assets/site/reduced-connectome.png" alt="Comparison of compact in vitro circuit and expanded in situ inhibitory connectome.">
-                    <figcaption>Compact in vitro circuit compared with the expanded in situ architecture.</figcaption>
+                    <figcaption>Respiratory slice output read alongside the expanded in situ architecture.</figcaption>
                 </figure>
             </div>
         </section>
@@ -278,11 +441,11 @@
         <section id="explorer" class="explorer-section" aria-labelledby="explorer-title">
             <div class="section-shell">
                 <div class="section-heading">
-                    <p class="section-kicker">Recording Explorer</p>
-                    <h2 id="explorer-title">Open the generated dashboard without leaving the story.</h2>
+                    <p class="section-kicker">Dashboard</p>
+                    <h2 id="explorer-title">The dashboard is the method under a glass cover.</h2>
                     <p>
-                        The embedded dashboard contains the high-resolution per-recording analysis snapshots used to audit
-                        the inference results across VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E cells.
+                        Browse all recording-level outputs: command mode, cycle count, accepted/rejected status, inferred
+                        parameters, source files, thumbnails, and full-resolution analysis snapshots.
                     </p>
                 </div>
                 <div class="dashboard-frame">
@@ -301,11 +464,12 @@
         <div class="section-shell footer-grid">
             <div>
                 <strong>CLAMP</strong>
-                <p>Synaptic conductance inference for rhythmic preBotzinger Complex slice recordings.</p>
+                <p>Phase-resolved synaptic conductance inference for cells embedded in rhythmic networks.</p>
             </div>
             <div class="footer-links">
+                <a href="#inputs">Inputs</a>
                 <a href="#method">Method</a>
-                <a href="#circuit">Circuit</a>
+                <a href="#fit">Fit</a>
                 <a href="dashboard.html">Dashboard</a>
             </div>
         </div>

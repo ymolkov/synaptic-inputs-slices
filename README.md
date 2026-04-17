@@ -1,14 +1,24 @@
-# Synaptic Inputs Slices Analysis
+# CLAMP Synaptic Conductance Inference
 
-This project implements a data analysis pipeline for electrophysiological recordings from brain slices. It processes raw traces to reconstruct synaptic conductances using a dynamic-Ei pivoting algorithm, aggregates population statistics, and generates publication-ready figures and an interactive dashboard.
+This project packages the CLAMP conductance-inference workflow for intracellular recordings from cells embedded in periodically active networks. It reconstructs phase-resolved excitatory and inhibitory synaptic conductance profiles from aligned current, voltage, and cycle-reference traces, then turns those profiles into population summaries, manuscript figures, and an interactive static dashboard.
+
+The respiratory slice dataset in this repository is a worked example of the method. The same inference strategy was introduced and applied to mature rat in situ respiratory CPG recordings in the eLife article [Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits](https://doi.org/10.7554/eLife.101959) (Molkov et al., 2025, eLife 13:RP101959).
 
 ## Overview
 
-The core of the pipeline is a C++ analyzer that performs cycle detection and linear regression on membrane current traces to separate excitation and inhibition components. The analyzer reports conductances normalized by leak conductance (`G_exc / g_leak`, `G_inh / g_leak`), and the Python automation layer plus root `Makefile` turn those outputs into CSV summaries and manuscript figures.
+The core of the pipeline is a C++ analyzer that detects network-cycle phase, pools current-voltage samples by phase, fits local I-V relationships, estimates recording-specific reversal geometry, and separates excitation from inhibition. The analyzer reports conductances normalized by leak conductance (`G_exc / g_leak`, `G_inh / g_leak`), and the Python automation layer plus root `Makefile` turn those outputs into CSV summaries, manuscript figures, and a companion web view.
+
+CLAMP is designed around a reusable pattern:
+
+*   align intracellular recordings to a reliable network phase reference;
+*   pool samples from many cycles and command levels into phase bins;
+*   fit local I-V relationships and infer reversal-potential geometry;
+*   reconstruct excitatory and inhibitory conductance profiles through the cycle;
+*   use those conductance profiles as evidence for functional circuit interactions in the studied rhythm.
 
 ## Project Structure
 
-*   **/web**: Local directory containing the companion site (`index.html`), the interactive analysis dashboard (`dashboard.html`), site figures in `assets/site/`, and generated per-recording snapshots/parameters in `assets/recordings/`. This directory is generated/deployable output and is ignored by Git.
+*   **/web**: Tracked companion site (`index.html`), interactive analysis dashboard (`dashboard.html`), site figures in `assets/site/`, and generated per-recording snapshots/parameters in `assets/recordings/`.
 *   **/results**: Population-level CSV summaries (`*_conductances.csv`) produced from per-cell analyses.
 *   **/paper**: LaTeX manuscript source, supplemental LaTeX, and the generated PDF figures used by the paper.
 *   **/src**: Core C++ implementation (`trace_analyzer.cpp`) featuring the geometric pivoting algorithm.
@@ -27,12 +37,17 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 *   `make all` (or `make paper`): Builds the LaTeX manuscript (`paper/Synaptic_Architecture_PreBotC.pdf`) plus the supplemental section and its declared dependencies.
 *   `make dashboard`: Processes all 59 data files in parallel, writes per-recording dashboard artifacts to `web/assets/recordings/`, and regenerates `web/dashboard.html`.
 *   `make deploy`: (Prerequisite: `lftp`) Synchronizes the local `/web` dashboard to the remote server at `math.gsu.edu` via SFTP. Prompts for password interactively.
-*   `make clean`: Removes binaries, temporary files, and local web assets for a fresh start.
+*   `make clean`: Removes binaries, temporary files, and generated web output for a fresh start. Regenerate `web/` before committing if you want to preserve the tracked companion-site snapshot.
 *   `make push`: Stages all changes, creates a commit with the fixed message `Build update via Makefile`, and pushes to `origin main`.
 
-## Companion Site and Dashboard
+## Method Companion Site and Dashboard
 
-The web companion is a static, deployable view of the method and its per-recording analysis outputs. It is intentionally kept out of Git because the dashboard artifacts are generated from the raw data and analysis scripts.
+The web companion is a static, deployable view of the method and its per-recording analysis outputs. It now frames CLAMP as the reusable method across studies while keeping the respiratory slice recordings as the inspectable worked example.
+
+The site links the current repository to the prior eLife method paper:
+
+*   **Molkov et al. 2025, eLife 13:RP101959**: introduced the inference technique and used in situ respiratory CPG recordings to infer synaptic conductance profiles and functional respiratory connectomes.
+*   **This repository**: applies the same method to VgluT2/VGAT respiratory slice recordings, with reproducible scripts, generated figures, and a browser for every per-recording analysis artifact.
 
 The generated layout is:
 

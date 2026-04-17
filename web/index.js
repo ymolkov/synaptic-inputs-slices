@@ -1,53 +1,53 @@
 const stages = {
-    protocol: {
+    record: {
         image: "assets/site/method-protocol.png",
-        alt: "Representative current-clamp and voltage-clamp step protocols aligned with XII respiratory activity.",
-        kicker: "Stage 01",
-        title: "Stepped acquisition supplies the I-V spread.",
+        alt: "Representative current-clamp and voltage-clamp command steps aligned to a respiratory cycle reference.",
+        kicker: "Step 01",
+        title: "Record across command levels while the network keeps cycling.",
         description:
-            "Current-clamp and voltage-clamp command levels are held piecewise constant while the slice continues to cycle. The analysis uses the whole accepted interval rather than a single step.",
-        input: "Aligned current, voltage, and XII traces",
-        output: "Usable command epochs across many cycles"
+            "Current-clamp and voltage-clamp files provide the same ingredients: a current coordinate, a voltage coordinate, and a cycle reference. CLAMP uses the full accepted interval rather than treating each step as a separate experiment.",
+        input: "current, voltage, time, phase reference",
+        output: "samples spanning many cycles and command levels"
     },
-    phase: {
+    clock: {
         image: "assets/site/method-protocol.png",
-        alt: "Expanded recording excerpts with command transitions and respiratory-cycle reference traces.",
-        kicker: "Stage 02",
-        title: "Cycle timing becomes a normalized phase axis.",
+        alt: "Expanded recording excerpts with command transitions and a respiratory cycle reference trace.",
+        kicker: "Step 02",
+        title: "Turn the reference signal into phase.",
         description:
-            "XII burst onsets define phase zero. Samples between onsets are mapped onto a 0 to 1 cycle, letting variable-duration breaths contribute to the same phase-resolved analysis.",
-        input: "Detected XII cycle onsets",
-        output: "Respiratory phase assigned to every retained sample"
+            "Cycle onsets define phase zero. Every sample is assigned a normalized phase between successive onsets, so slower and faster cycles can contribute to the same within-cycle map.",
+        input: "reference burst, stimulus pulse, or other cycle marker",
+        output: "phase assigned to every retained sample"
     },
-    wedge: {
+    fit: {
         image: "assets/site/method-workflow.png",
-        alt: "Geometric inference figure with phase-binned I-V regressions and wedge boundaries.",
-        kicker: "Stage 03",
-        title: "Phase-binned regressions form a geometric wedge.",
+        alt: "Phase-binned current-voltage regressions used for conductance inference.",
+        kicker: "Step 03",
+        title: "Fit a local I-V relationship at each phase.",
         description:
-            "Each phase bin gets a robust I-V fit. The fitted slope and intercept trace a wedge whose upper boundary estimates the inhibitory reversal potential for that recording.",
-        input: "Per-phase I-V point clouds",
-        output: "G_tot, I0, and recording-specific E_i"
+            "Samples from many cycles and command levels are pooled by phase. Each phase bin gets a robust I-V regression whose slope and intercept describe the total conductance state at that moment of the network cycle.",
+        input: "phase-binned I-V point clouds",
+        output: "G_tot and I0 as functions of phase"
     },
-    conductance: {
-        image: "assets/site/conductance-profiles.png",
-        alt: "Representative excitatory and inhibitory conductance profiles for VgluT2 and VGAT populations.",
-        kicker: "Stage 04",
-        title: "The mixed current separates into excitatory and inhibitory conductance.",
+    separate: {
+        image: "assets/site/method-workflow.png",
+        alt: "Wedge geometry used to separate excitatory and inhibitory conductance.",
+        kicker: "Step 04",
+        title: "Use reversal geometry to separate the mixed synaptic drive.",
         description:
-            "Leak-only limits at the excitatory and inhibitory reversal potentials anchor the decomposition. Outputs are reported as G_exc/g_leak and G_inh/g_leak.",
-        input: "Wedge geometry plus leak estimate",
-        output: "Phase-resolved excitatory and inhibitory traces"
+            "The slope-intercept trajectory forms a wedge. Its envelope estimates the inhibitory boundary for the recording, and the resulting geometry separates dynamic excitation from dynamic inhibition.",
+        input: "slope-intercept trajectory plus reversal potentials",
+        output: "G_exc/g_leak and G_inh/g_leak over phase"
     },
-    circuit: {
+    compare: {
         image: "assets/site/circuit-weighted.png",
         alt: "Conductance-weighted inferred circuit diagram for inspiratory and expiratory populations.",
-        kicker: "Stage 05",
-        title: "Conductance fingerprints become a population circuit.",
+        kicker: "Step 05",
+        title: "Compare conductance profiles across identified cells.",
         description:
-            "Phase-specific conductance means identify the functional drives between VgluT2-I, VgluT2-E, VGAT-I, and VGAT-E populations, with edge weights scaled by normalized conductance.",
-        input: "Population summary conductances",
-        output: "Inferred excitatory kernel and inhibitory connectome"
+            "Once each recording has a phase-resolved excitatory and inhibitory profile, populations can be compared by identity, phase preference, preparation, perturbation, or experimental condition.",
+        input: "per-recording conductance profiles",
+        output: "population summaries and functional circuit hypotheses"
     }
 };
 
