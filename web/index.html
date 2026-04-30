@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLAMP | Phase-Resolved Synaptic Conductance Inference</title>
-    <meta name="description" content="CLAMP infers excitatory and inhibitory synaptic conductance profiles from intracellular recordings made inside periodically active neural preparations.">
+    <title>SCION | Synaptic Conductance Inference for Oscillating Networks</title>
+    <meta name="description" content="SCION infers excitatory and inhibitory synaptic conductance profiles from intracellular recordings made inside periodically active neural networks.">
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
 
     <header class="site-header">
         <nav class="nav-shell" aria-label="Primary navigation">
-            <a class="brand" href="#top" aria-label="CLAMP home">
+            <a class="brand" href="#top" aria-label="SCION home">
                 <span class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" focusable="false">
                         <path d="M5 12c2.2-5.4 11.8-5.4 14 0-2.2 5.4-11.8 5.4-14 0Z"></path>
@@ -20,22 +20,41 @@
                         <path d="M12 9v6"></path>
                     </svg>
                 </span>
-                <span>CLAMP</span>
+                <span>SCION</span>
             </a>
             <div class="nav-links">
                 <a href="#inputs">Inputs</a>
                 <a href="#method">Method</a>
                 <a href="#fit">Fit</a>
                 <a href="#examples">Examples</a>
+                <a href="#cite">Cite</a>
             </div>
-            <a class="nav-action" href="dashboard.html">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M4 5h16v14H4z"></path>
-                    <path d="M8 9h3v6H8z"></path>
-                    <path d="M13 11h3v4h-3z"></path>
-                </svg>
-                <span>Dashboard</span>
-            </a>
+            <div class="nav-actions">
+                <a class="nav-action" href="https://www.biorxiv.org/" target="_blank" rel="noreferrer">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M6 4h9l4 4v12H6z"></path>
+                        <path d="M14 4v5h5"></path>
+                        <path d="M9 13h6"></path>
+                        <path d="M9 17h4"></path>
+                    </svg>
+                    <span>Paper</span>
+                </a>
+                <a class="nav-action" href="https://github.com/ymolkov/synaptic-inputs-slices" target="_blank" rel="noreferrer">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M9 19c-4 1.5-4-2-6-2"></path>
+                        <path d="M15 22v-3.5a3 3 0 0 0-.8-2.1c2.7-.3 5.5-1.3 5.5-6a4.7 4.7 0 0 0-1.3-3.2 4.4 4.4 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.5 11.5 0 0 0-6 0C6.5 3.7 5.5 4 5.5 4a4.4 4.4 0 0 0-.1 3.2A4.7 4.7 0 0 0 4.1 10.4c0 4.6 2.8 5.7 5.5 6a3 3 0 0 0-.8 2v3.5"></path>
+                    </svg>
+                    <span>Code</span>
+                </a>
+                <a class="nav-action" href="dashboard.html">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M4 5h16v14H4z"></path>
+                        <path d="M8 9h3v6H8z"></path>
+                        <path d="M13 11h3v4h-3z"></path>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+            </div>
         </nav>
     </header>
 
@@ -44,10 +63,10 @@
             <div class="hero-media" aria-hidden="true"></div>
             <div class="hero-overlay" aria-hidden="true"></div>
             <div class="hero-content">
-                <p class="eyebrow">Phase-resolved conductance inference</p>
+                <p class="eyebrow">Synaptic Conductance Inference for Oscillating Networks</p>
                 <h1 id="hero-title">See the synaptic input behind a rhythm.</h1>
                 <p class="hero-copy">
-                    CLAMP is an analysis workflow for recordings from cells embedded in periodically active preparations.
+                    SCION is an analysis workflow for recordings from cells embedded in periodically active networks.
                     Give it current, voltage, and a cycle reference collected while you step current or voltage.
                     It returns excitatory and inhibitory conductance profiles over one normalized cycle.
                 </p>
@@ -95,7 +114,7 @@
                     <h2 id="inputs-title">Record one cell. Read out the network.</h2>
                     <p>
                         The recorded cell sits inside a periodically active network and receives phase-locked synaptic input.
-                        CLAMP uses the cell as a postsynaptic sensor: perturb its membrane current or voltage, align the
+                        SCION uses the cell as a postsynaptic sensor: perturb its membrane current or voltage, align the
                         responses to the network cycle, and infer the conductances that best explain the observed I-V
                         relationships.
                     </p>
@@ -171,7 +190,7 @@
             <div class="section-shell">
                 <div class="section-heading">
                     <p class="section-kicker">Method</p>
-                    <h2 id="method-title">CLAMP treats phase as the independent variable.</h2>
+                    <h2 id="method-title">SCION treats phase as the independent variable.</h2>
                     <p>
                         The algorithm does not average away the command perturbations. It uses them. For each phase of the
                         cycle, samples collected at different command levels form a small I-V experiment inside the ongoing
@@ -232,7 +251,7 @@
                             <h3 id="stage-title">Record across command levels while the network keeps cycling.</h3>
                             <p id="stage-description">
                                 Current-clamp and voltage-clamp files provide the same ingredients: a current coordinate,
-                                a voltage coordinate, and a cycle reference. CLAMP uses the full accepted interval rather
+                                a voltage coordinate, and a cycle reference. SCION uses the full accepted interval rather
                                 than treating each step as a separate experiment.
                             </p>
                             <dl class="stage-facts">
@@ -257,7 +276,7 @@
                     <p class="section-kicker">Inference Geometry</p>
                     <h2 id="geometry-title">At every phase, the data ask for a line.</h2>
                     <p>
-                        Samples with the same normalized phase are pooled across cycles and command levels. CLAMP fits
+                        Samples with the same normalized phase are pooled across cycles and command levels. SCION fits
                         <strong>I = G<sub>tot</sub>V + I<sub>0</sub></strong> in each bin, so the changing slope reports
                         total conductance and the changing intercept reports the phase-dependent current offset.
                     </p>
@@ -279,7 +298,7 @@
             <div class="section-shell fit-grid">
                 <div>
                     <p class="section-kicker">Fit Checklist</p>
-                    <h2 id="fit-title">Use CLAMP when the rhythm gives you repeatable phase.</h2>
+                    <h2 id="fit-title">Use SCION when the rhythm gives you repeatable phase.</h2>
                     <p>
                         The method was developed for respiratory CPG preparations, but its real target is broader:
                         periodically active networks where synaptic input to a recorded cell can be sampled repeatedly
@@ -316,7 +335,7 @@
                     <p class="section-kicker">Respiration As Testbed</p>
                     <h2 id="examples-title">Two respiratory preparations demonstrate the same method at different scales.</h2>
                     <p>
-                        The point is not that CLAMP belongs only to respiration. Respiration is a demanding validation arena:
+                        The point is not that SCION belongs only to respiration. Respiration is a demanding validation arena:
                         the network is rhythmic, the postsynaptic inputs are mixed, and the preparation can be compared
                         across intact and reduced circuit states.
                     </p>
@@ -360,8 +379,18 @@
                         <p>
                             Replace XII or phrenic activity with your own phase marker: stimulation pulse, population
                             activity, motor output, imaging trace, or another clock. If the cell receives repeatable
-                            phase-locked synaptic drive, CLAMP gives you a way to ask which conductance carries it.
+                            phase-locked synaptic drive, SCION gives you a way to ask which conductance carries it.
                         </p>
+                        <pre class="quickstart"><code>git clone https://github.com/ymolkov/synaptic-inputs-slices
+cd synaptic-inputs-slices
+make analysis</code></pre>
+                        <a class="text-link" href="https://github.com/ymolkov/synaptic-inputs-slices" target="_blank" rel="noreferrer">
+                            <span>Open the repository</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M7 17 17 7"></path>
+                                <path d="M9 7h8v8"></path>
+                            </svg>
+                        </a>
                     </article>
                 </div>
             </div>
@@ -428,7 +457,7 @@
                     <p>
                         The in situ paper uses the method to resolve a richer respiratory CPG organization. The slice study
                         uses the same conductance logic to expose the reduced circuit retained in an isolated preparation.
-                        That contrast is the advertisement: CLAMP is useful because it separates method from preparation.
+                        That contrast is the advertisement: SCION is useful because it separates method from preparation.
                     </p>
                 </div>
                 <figure class="feature-figure">
@@ -458,19 +487,83 @@
                 </div>
             </div>
         </section>
+
+        <section id="cite" class="cite-section" aria-labelledby="cite-title">
+            <div class="section-shell">
+                <div class="section-heading compact">
+                    <p class="section-kicker">How to Cite</p>
+                    <h2 id="cite-title">If SCION informs your work, please cite both papers.</h2>
+                    <p>
+                        The conductance inference technique was introduced and validated in the eLife method paper.
+                        The slice study below applies it to genetically identified preBötC populations.
+                    </p>
+                </div>
+                <div class="cite-grid">
+                    <article class="cite-card">
+                        <p class="cite-label">Method paper</p>
+                        <p class="cite-text">
+                            Molkov YI, Borgmann A, Koizumi H, Hama N, Zhang R, Smith JC.
+                            <em>Inference technique for the synaptic conductances in rhythmically active networks
+                            and application to respiratory central pattern generation circuits.</em>
+                            eLife 13:RP101959 (2025).
+                        </p>
+                        <a class="text-link" href="https://doi.org/10.7554/eLife.101959" target="_blank" rel="noreferrer">
+                            <span>doi.org/10.7554/eLife.101959</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M7 17 17 7"></path>
+                                <path d="M9 7h8v8"></path>
+                            </svg>
+                        </a>
+                    </article>
+                    <article class="cite-card">
+                        <p class="cite-label">Slice study (this site)</p>
+                        <p class="cite-text">
+                            Molkov YI, Koizumi H, Smith JC.
+                            <em>Synaptic architecture of the preBötzinger Complex inferred from conductance profiling
+                            of genetically identified VgluT2 and VGAT neurons.</em>
+                            Manuscript in preparation; preprint forthcoming on bioRxiv.
+                        </p>
+                        <a class="text-link" href="https://www.biorxiv.org/" target="_blank" rel="noreferrer">
+                            <span>bioRxiv (placeholder until preprint posted)</span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M7 17 17 7"></path>
+                                <path d="M9 7h8v8"></path>
+                            </svg>
+                        </a>
+                    </article>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer class="site-footer">
         <div class="section-shell footer-grid">
-            <div>
-                <strong>CLAMP</strong>
-                <p>Phase-resolved synaptic conductance inference for cells embedded in rhythmic networks.</p>
+            <div class="footer-brand">
+                <strong>SCION</strong>
+                <p>Synaptic Conductance Inference for Oscillating Networks. Phase-resolved decomposition of excitatory and inhibitory synaptic drive in cells embedded in rhythmic networks.</p>
+                <p class="footer-meta">
+                    Maintained by <a href="https://math.gsu.edu/ymolkov" target="_blank" rel="noreferrer">Yaroslav Molkov</a>,
+                    Department of Mathematics &amp; Statistics and Neuroscience Institute, Georgia State University.
+                </p>
+                <p class="footer-meta">
+                    Code and data released under
+                    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>.
+                </p>
             </div>
             <div class="footer-links">
+                <h4>Site</h4>
                 <a href="#inputs">Inputs</a>
                 <a href="#method">Method</a>
                 <a href="#fit">Fit</a>
+                <a href="#examples">Examples</a>
+                <a href="#cite">Cite</a>
                 <a href="dashboard.html">Dashboard</a>
+            </div>
+            <div class="footer-links">
+                <h4>External</h4>
+                <a href="https://github.com/ymolkov/synaptic-inputs-slices" target="_blank" rel="noreferrer">GitHub repository</a>
+                <a href="https://www.biorxiv.org/" target="_blank" rel="noreferrer">Slice paper (bioRxiv)</a>
+                <a href="https://doi.org/10.7554/eLife.101959" target="_blank" rel="noreferrer">Method paper (eLife)</a>
             </div>
         </div>
     </footer>

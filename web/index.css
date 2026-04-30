@@ -811,6 +811,70 @@ h3 {
     background: #fff;
 }
 
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cite-section {
+    padding: 100px 0 80px;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+}
+
+.cite-grid {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.cite-card {
+    padding: 28px 30px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cite-label {
+    margin: 0;
+    color: var(--amber);
+    font-size: 0.78rem;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cite-text {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.98rem;
+    line-height: 1.55;
+}
+
+.quickstart {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    background: var(--dark);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.quickstart code {
+    color: inherit;
+    background: none;
+    font-family: inherit;
+    white-space: pre;
+}
+
 .site-footer {
     padding: 42px 0;
     background: #f2f0eb;
@@ -818,19 +882,45 @@ h3 {
 }
 
 .footer-grid {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+}
+
+.footer-brand strong {
+    font-size: 1.05rem;
 }
 
 .site-footer p {
     margin: 6px 0 0;
 }
 
+.footer-meta {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.footer-meta a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 2px;
+}
+
 .footer-links {
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    gap: 8px;
     color: var(--muted);
     font-weight: 760;
+}
+
+.footer-links h4 {
+    margin: 0 0 6px;
+    color: var(--ink);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
 @media (max-width: 1020px) {
@@ -855,6 +945,7 @@ h3 {
     .fit-grid,
     .circuit-grid,
     .compare-grid,
+    .cite-grid,
     .footer-grid {
         grid-template-columns: 1fr;
     }

@@ -5,7 +5,7 @@ const stages = {
         kicker: "Step 01",
         title: "Record across command levels while the network keeps cycling.",
         description:
-            "Current-clamp and voltage-clamp files provide the same ingredients: a current coordinate, a voltage coordinate, and a cycle reference. CLAMP uses the full accepted interval rather than treating each step as a separate experiment.",
+            "Current-clamp and voltage-clamp files provide the same ingredients: a current coordinate, a voltage coordinate, and a cycle reference. SCION uses the full accepted interval rather than treating each step as a separate experiment.",
         input: "current, voltage, time, phase reference",
         output: "samples spanning many cycles and command levels"
     },

@@ -1,8 +1,8 @@
-# CLAMP Synaptic Conductance Inference
+# SCION: Synaptic Conductance Inference for Oscillating Networks
 
-This project packages the CLAMP conductance-inference workflow for intracellular recordings from cells embedded in periodically active networks. It reconstructs phase-resolved excitatory and inhibitory synaptic conductance profiles from aligned current, voltage, and cycle-reference traces, then turns those profiles into population summaries, manuscript figures, and an interactive static dashboard.
+This repository packages the **SCION** conductance-inference workflow for intracellular recordings from cells embedded in periodically active neural networks. It reconstructs phase-resolved excitatory and inhibitory synaptic conductance profiles from aligned current, voltage, and cycle-reference traces, then turns those profiles into population summaries, manuscript figures, and an interactive static dashboard.
 
-The respiratory slice dataset in this repository is a worked example of the method. The same inference strategy was introduced and applied to mature rat in situ respiratory CPG recordings in the eLife article [Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits](https://doi.org/10.7554/eLife.101959) (Molkov et al., 2025, eLife 13:RP101959).
+The respiratory slice dataset in this repository is the worked example accompanying the slice manuscript (preprint forthcoming on [bioRxiv](https://www.biorxiv.org/)). The same inference strategy was introduced and validated on mature rat in situ respiratory CPG recordings in the eLife article [Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits](https://doi.org/10.7554/eLife.101959) (Molkov et al., 2025, eLife 13:RP101959).
 
 Live companion site: [ymolkov.github.io/synaptic-inputs-slices](https://ymolkov.github.io/synaptic-inputs-slices/)
 
@@ -10,7 +10,7 @@ Live companion site: [ymolkov.github.io/synaptic-inputs-slices](https://ymolkov.
 
 The core of the pipeline is a C++ analyzer that detects network-cycle phase, pools current-voltage samples by phase, fits local I-V relationships, estimates recording-specific reversal geometry, and separates excitation from inhibition. The analyzer reports conductances normalized by leak conductance (`G_exc / g_leak`, `G_inh / g_leak`), and the Python automation layer plus root `Makefile` turn those outputs into CSV summaries, manuscript figures, and a companion web view.
 
-CLAMP is designed around a reusable pattern:
+SCION is designed around a reusable pattern:
 
 *   align intracellular recordings to a reliable network phase reference;
 *   pool samples from many cycles and command levels into phase bins;
@@ -42,7 +42,7 @@ The project uses a standard `Makefile` to manage dependencies. Changes to any sc
 
 ## Method Companion Site and Dashboard
 
-The web companion is a static, deployable view of the method and its per-recording analysis outputs. It now frames CLAMP as the reusable method across studies while keeping the respiratory slice recordings as the inspectable worked example.
+The web companion is a static, deployable view of the method and its per-recording analysis outputs. It frames SCION as the reusable method across studies while keeping the respiratory slice recordings as the inspectable worked example.
 
 The site links the current repository to the prior eLife method paper:
 
@@ -97,6 +97,13 @@ Example: `VgluT2-E-Cell1-V = -f 25 -x 100000`
     Cellular and Systems Neurobiology Section, National Institute of Neurological Disorders and Stroke, National Institutes of Health, Bethesda, MD, USA
 *   **Jeffrey C. Smith**<br>
     Cellular and Systems Neurobiology Section, National Institute of Neurological Disorders and Stroke, National Institutes of Health, Bethesda, MD, USA
+
+## How to cite
+
+If SCION informs your work, please cite both papers:
+
+*   **Method paper.** Molkov YI, Borgmann A, Koizumi H, Hama N, Zhang R, Smith JC. *Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits.* eLife 13:RP101959 (2025). [doi.org/10.7554/eLife.101959](https://doi.org/10.7554/eLife.101959)
+*   **Slice study (this repository).** Molkov YI, Koizumi H, Smith JC. *Synaptic architecture of the preBötzinger Complex inferred from conductance profiling of genetically identified VgluT2 and VGAT neurons.* Manuscript in preparation; preprint forthcoming on bioRxiv.
 
 ## License
 
