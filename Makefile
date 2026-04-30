@@ -25,7 +25,6 @@ MAIN_FIGURES = \
 SUPP_FIGURES = \
 	$(FIG_DIR)/supp_figure1_sensitivity.pdf \
 	$(FIG_DIR)/supp_figure2_linearity.pdf \
-	$(FIG_DIR)/supp_figure3_ectopic.pdf \
 	$(FIG_DIR)/supp_figure4_pre_i_recruitment.pdf \
 	$(FIG_DIR)/supp_figure5_pre_i_inhibition.pdf
 
@@ -87,10 +86,6 @@ $(FIG_DIR)/supp_figure1_sensitivity.pdf: $(SCRIPT_DIR)/make_manuscript_figures.p
 $(FIG_DIR)/supp_figure2_linearity.pdf: $(SCRIPT_DIR)/make_manuscript_figures.py $(STYLE_SCRIPT)
 	@mkdir -p $(FIG_DIR)
 	python3 $(SCRIPT_DIR)/make_manuscript_figures.py --supp2
-
-$(FIG_DIR)/supp_figure3_ectopic.pdf: $(SCRIPT_DIR)/make_ectopic_png.py $(STYLE_SCRIPT)
-	@mkdir -p $(FIG_DIR)
-	python3 $(SCRIPT_DIR)/make_ectopic_png.py --out $@
 
 $(FIG_DIR)/supp_figure4_pre_i_recruitment.pdf: $(SCRIPT_DIR)/plot_refined_5x2.py $(STYLE_SCRIPT)
 	@mkdir -p $(FIG_DIR)
