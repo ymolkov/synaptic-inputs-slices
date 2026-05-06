@@ -576,15 +576,10 @@ def supplemental_figure_1_sensitivity():
     print("Generating Supplemental Figure 1: Sensitivity Analysis...")
     basename = "VgluT2-I-Cell2-C"
     
-    # Use baseline Ei = -70 and Ee = -10 as requested
-    Ei_def = -70.0
+    # Center the sensitivity grid on the manuscript default reversal potentials.
+    Ei_def = -80.0
     Ee_def = -10.0
-    
-    # Get g_scale for normalization
-    _, _, par_path_def = run_analysis(basename, Ei=Ei_def, Ee=Ee_def)
-    params_def = load_params(par_path_def)
-    g_ns_factor = params_def.get('g', 1.0) * 1000.0
-    
+
     Ei_vals = [Ei_def - 10, Ei_def, Ei_def + 10]
     Ee_vals = [Ee_def - 10, Ee_def, Ee_def + 10]
     
@@ -597,11 +592,13 @@ def supplemental_figure_1_sensitivity():
             ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, integer=True))
             
             # Run analysis for this specific combination
-            _, ph_path, _ = run_analysis(basename, Ee=ee, Ei=ei)
+            _, ph_path, par_path = run_analysis(basename, Ee=ee, Ei=ei, auto_Ei=False)
+            params = load_params(par_path)
             ph = np.loadtxt(ph_path)
             ph_valid = ph[ph[:, 3] > 0]
             
             phs = ph_valid[:, 6] / 1000.0
+            g_ns_factor = params.get('g', 1.0) * 1000.0
             gi = ph_valid[:, 4] * g_ns_factor
             ge = ph_valid[:, 5] * g_ns_factor
             

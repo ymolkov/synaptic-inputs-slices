@@ -33,6 +33,7 @@ VC_REF_AMPLITUDE_FRAC = CC_REF_AMPLITUDE_FRAC
 VC_BASELINE_FRAC = 0.88
 VC_PEAK_FRAC = ( -60.0 - (-100.0) ) / (40.0 - (-100.0))
 CC_SPIKE_THRESHOLD_MV = -30.0
+PRE_I_HIGHLIGHT_ALPHA = 0.15
 
 def format_cc_label(name):
     return re.sub(r'-C(?:-[^-]+)?$', '', name)
@@ -566,7 +567,7 @@ def plot_final_grid_tight():
                             shade_start,
                             ref_x,
                             color=HIGHLIGHT_COLOR,
-                            alpha=0.15,
+                            alpha=PRE_I_HIGHLIGHT_ALPHA,
                         )
 
             ax.set_ylabel(format_cc_label(cc_name), fontsize=LABEL_FONT_SIZE)
@@ -577,7 +578,6 @@ def plot_final_grid_tight():
             add_time_scalebar(ax, onset_times, y_frac=-0.02, label_offset_frac=0.03)
             style_panel_axes(ax, y_spine_bounds=(-60, 40))
             ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE)
-            ax.grid(alpha=GRID_ALPHA)
 
         # --- Column 2: Voltage Clamp ---
         ax = axes[row, 1]
@@ -610,10 +610,9 @@ def plot_final_grid_tight():
             inj_smooth = median_filter(inj, max(1, int(round(vc_smooth_sec / dt))))
             
             tx = normalize_two_burst_time(t, onset_times)
-            inj_disp, inj_smooth_disp, vc_scale = map_vc_current_trace(
+            _, inj_smooth_disp, vc_scale = map_vc_current_trace(
                 inj, inj_smooth, onset_times, t, VC_DISPLAY_YLIM
             )
-            ax.plot(tx, inj_disp, color=TRACE_COLOR, lw=0.45, alpha=0.22)
             ax.plot(tx, inj_smooth_disp, color=TRACE_COLOR, lw=1.25)
 
             ref_mapped = map_reference_trace(
@@ -629,7 +628,12 @@ def plot_final_grid_tight():
                 t_lead_vc_x = normalize_two_burst_time(np.array([t[idx_onset_vc]]), onset_times)[0]
                 shade_start_vc = max(DISPLAY_XLIM[0], t_lead_vc_x)
                 if shade_start_vc < ref_x:
-                    ax.axvspan(shade_start_vc, ref_x, color=HIGHLIGHT_COLOR, alpha=0.1)
+                    ax.axvspan(
+                        shade_start_vc,
+                        ref_x,
+                        color=HIGHLIGHT_COLOR,
+                        alpha=PRE_I_HIGHLIGHT_ALPHA,
+                    )
 
             if row == 0: ax.set_title("Voltage Clamp", fontsize=TITLE_FONT_SIZE)
             ax.set_xlim(*DISPLAY_XLIM)

@@ -18,7 +18,7 @@ def parse_makefile():
     """Load per-file flags from Makefile + overrides."""
     return get_flags_map(PROJECT_ROOT, strip_q=True)
 
-def run_analysis(basename, extra_flags=None, Ee=None, Ei=None):
+def run_analysis(basename, extra_flags=None, Ee=None, Ei=None, auto_Ei=True):
     """
     Runs trace_analyzer for a given basename.
     Returns (dat_path, ph_path, par_path)
@@ -38,6 +38,9 @@ def run_analysis(basename, extra_flags=None, Ee=None, Ei=None):
         
     if extra_flags:
         flags_str += " " + extra_flags
+
+    if not auto_Ei:
+        flags_str = " ".join(flag for flag in flags_str.split() if flag != "-auto_Ei")
         
     dat_path = os.path.join(TMP_DIR, f"{basename}.dat")
     ph_path = os.path.join(TMP_DIR, f"{basename}.ph")
