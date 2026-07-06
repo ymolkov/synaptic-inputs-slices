@@ -1,0 +1,27 @@
+tmp/
+.DS_Store
+bin/
+*.rp
+.npm_cache/
+__pycache__/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.bak
+web_deploy/
+output/
+legacy/
+
+# Local/private manuscript, submission, and review materials.
+paper/
+paper_private/
+*.docx
+CLAUDE.md
+.claude/
+js_*.txt
+*transcript*.txt
+*Transcript*.txt
