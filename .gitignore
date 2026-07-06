@@ -17,7 +17,9 @@ output/
 legacy/
 
 # Local/private manuscript, submission, and review materials.
+paper
 paper/
+paper_private
 paper_private/
 *.docx
 CLAUDE.md
