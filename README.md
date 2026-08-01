@@ -2,7 +2,7 @@
 
 This repository packages the **SCION** conductance-inference workflow for intracellular recordings from cells embedded in periodically active neural networks. It reconstructs phase-resolved excitatory and inhibitory synaptic conductance profiles from aligned current, voltage, and cycle-reference traces, then turns those profiles into population summaries and an interactive static dashboard.
 
-The respiratory slice dataset in this repository is the worked example accompanying the slice manuscript ([preprint on bioRxiv](https://doi.org/10.64898/2026.05.23.727419)). The same inference strategy was introduced and validated on mature rat in situ respiratory CPG recordings in the eLife article [Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits](https://doi.org/10.7554/eLife.101959) (Molkov et al., 2025, eLife 13:RP101959).
+The respiratory slice dataset in this repository is the worked example accompanying the *Journal of Neurophysiology* article [Functional Synaptic Interactions and Inhibitory Circuitry of the PreBötzinger Complex in the Rhythmic Slice](https://doi.org/10.1152/jn.00235.2026) (Molkov et al., 2026). The same inference strategy was introduced and validated on mature rat in situ respiratory CPG recordings in the eLife article [Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits](https://doi.org/10.7554/eLife.101959) (Molkov et al., 2025, eLife 13:RP101959).
 
 Live companion site: [ymolkov.github.io/synaptic-inputs-slices](https://ymolkov.github.io/synaptic-inputs-slices/)
 
@@ -98,7 +98,7 @@ Example: `VgluT2-E-Cell1-V = -f 25 -x 100000`
 If SCION informs your work, please cite both papers:
 
 *   **Method paper.** Molkov YI, Borgmann A, Koizumi H, Hama N, Zhang R, Smith JC. *Inference technique for the synaptic conductances in rhythmically active networks and application to respiratory central pattern generation circuits.* eLife 13:RP101959 (2025). [doi.org/10.7554/eLife.101959](https://doi.org/10.7554/eLife.101959)
-*   **Slice study (this repository).** Molkov YI, Koizumi H, Smith JC. *Functional Synaptic Interactions and Inhibitory Circuitry of the PreBötzinger Complex in the Rhythmic Slice.* bioRxiv (2026). [doi.org/10.64898/2026.05.23.727419](https://doi.org/10.64898/2026.05.23.727419)
+*   **Slice study (this repository).** Molkov YI, Koizumi H, Smith JC. *Functional Synaptic Interactions and Inhibitory Circuitry of the PreBötzinger Complex in the Rhythmic Slice.* Journal of Neurophysiology (2026). Published online July 31, 2026. [doi.org/10.1152/jn.00235.2026](https://doi.org/10.1152/jn.00235.2026)
 
 ## License
 
